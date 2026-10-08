@@ -137,12 +137,30 @@ Offline writes are opt-in (ARCA-OFF-005). Create the queue with
 write offline uses `ReadOnlyWhenOffline` and gets a read-only degraded mode.
 
 1. **Persistence.**
-   - Build the store with
-     `LocalStorageQueue.store execute LocalStorageQueue.DefaultBudget ns`.
+   - Take ownership with
+     `LocalStorageQueue.own lock execute LocalStorageQueue.DefaultBudget ns`
+     (0.2.1, DF-ARCA-2026-0009). Only one tab of the application at a time
+     holds a namespace's queue:
+     - `Owned store`: this tab loads, saves and synchronizes the queue.
+     - `OwnedElsewhere`: another tab holds it. Tell the person, keep no
+       queue here, and ask again later (for example on focus). The browser
+       releases the lock when the owner closes.
+     - `OwnershipUnsupported`: no Web Locks. Choose `store` (fenced, below),
+       memory only, or no offline writes.
+   - `lock` forwards `QueueLockRequest.Acquire name` to Limen's coordination
+     pack as `acquire { name, mode: "exclusive", wait: false, steal: false }`,
+     and answers `Acquired`, `Busy` or `Unsupported`. The host keeps the
+     lock for the page's lifetime.
    - `execute` forwards each `LocalStorageRequest` (`Get`, `Set` or `Remove`)
      to Limen's `Storage` effect, and answers with `Success value` or
      `Failure Unavailable | QuotaExceeded`.
-   - Each namespace's queue lives under `arca.queue.<app>[.<dataset>]`.
+   - `LocalStorageQueue.store execute budget ns` is the store without the
+     lock. Every save is fenced: it writes only over the text this store last
+     loaded or saved. A save after another tab wrote fails as `Unavailable`,
+     with nothing written. Without the lock, two saves whose read and write
+     overlap across tabs are not excluded, so prefer `own`.
+   - Each namespace's queue lives under `arca.queue.<app>[.<dataset>]`. The
+     layout is the same as 0.2.0, so an existing queue is adopted in place.
 2. **Start-up.** `Load` the queue, then apply `OfflineQueue.recover`. Any
    entry that was in flight becomes `OutcomeUnknown` and is reconciled.
 3. **Writing offline.** Use `OfflineQueue.enqueue now operation queue`, then

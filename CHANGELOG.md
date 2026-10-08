@@ -8,6 +8,29 @@ release may change the API; pin an exact version.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Two tabs no longer lose offline-queue entries** (WI-0024,
+  DF-ARCA-2026-0009). Tabs share localStorage, and the queue is saved as one
+  snapshot, so a tab saving a stale snapshot overwrote an entry another tab
+  had saved. `LocalStorageQueue.store` now fences every save on the stored
+  text: it writes only over what it last loaded or saved. Otherwise it fails
+  as `QueueStoreFailure.Unavailable`, with nothing written. The `QueueStore`
+  port and the storage layout are unchanged, and a 0.2.0 queue is adopted in
+  place.
+
+### Added
+
+- **`LocalStorageQueue.own`**: one owner per namespace through a Web Lock,
+  with Limen LCP-059's semantics. It returns `Owned store`, `OwnedElsewhere`
+  or `OwnershipUnsupported`. `QueueLockRequest` is shaped like Limen's
+  coordination `acquire`, and `LocalStorageQueue.lockName` names the lock.
+  `LocalStorageQueue.encodeWithin` and `mayReplace` expose the pure steps.
+- Multi-tab tests: a deterministic interleaving, properties over arbitrary
+  interleavings of tabs (with and without ownership), hand-off on close, and
+  ownership moved mid-send (exactly one commit). A real-browser test runs two
+  Chromium tabs through Limen's Storage effect and coordination pack.
+
 ## [0.2.0] — 2026-10-08
 
 Backlog slices 7–10: conformance and an in-memory provider, integrity of

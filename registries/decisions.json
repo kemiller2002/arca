@@ -339,5 +339,50 @@
     "title": "Migrations always copy to a different location, record progress in the target manifest, and retire the source only by an explicit, conditional step",
     "updated": "2026-10-08",
     "version": "1.0.0"
+  },
+  {
+    "created": "2026-10-08",
+    "id": "DF-ARCA-2026-0009",
+    "owners": [
+      "arca"
+    ],
+    "path": "research/decisions/DF-ARCA-2026-0009--interim-localstorage-queue-one-owner-and-a-content-fence.md",
+    "provenance": {
+      "contributions": {
+        "EXE-20261008T155254756Z-dca45d75": {
+          "actor": {
+            "id": "anthropic/claude-code",
+            "kind": "agent",
+            "model": "unknown",
+            "provider": "anthropic",
+            "runtime": "claude-code"
+          },
+          "at": "2026-10-08T16:14:52.552Z",
+          "operations": [
+            "created"
+          ],
+          "reason": "Interim multi-tab fix for the localStorage offline queue (WI-0024)"
+        }
+      }
+    },
+    "related_documents": [
+      "docs/requirements/ARCA-STORAGE-REQUIREMENTS.md",
+      "research/decisions/DF-ARCA-2026-0005--offline-queue-persists-to-localstorage-behind-a-port.md"
+    ],
+    "review_cycle": "on-trigger",
+    "status": "accepted",
+    "superseded_by": [],
+    "supersedes": [],
+    "tags": [
+      "offline",
+      "persistence",
+      "localstorage",
+      "multi-tab",
+      "web-locks",
+      "limen"
+    ],
+    "title": "The interim localStorage queue gets one owner per namespace through a Web Lock, and every save is fenced on the stored text; the storage layout does not change",
+    "updated": "2026-10-08",
+    "version": "1.0.0"
   }
 ]

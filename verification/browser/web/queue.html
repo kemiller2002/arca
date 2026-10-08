@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Arca offline queue across tabs</title>
+  <link rel="icon" href="data:,">
+</head>
+<body>
+  <main>
+    <h1>Arca's offline queue, one owner per namespace</h1>
+    <button type="button" data-event="own">Own</button>
+    <button type="button" data-event="open">Open without a lock</button>
+    <button type="button" data-event="enqueue">Enqueue</button>
+    <button type="button" data-event="save">Save</button>
+    <dl>
+      <dt>Ownership</dt><dd id="ownership" data-text="ownership"></dd>
+      <dt>Entries</dt><dd id="entries" data-text="entries"></dd>
+      <dt>Keys</dt><dd id="keys" data-text="keys"></dd>
+      <dt>Last</dt><dd id="last" data-text="last"></dd>
+    </dl>
+  </main>
+  <script type="module" src="./queue.js"></script>
+</body>
+</html>

@@ -9,6 +9,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Engine.fs" />
+    <Compile Include="QueueEngine.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../../src/Arca.Core/Arca.Core.fsproj" />

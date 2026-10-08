@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-08T15:15:21Z",
+  "updatedAt": "2026-10-08T16:16:22.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -693,6 +693,55 @@
       },
       "completedAt": "2026-10-08T15:15:21Z",
       "conclusion": "inconclusive"
+    },
+    {
+      "id": "WI-0024",
+      "type": "task",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "src/Arca.GitHub/LocalStorageQueue.fs"
+        },
+        {
+          "type": "tests",
+          "path": "tests/Arca.Tests/MultiTabQueueTests.fs"
+        },
+        {
+          "type": "browser-tests",
+          "path": "verification/browser/tests/queue.spec.mjs"
+        },
+        {
+          "type": "decision",
+          "path": "research/decisions/DF-ARCA-2026-0009--interim-localstorage-queue-one-owner-and-a-content-fence.md"
+        }
+      ],
+      "updatedAt": "2026-10-08T16:16:22.000Z",
+      "telemetryExecutionIds": [
+        "EXE-20261008T155254756Z-dca45d75"
+      ],
+      "latestCheckpoint": {
+        "id": "e7e64c11e77bcec5cf548fad",
+        "recordedAt": "2026-10-08T16:16:07.000Z",
+        "executionId": "EXE-20261008T155254756Z-dca45d75",
+        "repository": "arca",
+        "branch": "fix/multi-tab-offline-queue",
+        "commit": "cf23f74598e047520adbf1451304248b3831e3b4",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "fix/multi-tab-offline-queue",
+        "remoteCommit": "cf23f74598e047520adbf1451304248b3831e3b4",
+        "summary": "Multi-tab fix implemented and pushed: fenced LocalStorageQueue.store, LocalStorageQueue.own (Web Lock owner), tests (.NET 228 pass, browser 4 pass), DF-ARCA-2026-0009",
+        "nextAction": "Open the PR, wait for green checks, merge; then release 0.2.1 (WI-0025)",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-10-08T16:16:22.000Z"
     }
   ]
 }

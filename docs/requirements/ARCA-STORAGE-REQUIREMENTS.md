@@ -343,6 +343,13 @@ CHX-230.*
 > the last save wins, so an entry held only by the overwritten tab can be lost
 > from storage. The IndexedDB adapter removes this with one fenced queue
 > owner per namespace (LCP-059).
+>
+> **Fixed in the interim (0.2.1, WI-0024, DF-ARCA-2026-0009).**
+> `LocalStorageQueue.own` makes one tab the owner of a namespace's queue,
+> through a Web Lock, with LCP-059's semantics. Other tabs get
+> `OwnedElsewhere`. Every save, with or without the lock, is fenced on the
+> stored text, so a stale snapshot never overwrites an entry another tab
+> saved. The layout is unchanged, so no migration is needed.
 
 **ARCA-OFF-003** Unsynchronized data MUST NEVER be presented as globally
 synchronized. Sync state MUST be observable. *Sources: CHX-230, SIG ADM-070.*

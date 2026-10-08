@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "repository": "arca",
-  "nextSeq": 24,
+  "nextSeq": 26,
   "items": [
     {
       "id": "WI-0001",
@@ -574,6 +574,57 @@
       "attachments": [],
       "createdAt": "2026-10-08T15:14:43Z",
       "updatedAt": "2026-10-08T15:15:21Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0024",
+      "title": "Fix multi-tab loss in the interim localStorage offline queue: two tabs saving one whole snapshot lose entries (last save wins); single owner per namespace behind the unchanged QueueStore port (Limen LCP-059, LCP-060, DF-LIMEN-2026-0005)",
+      "description": null,
+      "tags": [
+        "arca",
+        "offline",
+        "bug",
+        "data-loss"
+      ],
+      "priority": "high",
+      "status": "complete",
+      "attachments": [],
+      "createdAt": "2026-10-08T15:52:43.728Z",
+      "updatedAt": "2026-10-08T16:16:22.000Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0025",
+      "title": "Release Arca 0.2.1 (multi-tab localStorage queue fix) as attested GitHub release assets and register it in echelon-registry",
+      "description": null,
+      "tags": [
+        "arca",
+        "release",
+        "registry"
+      ],
+      "priority": "high",
+      "status": "captured",
+      "attachments": [],
+      "createdAt": "2026-10-08T15:52:44.159Z",
+      "updatedAt": "2026-10-08T15:52:44.159Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",

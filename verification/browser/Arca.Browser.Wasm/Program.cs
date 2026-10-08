@@ -11,4 +11,9 @@ public partial class ArcaBrowser
     [JSExport]
     internal static string Dispatch(string messageJson) =>
         Arca.Browser.Engine.Dispatch.handle(messageJson);
+
+    /// <summary>The offline-queue page (WI-0024): one Limen message in, the engine's reply out.</summary>
+    [JSExport]
+    internal static string DispatchQueue(string messageJson) =>
+        Arca.Browser.QueueEngine.Dispatch.handle(messageJson);
 }
