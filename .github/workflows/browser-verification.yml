@@ -6,6 +6,9 @@ name: Browser verification
 # Limen's BrowserKernel in Chromium, and drives a commit and a read through
 # the kernel's Http effect against a simulated GitHub at the network
 # boundary, including a ref update whose answer is lost (OutcomeUnknown).
+# It also runs the offline queue in two tabs of one browser context (WI-0024):
+# one owner per namespace through the coordination pack's Web Lock, hand-off
+# when the owner closes, and a stale save refused rather than overwriting.
 
 on:
   pull_request:
