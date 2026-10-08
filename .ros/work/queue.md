@@ -4,7 +4,7 @@
 |---|---|---|---|---|
 | ROS-INSTALL-3-7-2 | ROS-INSTALL-3-7-2 | complete |  |  |
 | WI-0001 | Bootstrap Arca with Conditor: Praxis 3.7.2, Ordo 1.5.0, Communication Engineering 1.0.0 from echelon-current 1.2.0, plus the fsharp-nuget-library scaffold (foundations, build-and-test, release workflow) | complete | bootstrap, conditor | high |
-| WI-0002 | Derive Arca's storage requirements from Signal, Chrona and Summa, record the decisions, re-anchor the charter, and capture the dependency-ordered backlog | active | planning, requirements | high |
+| WI-0002 | Derive Arca's storage requirements from Signal, Chrona and Summa, record the decisions, re-anchor the charter, and capture the dependency-ordered backlog | complete | planning, requirements | high |
 | WI-0003 | Arca slice 1: package layout - pure core and GitHub adapter packages, WASM-safe, Aegis-bound (ARCA-ARCH-001..007) | captured | arca, slice:1, minimal, architecture | high |
 | WI-0004 | Arca slice 2: per-deployment data location, app-owned namespaces and path safety (ARCA-LOC-001..010) | captured | arca, slice:2, minimal, data-location | high |
 | WI-0005 | Arca slice 3: canonical JSON record format, stable ids, manifests and schema versioning (ARCA-REC-001..007) | captured | arca, slice:3, minimal, record-format | high |
