@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-08T16:51:26.000Z",
+  "updatedAt": "2026-10-08T19:14:05.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -787,6 +787,47 @@
         }
       },
       "completedAt": "2026-10-08T16:51:26.000Z"
+    },
+    {
+      "id": "WI-0019",
+      "type": "task",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "src/Arca.Core/QueueStoreConformance.fs"
+        },
+        {
+          "type": "tests",
+          "path": "tests/Arca.Tests/QueueStoreConformanceTests.fs"
+        }
+      ],
+      "updatedAt": "2026-10-08T19:14:05.000Z",
+      "telemetryExecutionIds": [
+        "EXE-20261008T190531149Z-90321e4d"
+      ],
+      "latestCheckpoint": {
+        "id": "66d74b75a035ca26d46d49bb",
+        "recordedAt": "2026-10-08T19:13:50.000Z",
+        "executionId": "EXE-20261008T190531149Z-90321e4d",
+        "repository": "arca",
+        "branch": "queue/wi-0019-conformance",
+        "commit": "9c2c5b1246cd127c9ff8693932c31b69e32ba966",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "queue/wi-0019-conformance",
+        "remoteCommit": "9c2c5b1246cd127c9ff8693932c31b69e32ba966",
+        "summary": "Queue-store conformance suite and MemoryQueueStore in Arca.Core; in-memory and localStorage stores pass; 238 tests pass",
+        "nextAction": "Open the PR, merge on green, then start WI-0021",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-10-08T19:14:05.000Z"
     }
   ]
 }

@@ -8,6 +8,23 @@ release may change the API; pin an exact version.
 
 ## [Unreleased]
 
+### Added
+
+- **Queue-store conformance suite** (WI-0019; Limen LCP-046, LCP-060,
+  LCP-075). `QueueStoreConformance` in `Arca.Core` is one executable
+  contract for every `QueueStore`. It checks that an absent queue loads
+  nothing; that a round-trip keeps order, sequences, states and policy,
+  through the store and after a reopen; that a save replaces the whole
+  snapshot; that an over-budget save is `QuotaExceeded` with nothing
+  truncated; that another namespace's queue and unreadable text are
+  `Corrupt`; that unavailable storage is `Unavailable`; and that a queue
+  carrying a credential is refused. A fault the harness cannot arrange is
+  reported `Unsupported`, never passed. `QueueStoreConformance.roundTrip`
+  serves property tests. The in-memory and localStorage stores pass it.
+- **`MemoryQueueStore`**: a `QueueStore` in memory. It encodes, budgets and
+  checks the namespace like a durable store, so it serves tests and the
+  memory-only durability mode.
+
 ## [0.2.1] — 2026-10-08
 
 A patch release for the offline queue across browser tabs. The `QueueStore`
