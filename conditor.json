@@ -4,14 +4,31 @@
   "registryAuthority": {
     "kind": "resolved-release-set",
     "path": ".conditor/authority/resolved-release-set.json",
-    "sha256": "ea1b39a003d3f2f41c4fb6e979694ec82fd03964854e5dd268e38df51cd22931"
+    "sha256": "f917318c6113caad2290b855e9b93a72077fd8183c90debd20fb7d7549100d48"
   },
   "components": [
-    { "id": "praxis", "version": "3.7.2", "required": true },
-    { "id": "ordo", "version": "1.5.0", "required": true },
-    { "id": "communication-engineering", "version": "1.0.0", "required": true }
+    {
+      "id": "praxis",
+      "version": "3.7.2",
+      "required": true
+    },
+    {
+      "id": "ordo",
+      "version": "1.5.0",
+      "required": true
+    },
+    {
+      "id": "communication-engineering",
+      "version": "1.0.0",
+      "required": true
+    }
   ],
-  "scaffold": { "kind": "fsharp-nuget-library", "name": "Arca" },
+  "scaffold": {
+    "kind": "fsharp-nuget-library",
+    "name": "Arca"
+  },
   "requirements": [],
-  "execution": { "enabled": false }
+  "execution": {
+    "enabled": false
+  }
 }
