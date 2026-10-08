@@ -34,5 +34,6 @@
     <Compile Include="Integrity.fs" />
     <Compile Include="InMemory.fs" />
     <Compile Include="Conformance.fs" />
+    <Compile Include="OfflineQueue.fs" />
   </ItemGroup>
 </Project>
