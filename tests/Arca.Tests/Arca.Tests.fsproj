@@ -27,6 +27,7 @@
     <Compile Include="QueueStoreConformanceTests.fs" />
     <Compile Include="MultiTabQueueTests.fs" />
     <Compile Include="MigrationTests.fs" />
+    <Compile Include="ReadCacheTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />

@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-08T19:14:05.000Z",
+  "updatedAt": "2026-10-08T19:26:53.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -828,6 +828,55 @@
         }
       },
       "completedAt": "2026-10-08T19:14:05.000Z"
+    },
+    {
+      "id": "WI-0021",
+      "type": "task",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "src/Arca.Core/ReadCache.fs"
+        },
+        {
+          "type": "implementation",
+          "path": "src/Arca.Core/ReadCacheConformance.fs"
+        },
+        {
+          "type": "tests",
+          "path": "tests/Arca.Tests/ReadCacheTests.fs"
+        },
+        {
+          "type": "tests",
+          "path": "tests/Arca.CompileFailure/CachedTokenAsWriteCondition.fs"
+        }
+      ],
+      "updatedAt": "2026-10-08T19:26:53.000Z",
+      "telemetryExecutionIds": [
+        "EXE-20261008T191539737Z-473b4788"
+      ],
+      "latestCheckpoint": {
+        "id": "d363f58cd7a9534f2c42df8a",
+        "recordedAt": "2026-10-08T19:26:52.000Z",
+        "executionId": "EXE-20261008T191539737Z-473b4788",
+        "repository": "arca",
+        "branch": "cache/wi-0021-port",
+        "commit": "c666ef32ea21d1f3c0d63b19f31e6c6ed4a2bcab",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "cache/wi-0021-port",
+        "remoteCommit": "c666ef32ea21d1f3c0d63b19f31e6c6ed4a2bcab",
+        "summary": "Read-cache port in Arca.Core (Cached/Fresh, revalidation, SignOut.plan), MemoryReadCache, 13-case conformance suite, compile-failure fixture; 258 tests pass",
+        "nextAction": "Merge the PR on green, then build EchelonFoundry.Arca.Limen (WI-0016)",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-10-08T19:26:53.000Z"
     }
   ]
 }

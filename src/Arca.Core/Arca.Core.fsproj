@@ -40,5 +40,7 @@
     <Compile Include="Derived.fs" />
     <Compile Include="Export.fs" />
     <Compile Include="Migration.fs" />
+    <Compile Include="ReadCache.fs" />
+    <Compile Include="ReadCacheConformance.fs" />
   </ItemGroup>
 </Project>
