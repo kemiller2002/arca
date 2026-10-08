@@ -19,4 +19,4 @@
 | WI-0014 | (Deferred, possible future) per-application at-rest encryption for co-located data | captured | arca, deferred, future, encryption | low |
 | WI-0015 | Align Arca to echelon-current 1.3.0 (conditor upgrade --current) and regenerate the test project as a real xUnit dotnet test project (conditor#54) | complete | arca, conditor, release-set, testing | high |
 | WI-0016 | Limen IndexedDB adapter for Arca's offline queue-store port (ARCA-OFF-002), replacing the interim localStorage adapter | captured | arca, offline, limen, indexeddb, follow-up | medium |
-| WI-0017 | Release Arca 0.2.0 (slices 7-10) as attested GitHub release assets and register it in echelon-registry | ready |  | medium |
+| WI-0017 | Release Arca 0.2.0 (slices 7-10) as attested GitHub release assets and register it in echelon-registry | complete |  | medium |
