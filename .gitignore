@@ -35,9 +35,10 @@ logs/*
 *.key
 
 # conditor:build-outputs:start
-# .NET build and pack outputs (Conditor fsharp-nuget-library scaffold)
+# .NET build, test and pack outputs (Conditor fsharp-nuget-library scaffold)
 bin/
 obj/
 dist/
+TestResults/
 *.nupkg
 # conditor:build-outputs:end

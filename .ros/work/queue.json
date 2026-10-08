@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "repository": "arca",
-  "nextSeq": 15,
+  "nextSeq": 16,
   "items": [
     {
       "id": "WI-0001",
@@ -350,6 +350,32 @@
       "attachments": [],
       "createdAt": "2026-10-08T08:03:46.267Z",
       "updatedAt": "2026-10-08T08:03:46.267Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0015",
+      "title": "Align Arca to echelon-current 1.3.0 (conditor upgrade --current) and regenerate the test project as a real xUnit dotnet test project (conditor#54)",
+      "description": "User direction 2026-10-08: align to echelon-current 1.3.0 via conditor upgrade --current, and regenerate tests/Arca.Tests as the conditor#54 xUnit scaffold, porting the requirements traceability check to xUnit facts.",
+      "tags": [
+        "arca",
+        "conditor",
+        "release-set",
+        "testing"
+      ],
+      "priority": "high",
+      "status": "ready",
+      "attachments": [],
+      "createdAt": "2026-10-08T08:42:59.000Z",
+      "updatedAt": "2026-10-08T08:43:05.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",

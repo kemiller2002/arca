@@ -1,14 +1,14 @@
 {
   "schemaVersion": 4,
   "project": "arca",
-  "manifestSha256": "d57090331df72db95261c7bc37010c4573a14dda625c2d4cc12cdc02798d5ba9",
+  "manifestSha256": "42d447e3538801d92fc96b49d3ee357c56c41a66ef008a6b0e159cb2e03e6bfc",
   "manifest": {
     "schemaVersion": 1,
     "name": "arca",
     "registryAuthority": {
       "kind": "resolved-release-set",
       "path": ".conditor/authority/resolved-release-set.json",
-      "sha256": "ea1b39a003d3f2f41c4fb6e979694ec82fd03964854e5dd268e38df51cd22931"
+      "sha256": "f917318c6113caad2290b855e9b93a72077fd8183c90debd20fb7d7549100d48"
     },
     "components": [
       {

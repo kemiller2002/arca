@@ -11,7 +11,7 @@ token provider and does not depend on Fides.
 - Decisions: [`research/decisions/`](research/decisions/)
 - Backlog: `./praxis work ready` (minimal slices WI-0003..WI-0008 come before Chrona's storage work)
 
-The repository runs Praxis 3.7.2 and Ordo 1.5.0, installed by Conditor
+The repository runs Praxis 3.7.2 and Ordo 1.5.0 from echelon-current 1.3.0, installed by Conditor
 (`conditor.json`). An older installation may also have `./ros`, a
 compatibility alias of `./praxis`.
 

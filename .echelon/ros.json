@@ -34,7 +34,7 @@
     {
       "path": ".gitignore",
       "ownership": "user-owned",
-      "sha256": "184c724fa5bd45212ea761139556fed593bb3292794b1cc55f2b4432647cc82a"
+      "sha256": "2561fbc342a9f16d935feca9796b8346e6d7f3efbf6f5ce01750e1bf78523402"
     },
     {
       "path": "AGENTS.md",
@@ -64,12 +64,12 @@
     {
       "path": "PROJECT-CHARTER.md",
       "ownership": "shared",
-      "sha256": "930cf003169d34a43c029f399848806ac12381dd65757bf79641916563536223"
+      "sha256": "26e854825ca9c65894ef155f1e450a148c9b66f9cde696786f1010cf174bee74"
     },
     {
       "path": "README.md",
       "ownership": "user-owned",
-      "sha256": "510d1c9060e932535c5c528131e36d4d033dfed07d34669f575721c483addd0e"
+      "sha256": "e2b586cd9fc3beb8315a852925681d3daf5dd5bd6fb518707046eecfef915b1c"
     },
     {
       "path": "context/ARCHITECTURE.md",
@@ -79,7 +79,7 @@
     {
       "path": "context/CURRENT-STATE.md",
       "ownership": "shared",
-      "sha256": "aceadf8debb603c0ceb3e31837c1c8edf94ae043d4fd6bcd4b8c1fccb3d2f417"
+      "sha256": "1e3235c7892ff16f1d9b0630eabd5a60b5e2425126333fb2b096edcef95d4cd4"
     },
     {
       "path": "context/DECISIONS.md",
@@ -269,7 +269,7 @@
     {
       "path": "registries/decisions.json",
       "ownership": "generated",
-      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+      "sha256": "c912f501da0bbb55111f07c3c38e53a833bab46f3240ce8fe50413f5ed31364c"
     },
     {
       "path": "registries/evidence.json",

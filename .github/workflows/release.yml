@@ -90,7 +90,19 @@ jobs:
       - name: Build
         run: dotnet build Arca.slnx -c Release -p:ContinuousIntegrationBuild=true
       - name: Test
-        run: dotnet run --project tests/Arca.Tests/Arca.Tests.fsproj -c Release --no-build
+        shell: bash
+        run: |
+          set -uo pipefail
+          output=$(dotnet test Arca.slnx -c Release --no-build 2>&1)
+          status=$?
+          echo "$output"
+          if [ "$status" -ne 0 ]; then exit "$status"; fi
+          if ! echo "$output" | grep -qE 'Passed:[[:space:]]*[1-9]'; then
+            echo "::error::No test passed. An empty test run is not a pass."; exit 1
+          fi
+          if echo "$output" | grep -qE 'Skipped:[[:space:]]*[1-9]'; then
+            echo "::error::Tests were skipped. A run that skips tests is not a pass."; exit 1
+          fi
       - name: Pack
         shell: bash
         run: |
