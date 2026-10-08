@@ -84,5 +84,217 @@
     "title": "The data repository is configured per deployment, each application owns its namespace, permission separation uses separate repositories, and there is no at-rest encryption for now",
     "updated": "2026-10-08",
     "version": "1.0.0"
+  },
+  {
+    "created": "2026-10-08",
+    "id": "DF-ARCA-2026-0003",
+    "owners": [
+      "arca"
+    ],
+    "path": "research/decisions/DF-ARCA-2026-0003--two-packages-core-and-github-adapter-with-effects-as-data.md",
+    "provenance": {
+      "contributions": {
+        "EXE-20261008T084806354Z-6573ebbf": {
+          "actor": {
+            "id": "anthropic/claude-code",
+            "kind": "agent",
+            "model": "unknown",
+            "provider": "anthropic",
+            "runtime": "claude-code"
+          },
+          "at": "2026-10-08T08:54:30.000Z",
+          "operations": [
+            "created"
+          ],
+          "reason": "User decisions of 2026-10-08 (coordinator brief), recorded with slice 1"
+        }
+      }
+    },
+    "related_documents": [
+      "docs/requirements/ARCA-STORAGE-REQUIREMENTS.md",
+      "research/decisions/DF-ARCA-2026-0001--github-only-behind-a-storage-interface.md"
+    ],
+    "review_cycle": "on-trigger",
+    "status": "accepted",
+    "superseded_by": [],
+    "supersedes": [],
+    "tags": [
+      "architecture",
+      "packaging",
+      "wasm",
+      "effects"
+    ],
+    "title": "Arca ships as two packages, a pure core (Arca.Core) and a GitHub adapter (Arca.GitHub) that describes GitHub conversations as data for the host to execute",
+    "updated": "2026-10-08",
+    "version": "1.0.0"
+  },
+  {
+    "created": "2026-10-08",
+    "id": "DF-ARCA-2026-0004",
+    "owners": [
+      "arca"
+    ],
+    "path": "research/decisions/DF-ARCA-2026-0004--arca-stays-separate-from-aegis-github-event-store.md",
+    "provenance": {
+      "contributions": {
+        "EXE-20261008T084806354Z-6573ebbf": {
+          "actor": {
+            "id": "anthropic/claude-code",
+            "kind": "agent",
+            "model": "unknown",
+            "provider": "anthropic",
+            "runtime": "claude-code"
+          },
+          "at": "2026-10-08T08:54:31.000Z",
+          "operations": [
+            "created"
+          ],
+          "reason": "User decisions of 2026-10-08 (coordinator brief), recorded with slice 1"
+        }
+      }
+    },
+    "related_documents": [
+      "docs/requirements/ARCA-STORAGE-REQUIREMENTS.md"
+    ],
+    "review_cycle": "on-trigger",
+    "status": "accepted",
+    "superseded_by": [],
+    "supersedes": [],
+    "tags": [
+      "architecture",
+      "aegis",
+      "boundaries"
+    ],
+    "title": "Arca stays separate from Aegis's GitHub event store because they serve different concerns; Arca reuses only Aegis's GitHub failure model",
+    "updated": "2026-10-08",
+    "version": "1.0.0"
+  },
+  {
+    "created": "2026-10-08",
+    "id": "DF-ARCA-2026-0005",
+    "owners": [
+      "arca"
+    ],
+    "path": "research/decisions/DF-ARCA-2026-0005--offline-queue-persists-to-localstorage-behind-a-port.md",
+    "provenance": {
+      "contributions": {
+        "EXE-20261008T084806354Z-6573ebbf": {
+          "actor": {
+            "id": "anthropic/claude-code",
+            "kind": "agent",
+            "model": "unknown",
+            "provider": "anthropic",
+            "runtime": "claude-code"
+          },
+          "at": "2026-10-08T08:54:31.000Z",
+          "operations": [
+            "created"
+          ],
+          "reason": "User decisions of 2026-10-08 (coordinator brief), recorded with slice 1"
+        }
+      }
+    },
+    "related_documents": [
+      "docs/requirements/ARCA-STORAGE-REQUIREMENTS.md"
+    ],
+    "review_cycle": "on-trigger",
+    "status": "accepted",
+    "superseded_by": [],
+    "supersedes": [],
+    "tags": [
+      "offline",
+      "persistence",
+      "limen",
+      "indexeddb",
+      "localstorage"
+    ],
+    "title": "The offline change queue persists to localStorage through Limen's Storage effect, behind a small queue-store port, until a Limen IndexedDB adapter replaces it",
+    "updated": "2026-10-08",
+    "version": "1.0.0"
+  },
+  {
+    "created": "2026-10-08",
+    "id": "DF-ARCA-2026-0006",
+    "owners": [
+      "arca"
+    ],
+    "path": "research/decisions/DF-ARCA-2026-0006--interim-distribution-through-attested-github-release-assets.md",
+    "provenance": {
+      "contributions": {
+        "EXE-20261008T084806354Z-6573ebbf": {
+          "actor": {
+            "id": "anthropic/claude-code",
+            "kind": "agent",
+            "model": "unknown",
+            "provider": "anthropic",
+            "runtime": "claude-code"
+          },
+          "at": "2026-10-08T08:54:31.000Z",
+          "operations": [
+            "created"
+          ],
+          "reason": "User decisions of 2026-10-08 (coordinator brief), recorded with slice 1"
+        }
+      }
+    },
+    "related_documents": [
+      "docs/requirements/ARCA-STORAGE-REQUIREMENTS.md",
+      "docs/distribution-short-term-plan.md"
+    ],
+    "review_cycle": "on-trigger",
+    "status": "accepted",
+    "superseded_by": [],
+    "supersedes": [],
+    "tags": [
+      "release",
+      "distribution",
+      "nuget",
+      "registry",
+      "conditor"
+    ],
+    "title": "Until nuget.org Trusted Publishing is set up, Arca ships its .nupkg files as Sigstore-attested GitHub release assets, registered in echelon-registry and installed by Conditor through a local feed",
+    "updated": "2026-10-08",
+    "version": "1.0.0"
+  },
+  {
+    "created": "2026-10-08",
+    "id": "DF-ARCA-2026-0007",
+    "owners": [
+      "arca"
+    ],
+    "path": "research/decisions/DF-ARCA-2026-0007--echelon-current-1-3-0-and-an-xunit-test-project.md",
+    "provenance": {
+      "contributions": {
+        "EXE-20261008T084806354Z-6573ebbf": {
+          "actor": {
+            "id": "anthropic/claude-code",
+            "kind": "agent",
+            "model": "unknown",
+            "provider": "anthropic",
+            "runtime": "claude-code"
+          },
+          "at": "2026-10-08T08:54:32.000Z",
+          "operations": [
+            "created"
+          ],
+          "reason": "User decisions of 2026-10-08 (coordinator brief), recorded with slice 1"
+        }
+      }
+    },
+    "related_documents": [
+      "docs/requirements/ARCA-STORAGE-REQUIREMENTS.md"
+    ],
+    "review_cycle": "on-trigger",
+    "status": "accepted",
+    "superseded_by": [],
+    "supersedes": [],
+    "tags": [
+      "release-set",
+      "conditor",
+      "testing"
+    ],
+    "title": "Arca is aligned to the echelon-current 1.3.0 release set and tests with a real xUnit dotnet test project (the conditor#54 scaffold)",
+    "updated": "2026-10-08",
+    "version": "1.0.0"
   }
 ]

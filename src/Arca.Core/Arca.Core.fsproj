@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Arca's pure core (ARCA-ARCH-001, DF-ARCA-2026-0003): record formats,
+       data location, versioning, conflict detection and merge, the commit and
+       audit format, and the offline change queue, all as data and total
+       functions. It performs no I/O: no clock, randomness, browser, network,
+       file system or process access. Time, identifiers and entropy are
+       inputs. It depends on FSharp.Core and the BCL only; the architecture
+       tests enforce both. -->
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>EchelonFoundry.Arca.Core</PackageId>
+    <AssemblyName>Arca.Core</AssemblyName>
+    <RootNamespace>Arca</RootNamespace>
+    <Description>Arca's pure core: Echelon's GitHub-backed data layer as data and total functions (record format, data location, concurrency, merge, commit format, offline queue). No I/O.</Description>
+    <PackageTags>echelon;arca;storage;github;fsharp;wasm</PackageTags>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Capabilities.fs" />
+  </ItemGroup>
+</Project>

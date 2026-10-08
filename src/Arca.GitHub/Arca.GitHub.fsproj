@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Arca's GitHub adapter (ARCA-ARCH-001/002, DF-ARCA-2026-0003). It
+       describes each GitHub conversation as data (HTTP requests, waits and
+       token requests) and interprets the answers; the host executes the
+       requests through its own transport (a Limen kernel's Http effect in the
+       browser, or any HTTP client elsewhere). It therefore holds no network,
+       JavaScript-interop, file-system or thread authority itself and runs
+       unchanged in browser WebAssembly. Unexpected operational failures are
+       classified through Aegis (ARCA-ARCH-007). -->
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>EchelonFoundry.Arca.GitHub</PackageId>
+    <AssemblyName>Arca.GitHub</AssemblyName>
+    <RootNamespace>Arca.GitHub</RootNamespace>
+    <Description>Arca's GitHub adapter: atomic commits, conditional requests, rate limits and OutcomeUnknown reconciliation, described as data so it runs in browser WebAssembly behind Limen.</Description>
+    <PackageTags>echelon;arca;storage;github;fsharp;wasm</PackageTags>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Http.fs" />
+    <Compile Include="Faults.fs" />
+    <Compile Include="Provider.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Arca.Core/Arca.Core.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="EchelonFoundry.Aegis.Integration.GitHub" />
+  </ItemGroup>
+</Project>

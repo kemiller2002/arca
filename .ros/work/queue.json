@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "repository": "arca",
-  "nextSeq": 16,
+  "nextSeq": 17,
   "items": [
     {
       "id": "WI-0001",
@@ -62,10 +62,10 @@
         "architecture"
       ],
       "priority": "high",
-      "status": "captured",
+      "status": "ready",
       "attachments": [],
       "createdAt": "2026-10-08T08:03:42.934Z",
-      "updatedAt": "2026-10-08T08:03:42.934Z",
+      "updatedAt": "2026-10-08T08:48:05.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",
@@ -312,8 +312,8 @@
     },
     {
       "id": "WI-0013",
-      "title": "Arca first release 0.1.0: nuget.org Trusted Publishing, NUGET_USER variable and echelon-registry system entry",
-      "description": "Depends on WI-0009. The release workflow from Conditor's fsharp-nuget-library scaffold never publishes 0.0.0, and it refuses to publish without the NUGET_USER repository variable. Create the nuget.org Trusted Publishing policy for the EchelonFoundry.Arca* packages naming kemiller2002/arca and .github/workflows/release.yml (a user action). Extend the release to pack both packages (EchelonFoundry.Arca and EchelonFoundry.Arca.GitHub) with the release input listing both nupkgs. Bump Directory.Build.props to 0.1.0. Add Arca to echelon-registry registry/systems-v2.json (distribution class nuget-library) and to the echelon-current channel so applications can pin it through conditor.json.",
+      "title": "Arca first release: interim distribution as Sigstore-attested GitHub release assets, echelon-registry entry, Conditor local-feed install; nuget.org Trusted Publishing kept dormant until NUGET_USER exists",
+      "description": "DF-ARCA-2026-0006 and docs/distribution-short-term-plan.md. Release both packages (EchelonFoundry.Arca.Core, EchelonFoundry.Arca.GitHub) as attested GitHub release assets, register them in echelon-registry, make Conditor install them into consumers from the release assets through a local feed, and keep the nuget.org push dormant until the NUGET_USER repository variable exists.",
       "tags": [
         "arca",
         "release",
@@ -323,7 +323,7 @@
       "status": "captured",
       "attachments": [],
       "createdAt": "2026-10-08T08:03:45.935Z",
-      "updatedAt": "2026-10-08T08:03:45.935Z",
+      "updatedAt": "2026-10-08T08:54:26.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",
@@ -376,6 +376,33 @@
       "attachments": [],
       "createdAt": "2026-10-08T08:42:59.000Z",
       "updatedAt": "2026-10-08T08:45:29.000Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0016",
+      "title": "Limen IndexedDB adapter for Arca's offline queue-store port (ARCA-OFF-002), replacing the interim localStorage adapter",
+      "description": "DF-ARCA-2026-0005. Limen 0.7.x already ships the IndexedDB store pack (limen.store v1) with generated F# bindings, but Limen.Contract is not published as a consumable package. Blocked on Limen publishing its F# store binding; then implement the queue-store port over limen.store (open with a declared schema, putIf for the snapshot, typed VersionChanged/Blocked/Unavailable handling) and a one-time migration from the localStorage snapshot. The core does not change.",
+      "tags": [
+        "arca",
+        "offline",
+        "limen",
+        "indexeddb",
+        "follow-up"
+      ],
+      "priority": "medium",
+      "status": "captured",
+      "attachments": [],
+      "createdAt": "2026-10-08T08:54:26.000Z",
+      "updatedAt": "2026-10-08T08:54:26.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",

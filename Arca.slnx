@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/Arca/Arca.fsproj" />
+    <Project Path="src/Arca.Core/Arca.Core.fsproj" />
+    <Project Path="src/Arca.GitHub/Arca.GitHub.fsproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Arca.Tests/Arca.Tests.fsproj" />

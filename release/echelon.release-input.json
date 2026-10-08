@@ -7,12 +7,18 @@
   "provides": [],
   "distribution": {
     "mechanism": "nuget",
-    "package": "EchelonFoundry.Arca",
+    "package": "EchelonFoundry.Arca.Core",
     "url": null
   },
   "artifacts": [
     {
-      "name": "EchelonFoundry.Arca.{version}.nupkg",
+      "name": "EchelonFoundry.Arca.Core.{version}.nupkg",
+      "purpose": "package",
+      "platform": null,
+      "mediaType": "application/zip"
+    },
+    {
+      "name": "EchelonFoundry.Arca.GitHub.{version}.nupkg",
       "purpose": "package",
       "platform": null,
       "mediaType": "application/zip"
