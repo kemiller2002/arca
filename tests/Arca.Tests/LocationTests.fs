@@ -16,7 +16,7 @@ let private location owner repository basePath =
     DataLocation.create owner repository "main" basePath |> ok
 
 let private binding application location =
-    { Application = ApplicationId.create application |> ok
+    { Application = AppId.create application |> ok
       Environment = { Kind = EnvironmentKind.Production; Name = "production" }
       Location = location }
 
