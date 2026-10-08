@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+  <!-- The browser-side marshalling shim (ARCA-TEST-003): one [JSExport] that
+       forwards a Limen message, as JSON, to the F# engine and returns its
+       reply. It holds no state and makes no decision. -->
+  <PropertyGroup>
+    <RootNamespace>Arca.Browser.Wasm</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- JSExportAttribute is browser-only, and browser-wasm is this project's only target. -->
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+    <!-- The WASM publish reports trim warnings from FSharp.Core that this shim cannot act on. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Arca.Browser.Engine/Arca.Browser.Engine.fsproj" />
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+</Project>

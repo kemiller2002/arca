@@ -24,6 +24,15 @@ release may change the API; pin an exact version.
 - **`GitHubConfig.MaxObjectBytes` and `ListingLimit`.** The adapter now
   refuses an oversized write up front with `ObjectTooLarge`.
 
+- **Real-browser verification** (`verification/browser`, ARCA-TEST-003).
+  - A Limen engine runs Arca's GitHub adapter on the .NET WebAssembly
+    runtime, with Limen 0.7.1's `BrowserKernel` executing every request
+    through `fetch` in Chromium.
+  - It commits a record and reads it back against a simulated GitHub,
+    including a ref update whose answer is lost: Limen reports it as
+    `OutcomeUnknown`, and Arca reconciles it as landed without resending.
+  - CI runs it on every pull request (`browser-verification.yml`).
+
 ### Changed
 
 - **Reflection-free compilation.** Both packages compile with

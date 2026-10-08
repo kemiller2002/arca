@@ -1,0 +1,14 @@
+{
+  "name": "arca-browser-verification",
+  "private": true,
+  "description": "Arca in a real browser WebAssembly host behind Limen (ARCA-TEST-003).",
+  "type": "module",
+  "scripts": {
+    "build:wasm": "dotnet publish Arca.Browser.Wasm/Arca.Browser.Wasm.csproj -c Release -o build/wasm",
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@echelon-foundry/limen": "0.7.1",
+    "@playwright/test": "1.63.0"
+  }
+}

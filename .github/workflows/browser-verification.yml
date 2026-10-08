@@ -1,0 +1,43 @@
+name: Browser verification
+
+# ARCA-TEST-003: Arca's GitHub adapter must be verified in a real browser
+# WebAssembly host through Limen, not only on the server runtime. This job
+# publishes a Limen engine that runs Arca to .NET WebAssembly, starts
+# Limen's BrowserKernel in Chromium, and drives a commit and a read through
+# the kernel's Http effect against a simulated GitHub at the network
+# boundary, including a ref update whose answer is lost (OutcomeUnknown).
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: verification/browser
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Limen and Playwright
+        run: npm ci --no-audit --no-fund
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Publish the engine to WebAssembly
+        run: npm run build:wasm
+      - name: Run the browser verification
+        run: npm test
