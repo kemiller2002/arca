@@ -4,7 +4,7 @@
   "registryAuthority": {
     "kind": "resolved-release-set",
     "path": ".conditor/authority/resolved-release-set.json",
-    "sha256": "f917318c6113caad2290b855e9b93a72077fd8183c90debd20fb7d7549100d48"
+    "sha256": "630aab1f1eeea7f8dac4e83b6396419bdc3dea723635c4a5f08dbf5016b875d0"
   },
   "components": [
     {
@@ -20,6 +20,11 @@
     {
       "id": "communication-engineering",
       "version": "1.0.0",
+      "required": true
+    },
+    {
+      "id": "limen-fsharp",
+      "version": "0.8.0",
       "required": true
     }
   ],

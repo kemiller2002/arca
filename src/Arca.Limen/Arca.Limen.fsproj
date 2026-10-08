@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Arca's Limen bridge (WI-0016, DF-LIMEN-2026-0005, DF-ARCA-2026-0010):
+       the IndexedDB implementations of Arca's QueueStore and read-cache
+       ports over Limen's limen.store, single queue ownership through the
+       coordination pack's Web Lock with a fencing epoch, the durability-mode
+       composer and the one-time move from the localStorage queue. Like
+       Arca.GitHub it describes every browser request as data and runs the
+       host's executors; it holds no browser, interop, network or file
+       authority, and runs in browser WebAssembly. Arca.Core and Arca.GitHub
+       take no Limen dependency: only applications that opt in reference
+       this package. -->
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>EchelonFoundry.Arca.Limen</PackageId>
+    <AssemblyName>Arca.Limen</AssemblyName>
+    <RootNamespace>Arca.Limen</RootNamespace>
+    <Description>Arca's IndexedDB adapters over Limen's limen.store: the offline queue store with one owner per namespace and fenced saves, a durability-mode composer (IndexedDB, localStorage, memory), the one-time move from the localStorage queue, and the offline-start read cache.</Description>
+    <PackageTags>echelon;arca;storage;limen;indexeddb;offline;fsharp;wasm</PackageTags>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- No reflection-based printing, as Limen's own engines compile
+         (ARCA-ARCH-002). -->
+    <OtherFlags>$(OtherFlags) --reflectionfree</OtherFlags>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Locks.fs" />
+    <Compile Include="Failures.fs" />
+    <Compile Include="Diagnostics.fs" />
+    <Compile Include="IndexedDbQueue.fs" />
+    <Compile Include="LimenQueue.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Arca.Core/Arca.Core.fsproj" />
+    <ProjectReference Include="../Arca.GitHub/Arca.GitHub.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="EchelonFoundry.Limen.Store" />
+    <PackageReference Include="EchelonFoundry.Aegis.Core" />
+  </ItemGroup>
+</Project>
