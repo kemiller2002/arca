@@ -16,7 +16,7 @@ behind Limen, and ships as two NuGet packages
 Arca takes a token provider and does not depend on Fides. Until nuget.org
 publishing is set up, releases ship as attested GitHub release assets that
 Conditor installs into a local feed
-([short-term plan](docs/distribution-short-term-plan.md)).
+([short-term plan](docs/distribution-short-term-plan.md)). To use Arca, see [`docs/consuming-arca.md`](docs/consuming-arca.md).
 
 - Requirements: [`docs/requirements/ARCA-STORAGE-REQUIREMENTS.md`](docs/requirements/ARCA-STORAGE-REQUIREMENTS.md)
 - Decisions: [`research/decisions/`](research/decisions/)

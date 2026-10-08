@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-08T09:23:22.000Z",
+  "updatedAt": "2026-10-08T09:44:56.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -393,33 +393,43 @@
     {
       "id": "WI-0013",
       "type": "task",
-      "state": "active",
-      "semanticState": "active",
-      "evidence": [],
-      "updatedAt": "2026-10-08T09:23:22.000Z",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": ".github/workflows/release.yml"
+        },
+        {
+          "type": "tests",
+          "path": "docs/consuming-arca.md"
+        }
+      ],
+      "updatedAt": "2026-10-08T09:44:56.000Z",
       "telemetryExecutionIds": [
         "EXE-20261008T092323072Z-4beb1b24"
       ],
       "latestCheckpoint": {
-        "id": "750688ab9d5d8e653c451185",
-        "recordedAt": "2026-10-08T09:23:44.000Z",
+        "id": "7ed0c41ccaf819f2bd75a943",
+        "recordedAt": "2026-10-08T09:44:55.000Z",
         "executionId": "EXE-20261008T092323072Z-4beb1b24",
         "repository": "arca",
-        "branch": "release/0.1.0",
-        "commit": "0bc14b78083c4a9135744d19e025686de2c61318",
+        "branch": "docs/consume-0.1.0",
+        "commit": "e17749e579c2e845b3974b955116d08026653a66",
         "remote": {
           "name": "origin",
           "url": "https://github.com/kemiller2002/arca"
         },
-        "remoteBranch": "release/0.1.0",
-        "remoteCommit": "0bc14b78083c4a9135744d19e025686de2c61318",
-        "summary": "Release workflow publishes attested GitHub release assets; version 0.1.0",
-        "nextAction": "Merge, verify the v0.1.0 release, register it in echelon-registry, add Conditor's release-asset feed",
+        "remoteBranch": "docs/consume-0.1.0",
+        "remoteCommit": "e17749e579c2e845b3974b955116d08026653a66",
+        "summary": "Arca 0.1.0 released as attested assets, registered (registry#45), installable through Conditor's feed (conditor#59); consumption documented",
+        "nextAction": "PR, CI green, merge; then slice 7 (WI-0009)",
         "verification": {
           "status": "verified",
           "mechanism": "git-remote-observation"
         }
-      }
+      },
+      "completedAt": "2026-10-08T09:44:56.000Z"
     }
   ]
 }
