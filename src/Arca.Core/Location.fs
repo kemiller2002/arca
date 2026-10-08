@@ -250,11 +250,11 @@ module DataLocation =
 
 /// A lower-case identifier: `a-z 0-9 -`, 1 to 40 characters, starting with a
 /// letter. Used for application namespaces.
-type ApplicationId = private ApplicationId of string
+type AppId = private AppId of string
 
 /// Construction of application identifiers.
 [<RequireQualifiedAccess>]
-module ApplicationId =
+module AppId =
 
     /// A validated application identifier, for example `chrona`.
     let create (text: string) =
@@ -265,10 +265,10 @@ module ApplicationId =
             && text |> Seq.forall (fun c -> Char.IsAsciiLetterLower c || Char.IsAsciiDigit c || c = '-')
             && not (text.EndsWith '-')
 
-        if valid then Ok(ApplicationId text) else Error(LocationError.InvalidIdentifier("application", text))
+        if valid then Ok(AppId text) else Error(LocationError.InvalidIdentifier("application", text))
 
     /// The identifier's text.
-    let value (ApplicationId text) = text
+    let value (AppId text) = text
 
 /// An organization's or dataset's immutable identifier (ARCA-LOC-005). It is
 /// independent of display names and slugs: renaming an organization never
@@ -312,7 +312,7 @@ type DeploymentEnvironment =
 /// where its data lives. An application may point at its own repository or a
 /// shared one (ARCA-LOC-004).
 type ApplicationBinding =
-    { Application: ApplicationId
+    { Application: AppId
       Environment: DeploymentEnvironment
       Location: DataLocation }
 
@@ -326,7 +326,7 @@ type ObjectAddress =
 /// A namespace: the root under which one application, or one of its datasets,
 /// keeps every object (ARCA-LOC-002).
 type Namespace =
-    { Application: ApplicationId
+    { Application: AppId
       /// The dataset, for a per-organization or per-dataset sub-namespace.
       Dataset: DatasetId option
       Location: DataLocation
@@ -348,7 +348,7 @@ module Namespace =
 
     /// The application's namespace: `<base path>/<application>`.
     let ofApplication (binding: ApplicationBinding) =
-        RelativePath.append binding.Location.BasePath (RelativePath [ segment (ApplicationId.value binding.Application) ])
+        RelativePath.append binding.Location.BasePath (RelativePath [ segment (AppId.value binding.Application) ])
         |> Result.map (fun root ->
             { Application = binding.Application
               Dataset = None
@@ -365,7 +365,7 @@ module Namespace =
         RelativePath.append
             location.BasePath
             (RelativePath
-                [ segment (ApplicationId.value binding.Application)
+                [ segment (AppId.value binding.Application)
                   segment DatasetsFolder
                   segment (DatasetId.value dataset) ])
         |> Result.map (fun root ->
@@ -423,7 +423,7 @@ module Deployment =
             bindings
             |> List.countBy (fun binding -> binding.Application)
             |> List.filter (fun (_, count) -> count > 1)
-            |> List.map (fun (application, _) -> LocationError.DuplicateApplication(ApplicationId.value application))
+            |> List.map (fun (application, _) -> LocationError.DuplicateApplication(AppId.value application))
 
         let resolved = bindings |> List.map Namespace.ofApplication
 

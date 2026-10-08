@@ -18,5 +18,8 @@
   <ItemGroup>
     <Compile Include="Capabilities.fs" />
     <Compile Include="Location.fs" />
+    <Compile Include="Json.fs" />
+    <Compile Include="Record.fs" />
+    <Compile Include="Manifest.fs" />
   </ItemGroup>
 </Project>
