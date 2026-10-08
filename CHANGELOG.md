@@ -48,6 +48,24 @@ release may change the API; pin an exact version.
     immutable record.
   - Three new conformance cases cover this.
 
+- **Offline change queue** (`OfflineQueue`, `OfflineSync`, ARCA-OFF-001..006).
+  - The queue is plain data: ordered entries with idempotency keys, expected
+    revisions and states (pending, in flight, synchronized, conflicted,
+    outcome unknown, refused, abandoned). An application can inspect it, and
+    `OfflineQueue.status` never reports unsynchronized work as synchronized.
+  - Offline writes are opt-in: under `OfflinePolicy.ReadOnlyWhenOffline`,
+    `enqueue` refuses with `OfflineWritesDisabled`.
+  - `OfflineSync.step` and `run` synchronize in strict order and write ahead:
+    an entry is persisted as in flight before it is sent. After a restart an
+    in-flight entry becomes `OutcomeUnknown` and is reconciled, never resent
+    blindly. A conflicted or refused entry blocks the entries after it until
+    the application revises (`revise`) or abandons (`abandon`) it.
+  - The queue is persisted through a `QueueStore` port. Its first adapter,
+    `Arca.GitHub.LocalStorageQueue`, describes Limen `Storage` effect requests
+    as data. It enforces a size budget, so an over-budget queue fails whole
+    with `QuotaExceeded` and is never truncated (DF-ARCA-2026-0005). A Limen
+    IndexedDB adapter can replace it later (WI-0016).
+
 ### Changed
 
 - **Reflection-free compilation.** Both packages compile with

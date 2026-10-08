@@ -23,6 +23,7 @@
     <Compile Include="GitHubStorageTests.fs" />
     <Compile Include="ConformanceTests.fs" />
     <Compile Include="IntegrityTests.fs" />
+    <Compile Include="OfflineQueueTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />

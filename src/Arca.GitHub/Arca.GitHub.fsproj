@@ -29,6 +29,7 @@
     <Compile Include="Identity.fs" />
     <Compile Include="Session.fs" />
     <Compile Include="GitHubStorage.fs" />
+    <Compile Include="LocalStorageQueue.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Arca.Core/Arca.Core.fsproj" />

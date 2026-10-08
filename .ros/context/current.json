@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-08T10:05:08.000Z",
+  "updatedAt": "2026-10-08T10:14:16.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -512,6 +512,51 @@
         }
       },
       "completedAt": "2026-10-08T10:05:08.000Z"
+    },
+    {
+      "id": "WI-0011",
+      "type": "task",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "src/Arca.Core/OfflineQueue.fs"
+        },
+        {
+          "type": "adapter",
+          "path": "src/Arca.GitHub/LocalStorageQueue.fs"
+        },
+        {
+          "type": "tests",
+          "path": "tests/Arca.Tests/OfflineQueueTests.fs"
+        }
+      ],
+      "updatedAt": "2026-10-08T10:14:16.000Z",
+      "telemetryExecutionIds": [
+        "EXE-20261008T100600660Z-f949b30f"
+      ],
+      "latestCheckpoint": {
+        "id": "3a82bca1612a7e4a376ba4c0",
+        "recordedAt": "2026-10-08T10:14:15.000Z",
+        "executionId": "EXE-20261008T100600660Z-f949b30f",
+        "repository": "arca",
+        "branch": "slice/09-offline-queue",
+        "commit": "1df55940bae2b170dfb7e50a2d9078210b256060",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "slice/09-offline-queue",
+        "remoteCommit": "1df55940bae2b170dfb7e50a2d9078210b256060",
+        "summary": "Offline queue, write-ahead sync and localStorage queue store delivered; 194 tests pass",
+        "nextAction": "Slice 10: derived indexes, migration and export (WI-0012)",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-10-08T10:14:16.000Z"
     }
   ]
 }

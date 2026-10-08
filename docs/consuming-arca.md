@@ -130,11 +130,42 @@ so the engine stays inside Limen's boundary rules. Outside the browser,
 `GitHubStorage.provider host config` exposes Arca's provider-neutral
 `StorageProvider`.
 
-## 5. Pending work and what to expect
+## 5. Offline writes (unreleased)
 
-- **Slices 7 to 10.** The conformance suite with an in-memory provider for your
-  tests, integrity checks on read, the offline queue with its localStorage
-  store, and migration and export follow in later releases (`./praxis work ready`).
+Offline writes are opt-in (ARCA-OFF-005). Create the queue with
+`OfflineQueue.create OfflinePolicy.QueueWrites`. An application that must not
+write offline uses `ReadOnlyWhenOffline` and gets a read-only degraded mode.
+
+1. **Persistence.**
+   - Build the store with
+     `LocalStorageQueue.store execute LocalStorageQueue.DefaultBudget ns`.
+   - `execute` forwards each `LocalStorageRequest` (`Get`, `Set` or `Remove`)
+     to Limen's `Storage` effect, and answers with `Success value` or
+     `Failure Unavailable | QuotaExceeded`.
+   - Each namespace's queue lives under `arca.queue.<app>[.<dataset>]`.
+2. **Start-up.** `Load` the queue, then apply `OfflineQueue.recover`. Any
+   entry that was in flight becomes `OutcomeUnknown` and is reconciled.
+3. **Writing offline.** Use `OfflineQueue.enqueue now operation queue`, then
+   `Save`.
+4. **Reconnecting.**
+   - `OfflineSync.run provider store ns limit queue` sends entries in order,
+     persisting each one before sending it.
+   - The result is one of these:
+     - `Idle`: all work is synchronized.
+     - `Blocked entry`: an entry conflicted or was refused. Reload, revalidate,
+       then `revise` or `abandon` it.
+     - `Deferred reason`: try again later.
+5. **Status.** Show `OfflineQueue.status queue`. Use `prune` to drop
+   synchronized and abandoned entries.
+
+The queue holds operations, not records. Reads always go to GitHub, which
+stays authoritative (ARCA-OFF-006).
+
+## 6. Pending work and what to expect
+
+- **Unreleased and later slices.** The conformance suite with an in-memory
+  provider, integrity checks on read and the offline queue are on `main` for
+  the next release. Migration and export follow (`./praxis work ready`).
 - **Moving to nuget.org.** When the packages are on nuget.org, remove the
   `EchelonFoundry.Arca.*` mapping from `NuGet.config`. The package ids and
   versions do not change.
