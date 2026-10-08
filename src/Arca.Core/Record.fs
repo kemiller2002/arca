@@ -334,6 +334,25 @@ module Layout =
     /// The manifest's path, relative to its namespace.
     let manifestPath = RelativePath.ofSegments [ segment ManifestFile ]
 
+    /// The record key an authoritative path names; None for any other path.
+    /// `recordPath` of the result is the path again.
+    let keyOf (path: RelativePath) =
+        match RelativePath.segments path with
+        | records :: recordType :: (_ :: _ as rest) when Segment.value records = RecordsFolder ->
+            let file = Segment.value (List.last rest)
+
+            if file.EndsWith(".json", System.StringComparison.Ordinal) then
+                match RecordType.create (Segment.value recordType), RecordId.create (file.Substring(0, file.Length - 5)) with
+                | Ok recordType, Ok id ->
+                    Some
+                        { Type = recordType
+                          Partition = List.take (rest.Length - 1) rest
+                          Id = id }
+                | _ -> None
+            else
+                None
+        | _ -> None
+
     /// Which kind of object a namespace-relative path names, if any.
     let authorityOf (path: RelativePath) =
         match RelativePath.segments path |> List.map Segment.value with

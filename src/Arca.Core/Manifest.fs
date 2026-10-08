@@ -58,13 +58,19 @@ module ActorKind =
         | "integration" -> Some ActorKind.Integration
         | _ -> None
 
-/// The phase of an active migration (ARCA-MIG-002: validate, copy, verify, activate).
+/// The phase of a migration (ARCA-MIG-002: validate, copy, verify, activate),
+/// as recorded in a manifest.
 [<RequireQualifiedAccess>]
 type MigrationPhase =
     | Validating
     | Copying
     | Verifying
     | Activating
+    /// The target of a finished migration: active, recording which migration
+    /// produced it.
+    | Completed
+    /// The source of a finished migration, explicitly retired: no longer used.
+    | Retired
 
 /// A migration in progress, recorded in the manifest so it can be resumed.
 type MigrationState =
@@ -109,6 +115,9 @@ type ManifestProblem =
     | Relocated of RelocationRequired
     /// A migration is in progress; the data is not ready for normal use.
     | MigrationInProgress of MigrationState
+    /// The data was migrated elsewhere and this copy explicitly retired
+    /// (ARCA-MIG-002, ARCA-LOC-009).
+    | Retired of migrationId: string
 
 /// The manifest format and its checks.
 [<RequireQualifiedAccess>]
@@ -148,6 +157,8 @@ module Manifest =
         | MigrationPhase.Copying -> "copying"
         | MigrationPhase.Verifying -> "verifying"
         | MigrationPhase.Activating -> "activating"
+        | MigrationPhase.Completed -> "completed"
+        | MigrationPhase.Retired -> "retired"
 
     /// The manifest as a JSON value.
     let toJson (manifest: Manifest) =
@@ -266,6 +277,8 @@ module Manifest =
                     | "copying" -> Ok MigrationPhase.Copying
                     | "verifying" -> Ok MigrationPhase.Verifying
                     | "activating" -> Ok MigrationPhase.Activating
+                    | "completed" -> Ok MigrationPhase.Completed
+                    | "retired" -> Ok MigrationPhase.Retired
                     | other -> Error(DecodeError.InvalidField("migration.phase", $"'{other}' is not a migration phase")))
                 |> Result.map (fun phase -> Some { MigrationId = id; Phase = phase }))
 
@@ -327,5 +340,7 @@ module Manifest =
           | Ok() -> ()
           | Error relocation -> ManifestProblem.Relocated relocation
           match manifest.Migration with
-          | Some state -> ManifestProblem.MigrationInProgress state
-          | None -> () ]
+          | None
+          | Some { Phase = MigrationPhase.Completed } -> ()
+          | Some { Phase = MigrationPhase.Retired; MigrationId = id } -> ManifestProblem.Retired id
+          | Some state -> ManifestProblem.MigrationInProgress state ]

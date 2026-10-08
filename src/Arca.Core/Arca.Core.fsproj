@@ -35,5 +35,9 @@
     <Compile Include="InMemory.fs" />
     <Compile Include="Conformance.fs" />
     <Compile Include="OfflineQueue.fs" />
+    <Compile Include="Snapshot.fs" />
+    <Compile Include="Derived.fs" />
+    <Compile Include="Export.fs" />
+    <Compile Include="Migration.fs" />
   </ItemGroup>
 </Project>

@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-08T10:14:16.000Z",
+  "updatedAt": "2026-10-08T10:24:34.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -557,6 +557,59 @@
         }
       },
       "completedAt": "2026-10-08T10:14:16.000Z"
+    },
+    {
+      "id": "WI-0012",
+      "type": "task",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "src/Arca.Core/Migration.fs"
+        },
+        {
+          "type": "derived",
+          "path": "src/Arca.Core/Derived.fs"
+        },
+        {
+          "type": "export",
+          "path": "src/Arca.Core/Export.fs"
+        },
+        {
+          "type": "tests",
+          "path": "tests/Arca.Tests/MigrationTests.fs"
+        },
+        {
+          "type": "decision",
+          "path": "research/decisions/DF-ARCA-2026-0008--migrations-copy-to-a-new-location-and-retire-the-source-explicitly.md"
+        }
+      ],
+      "updatedAt": "2026-10-08T10:24:34.000Z",
+      "telemetryExecutionIds": [
+        "EXE-20261008T102316191Z-42ea7eeb"
+      ],
+      "latestCheckpoint": {
+        "id": "8ded707ef99465842d426dd9",
+        "recordedAt": "2026-10-08T10:24:33.000Z",
+        "executionId": "EXE-20261008T102316191Z-42ea7eeb",
+        "repository": "arca",
+        "branch": "slice/10-migration",
+        "commit": "5df97fd9e7d1153e410915622bce1caaf5a2c1ca",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "slice/10-migration",
+        "remoteCommit": "5df97fd9e7d1153e410915622bce1caaf5a2c1ca",
+        "summary": "Snapshots, derived indexes, export and migration workflow delivered; 215 tests pass",
+        "nextAction": "Release 0.2.0 with slices 7-10",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-10-08T10:24:34.000Z"
     }
   ]
 }

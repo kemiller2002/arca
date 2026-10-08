@@ -161,11 +161,32 @@ write offline uses `ReadOnlyWhenOffline` and gets a read-only degraded mode.
 The queue holds operations, not records. Reads always go to GitHub, which
 stays authoritative (ARCA-OFF-006).
 
-## 6. Pending work and what to expect
+## 6. Indexes, export and migration (unreleased)
 
-- **Unreleased and later slices.** The conformance suite with an in-memory
-  provider, integrity checks on read and the offline queue are on `main` for
-  the next release. Migration and export follow (`./praxis work ready`).
+- **Derived indexes.**
+  - Define an index as an `IndexDefinition`: a name, a version, the record
+    types it reads, and a pure projection.
+  - `Derived.rebuild provider ns metadata definition` writes it under
+    `derived/indexes/` only when it is out of date.
+  - `Derived.check` tells you whether a stored index still matches the
+    records.
+- **Export.**
+  - `Export.take provider ns 3 |> Async.map (Result.map Export.encode)` gives
+    a canonical, hash-verified archive of everything the namespace stores.
+  - Keep it as a backup. `Export.decode` verifies it before use.
+- **Moving data, or changing record schemas.**
+  - Never edit the configured location (ARCA-LOC-009). Build a
+    `MigrationPlan` (source and target namespaces, transform, batch size).
+  - Run `Migration.run sourceProvider targetProvider plan` until it returns
+    `Ok`, then switch the application's configured location to the target.
+  - Later, call `Migration.retire`. Put the application into read-only mode
+    while it migrates.
+
+## 7. Pending work and what to expect
+
+- **Unreleased.** The conformance suite with an in-memory provider, integrity
+  checks on read, the offline queue, derived indexes, export and migration
+  are on `main` for the next release.
 - **Moving to nuget.org.** When the packages are on nuget.org, remove the
   `EchelonFoundry.Arca.*` mapping from `NuGet.config`. The package ids and
   versions do not change.

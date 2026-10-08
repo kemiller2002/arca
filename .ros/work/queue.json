@@ -295,10 +295,10 @@
         "migration"
       ],
       "priority": "medium",
-      "status": "captured",
+      "status": "complete",
       "attachments": [],
       "createdAt": "2026-10-08T08:03:45.618Z",
-      "updatedAt": "2026-10-08T08:03:45.618Z",
+      "updatedAt": "2026-10-08T10:24:34.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",
