@@ -21,5 +21,9 @@
     <Compile Include="Json.fs" />
     <Compile Include="Record.fs" />
     <Compile Include="Manifest.fs" />
+    <Compile Include="Secrets.fs" />
+    <Compile Include="Concurrency.fs" />
+    <Compile Include="Merge.fs" />
+    <Compile Include="Commit.fs" />
   </ItemGroup>
 </Project>
