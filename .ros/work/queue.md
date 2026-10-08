@@ -13,7 +13,7 @@
 | WI-0008 | Arca slice 6: GitHub adapter - atomic commits, conditional requests, rate limits, OutcomeUnknown and idempotency (ARCA-API-001..005, ARCA-OUT-001..002, ARCA-COMMIT-001/006) | complete | arca, slice:6, minimal, github-adapter | high |
 | WI-0009 | Arca slice 7: provider conformance suite, in-memory provider and real-browser WASM verification (ARCA-TEST-001..004) | complete | arca, slice:7, conformance, testing | high |
 | WI-0010 | Arca slice 8: storage content is untrusted input - validation, manual-edit and tamper detection (ARCA-INT-001..004) | complete | arca, slice:8, integrity | high |
-| WI-0011 | Arca slice 9: offline change queue as data with durable browser persistence through Limen (ARCA-OFF-001..006) | ready | arca, slice:9, offline | high |
+| WI-0011 | Arca slice 9: offline change queue as data with durable browser persistence through Limen (ARCA-OFF-001..006) | complete | arca, slice:9, offline | high |
 | WI-0012 | Arca slice 10: rebuildable derived indexes, explicit migration workflow and canonical export (ARCA-MIG-001..003, ARCA-LOC-009) | captured | arca, slice:10, derived-state, migration | medium |
 | WI-0013 | Arca first release: interim distribution as Sigstore-attested GitHub release assets, echelon-registry entry, Conditor local-feed install; nuget.org Trusted Publishing kept dormant until NUGET_USER exists | complete | arca, release, registry | high |
 | WI-0014 | (Deferred, possible future) per-application at-rest encryption for co-located data | captured | arca, deferred, future, encryption | low |
