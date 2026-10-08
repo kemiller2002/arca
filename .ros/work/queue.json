@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "repository": "arca",
-  "nextSeq": 19,
+  "nextSeq": 24,
   "items": [
     {
       "id": "WI-0001",
@@ -389,8 +389,8 @@
     },
     {
       "id": "WI-0016",
-      "title": "Limen IndexedDB adapter for Arca's offline queue-store port (ARCA-OFF-002), replacing the interim localStorage adapter",
-      "description": "DF-ARCA-2026-0005. Limen 0.7.x already ships the IndexedDB store pack (limen.store v1) with generated F# bindings, but Limen.Contract is not published as a consumable package. Blocked on Limen publishing its F# store binding; then implement the queue-store port over limen.store (open with a declared schema, putIf for the snapshot, typed VersionChanged/Blocked/Unavailable handling) and a one-time migration from the localStorage snapshot. The core does not change.",
+      "title": "Limen IndexedDB adapter for Arca's offline queue-store port (ARCA-OFF-002) in a new EchelonFoundry.Arca.Limen package, replacing the interim localStorage adapter (Limen LCP-046, LCP-059, LCP-060, LCP-062, LCP-065)",
+      "description": "DF-ARCA-2026-0005, DF-LIMEN-2026-0005. Requirements: kemiller2002/limen docs/requirements/LIMEN-INDEXEDDB-REQUIREMENTS.md LCP-046, LCP-059, LCP-060, LCP-062, LCP-065, LCP-068, LCP-070, LCP-072, LCP-073. Blocked on Limen WI-0166 (Limen 0.8.0 releasing EchelonFoundry.Limen.Contract and EchelonFoundry.Limen.Store as attested release assets, installed through Conditor) and on Arca WI-0019 (queue-store conformance). Placement: a new package EchelonFoundry.Arca.Limen referencing Arca.Core and Limen.Store only; Arca.Core and Arca.GitHub take no Limen dependency. Implements the unchanged QueueStore port over limen.store: one queue owner per namespace through a coordination-pack lock with a fencing epoch compared by putIf (a pre-empted owner's Save writes nothing and fails as Unavailable; non-owner tabs get OwnedElsewhere from the factory, outside the port) - this removes the whole-snapshot last-writer-wins loss that two tabs can cause with the localStorage adapter today; FIFO and exactly-once hand-off (only the owner runs OfflineSync; recover then reconcile in-flight entries); a durability-mode composer (IndexedDb, LocalStorage, MemoryOnly) that reports the mode it obtained; LocalQueueLost when the database is found recreated after the device held a queue; sign-out clearing per the application's sharedDevicePolicy (ask | discardOnSignOut); QueueDiagnostics (mode, depth by state, snapshot size against budget, last save, last sync, ownership). Passes WI-0019's suite over Limen's fake and in Chromium and WebKit. The localStorage migration is WI-0020; the read cache is WI-0021/WI-0022. The core does not change.",
       "tags": [
         "arca",
         "offline",
@@ -402,7 +402,7 @@
       "status": "captured",
       "attachments": [],
       "createdAt": "2026-10-08T08:54:26.000Z",
-      "updatedAt": "2026-10-08T08:54:26.000Z",
+      "updatedAt": "2026-10-08T15:14:43Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",
@@ -445,6 +445,135 @@
       "attachments": [],
       "createdAt": "2026-10-08T13:58:00Z",
       "updatedAt": "2026-10-08T13:58:00Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0019",
+      "title": "Queue-store port conformance suite: one executable contract that the localStorage, in-memory and (later) IndexedDB QueueStore implementations all pass (ARCA-OFF-002; Limen LCP-046, LCP-060, LCP-075)",
+      "description": "No dependency; can start now. Arca's QueueStore port has implementations (LocalStorageQueue, the tests' memory store) but no shared conformance: add one in Arca.Core beside the provider conformance (Conformance.fs), as data-driven cases over a subject that yields a fresh QueueStore: save/load round-trip with order and sequences preserved (property over queueGen), absent queue loads None, a foreign namespace's queue is Corrupt, over-budget save is QuotaExceeded with nothing truncated, unavailable storage is Unavailable, and a fault the harness cannot arrange is Unsupported, never passed. LocalStorageQueue and an in-memory store pass it now; the IndexedDB adapter (WI-0016) must pass it. Requirements: kemiller2002/limen docs/requirements/LIMEN-INDEXEDDB-REQUIREMENTS.md LCP-046, LCP-060, LCP-075; DF-LIMEN-2026-0005.",
+      "tags": [
+        "arca",
+        "offline",
+        "limen",
+        "indexeddb"
+      ],
+      "priority": "medium",
+      "status": "captured",
+      "attachments": [],
+      "createdAt": "2026-10-08T15:14:30Z",
+      "updatedAt": "2026-10-08T15:14:30Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0020",
+      "title": "One-time move of the localStorage queue into IndexedDB: idempotent, drain-then-adopt, safe at every interruption point (ARCA-OFF-002, ARCA-MIG-002; Limen LCP-066, LCP-067)",
+      "description": "Depends on WI-0016. In EchelonFoundry.Arca.Limen: when the queue owner first opens a namespace with IndexedDB available, move the arca.queue.<app>[.<dataset>] localStorage snapshot into IndexedDB exactly once: decode with LocalStorageQueue.loaded (corrupt or foreign: left in place, LegacyQueueUnreadable); if the IndexedDB queue is empty, putIf the queue with a migration marker (SHA-256 of the localStorage text), read back and compare, then remove the localStorage key; if the IndexedDB queue has entries, defer (LegacyQueuePending) and adopt only once it is empty - never merge, never drop; a marker equal to the text's digest means only the removal remains. Copy, verify, retire (DF-ARCA-2026-0008). Fault-injection test per cut point over Limen's fake, and one real-browser tab-close test. The core does not change.",
+      "tags": [
+        "arca",
+        "offline",
+        "limen",
+        "indexeddb"
+      ],
+      "priority": "medium",
+      "status": "captured",
+      "attachments": [],
+      "createdAt": "2026-10-08T15:14:30Z",
+      "updatedAt": "2026-10-08T15:14:30Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0021",
+      "title": "Read-cache port in Arca.Core: Cached and Fresh values, token-stamped partitions, freshness rules, an in-memory implementation and a read-cache conformance suite (Limen LCP-082..LCP-086)",
+      "description": "No dependency; can start now. Chrona's offline-start read cache (coordinator 2026-10-08), generic for Summa (SUM0-015) and Signal (ADM-055, ADM-070). Pure, no I/O (ARCA-ARCH-001): a cache entry keyed by account, namespace and partition carries the change token it reflects, every record's content hash, the record schema version and the read time (an input); validation as ARCA-INT-001; Cached<'T> is a distinct type from Fresh<'T> and no write-building function accepts a Cached value or token (compile-failure fixture); revalidation rules (equal token confirms, different token refreshes or marks stale, missing partition removes); clearing by account and by namespace under the application's sharedDevicePolicy (ask | discardOnSignOut: the cache is cleared at sign-out under both). Holds only provider-read data, never unsent changes (ARCA-OFF-006). Requirements: kemiller2002/limen LCP-082..LCP-086; DF-LIMEN-2026-0005 section 4.",
+      "tags": [
+        "arca",
+        "offline",
+        "limen",
+        "indexeddb"
+      ],
+      "priority": "medium",
+      "status": "captured",
+      "attachments": [],
+      "createdAt": "2026-10-08T15:14:30Z",
+      "updatedAt": "2026-10-08T15:14:30Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0022",
+      "title": "IndexedDB read cache in EchelonFoundry.Arca.Limen: compound-keyed partitions, online revalidation, policy-driven clearing, budget and least-recently-used eviction (Limen LCP-082..LCP-087)",
+      "description": "Depends on WI-0016 (the Arca.Limen package and its Limen.Store consumption) and WI-0021 (the port). Implements the read-cache port over limen.store: entries keyed [account, namespace, partition]; revalidation reads only shown partitions' change tokens (namespace-scoped tokens once WI-0018 lands); deleteRange for sign-out and clear-this-device; a per-namespace budget with LRU eviction; a failed cache write never fails the read and never takes space the queue needs; any tab may write the cache (whole provider-validated partitions). Passes the read-cache conformance suite over Limen's fake and in Chromium and WebKit. Requirements: kemiller2002/limen LCP-082..LCP-087.",
+      "tags": [
+        "arca",
+        "offline",
+        "limen",
+        "indexeddb"
+      ],
+      "priority": "medium",
+      "status": "captured",
+      "attachments": [],
+      "createdAt": "2026-10-08T15:14:31Z",
+      "updatedAt": "2026-10-08T15:14:31Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0023",
+      "title": "Cross-reference Limen's IndexedDB requirements (LCP-043..087, DF-LIMEN-2026-0005) from Arca's requirements and backlog plan; refine WI-0016 and capture WI-0019..WI-0022",
+      "description": "Docs and queue only, no code. ARCA-OFF-002 and OQ-ARCA-003 point to kemiller2002/limen docs/requirements/LIMEN-INDEXEDDB-REQUIREMENTS.md and DF-LIMEN-2026-0005; the backlog plan lists the IndexedDB items in dependency order; the whole-snapshot two-tab hazard of the localStorage adapter is recorded.",
+      "tags": [
+        "arca",
+        "limen",
+        "indexeddb"
+      ],
+      "priority": "medium",
+      "status": "ready",
+      "attachments": [],
+      "createdAt": "2026-10-08T15:14:43Z",
+      "updatedAt": "2026-10-08T15:14:48Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",
