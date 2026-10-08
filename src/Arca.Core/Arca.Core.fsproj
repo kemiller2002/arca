@@ -25,5 +25,6 @@
     <Compile Include="Concurrency.fs" />
     <Compile Include="Merge.fs" />
     <Compile Include="Commit.fs" />
+    <Compile Include="Credentials.fs" />
   </ItemGroup>
 </Project>
