@@ -1,7 +1,8 @@
 # Changelog
 
-Notable changes to Arca's packages, `EchelonFoundry.Arca.Core` and
-`EchelonFoundry.Arca.GitHub`, which share one version. The format follows
+Notable changes to Arca's packages, `EchelonFoundry.Arca.Core`,
+`EchelonFoundry.Arca.GitHub` and (from 0.3.0) `EchelonFoundry.Arca.Limen`,
+which share one version. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [semantic versioning](https://semver.org/spec/v2.0.0.html). In `0.x`, a minor
 release may change the API; pin an exact version.
@@ -9,6 +10,40 @@ release may change the API; pin an exact version.
 ## [Unreleased]
 
 ### Added
+
+- **`EchelonFoundry.Arca.Limen`**, a new opt-in package. It contains Arca's
+  IndexedDB offline queue over Limen 0.8.0's `limen.store` (WI-0016;
+  DF-LIMEN-2026-0005, DF-ARCA-2026-0010; Limen LCP-046, LCP-059, LCP-060,
+  LCP-062, LCP-065, LCP-068, LCP-070, LCP-072, LCP-073). `Arca.Core` and
+  `Arca.GitHub` take no Limen dependency.
+  - `LimenQueue.own` and `LimenQueue.takeOver` take the namespace's Web Lock,
+    the same `arca.queue/<app>[/<dataset>]` lock as the localStorage queue.
+    They then obtain one store in the declared order (IndexedDB, then
+    localStorage, then memory) and answer one of:
+    - `Owned queue`, which carries the unchanged `QueueStore` and its
+      `DurabilityMode`;
+    - `OwnedElsewhere`;
+    - `OwnershipUnsupported`;
+    - `NothingUsable`.
+  - Fencing: one IndexedDB record per namespace holds the snapshot and the
+    fencing epoch. Every new owner raises the epoch, and every save is a
+    `putIf` over what that owner last read or wrote. A pre-empted owner's
+    save writes nothing.
+  - `LocalQueueLost` is reported when the database is found recreated after
+    the device held unsent changes. The evidence for this is kept in
+    localStorage.
+  - Persistence is asked for once, after the first offline write.
+  - Sizes are checked against the pack's limits before anything is sent.
+  - `QueueDiagnostics` reports the mode, the ownership, depth by state, the
+    snapshot size against the budget, the last save, the last sync,
+    whether storage is persisted, any notices, and the last failure. Every
+    failure has a stable `arca.limen.*` code and an Aegis mapping.
+  - `OwnedQueue.Discard` and `QueueSignOut` remove an account's discardable
+    entries at sign-out, counted. In-flight entries are kept.
+  - Tested against Limen's `FakeStore` and Limen 0.8.0's 32 shared store
+    vectors (pinned by digest), and in real Chromium and WebKit tabs.
+- The browser verification now runs every page in WebKit as well as
+  Chromium (OQ-LIMEN-IDB-006), on Limen 0.8.0.
 
 - **Queue-store conformance suite** (WI-0019; Limen LCP-046, LCP-060,
   LCP-075). `QueueStoreConformance` in `Arca.Core` is one executable

@@ -1,0 +1,3714 @@
+{
+  "doc": "Language-neutral conformance vectors for the limen.store capability, version 2 (LCP-075). Each vector runs on a fresh origin. A tab is one registration of the pack (one provider, one connection per database) on that origin; tabs share the origin's databases. Every step's result, and every fact a tab receives, must equal the expectation exactly; {\"$any\": \"bool\"|\"int\"|\"string\"} matches any value of that kind. A runner that cannot perform a vector's requirement reports it unsupported, never passed. See README.md.",
+  "unit": "limen.store",
+  "version": 2,
+  "requirements": {
+    "holdOpen": "Open a raw connection to a database (the tab's namespace) that ignores version changes, and close it on release.",
+    "inject:quota": "Make the tab's next transaction fail at commit, with QuotaExceededError, after its operations ran.",
+    "inject:openFails": "Make the tab's next indexedDB.open fail with the named error.",
+    "inject:storageCleared": "Clear the origin's IndexedDB under the tab's open connections, as clearing site data or eviction does: the browser closes them abnormally and the data is gone.",
+    "inject:missing": "Run the tab with no indexedDB at all.",
+    "storage:present": "The tab's browser has navigator.storage persist, persisted and estimate.",
+    "storage:absent": "The tab's browser has no navigator.storage."
+  },
+  "vectors": [
+    {
+      "name": "a new database is created at the declared version; a reopen reports it was not created",
+      "covers": [
+        "Opened"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 1,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "an upgrade adds a store; opening an older version is VersionConflict with the stored version",
+      "covers": [
+        "Opened",
+        "VersionConflict"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 2,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              },
+              {
+                "name": "users",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byEmail",
+                    "keyPath": "email",
+                    "unique": true,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 2,
+            "upgradedFrom": 1,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": false
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "VersionConflict",
+            "stored": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "at the stored version a different schema is SchemaMismatch, naming each difference",
+      "covers": [
+        "SchemaMismatch"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              },
+              {
+                "name": "users",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byEmail",
+                    "keyPath": "email",
+                    "unique": true,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "SchemaMismatch",
+            "problems": [
+              "store users is stored but not declared"
+            ]
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": []
+              },
+              {
+                "name": "users",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byEmail",
+                    "keyPath": "email",
+                    "unique": true,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "SchemaMismatch",
+            "problems": [
+              "index todos.byDue is stored but not declared"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "an upgrade cannot change a keyPath in place: SchemaMismatch, and the version stays",
+      "covers": [
+        "SchemaMismatch",
+        "Opened"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 2,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "uuid",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "SchemaMismatch",
+            "problems": [
+              "store todos keyPath is id, declared uuid; drop it to change it"
+            ]
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 1,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "a connection that ignores version changes makes an upgrade Blocked; the abandoned upgrade never applies",
+      "covers": [
+        "Blocked"
+      ],
+      "requires": [
+        "holdOpen"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "holdOpen": "db"
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 2,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              },
+              {
+                "name": "users",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byEmail",
+                    "keyPath": "email",
+                    "unique": true,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Blocked"
+          }
+        },
+        {
+          "release": "db"
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 1,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "another tab's upgrade: this tab steps aside, hears VersionChanged under the engine's name, and is then NotOpen",
+      "covers": [
+        "VersionChanged",
+        "NotOpen"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "b",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 2,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              },
+              {
+                "name": "users",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byEmail",
+                    "keyPath": "email",
+                    "unique": true,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 2,
+            "upgradedFrom": 1,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": false
+          }
+        },
+        {
+          "facts": "a",
+          "expect": [
+            {
+              "kind": "VersionChanged",
+              "database": "db",
+              "newVersion": 2
+            }
+          ]
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readonly",
+            "operations": [
+              {
+                "op": "get",
+                "store": "todos",
+                "key": 1
+              }
+            ]
+          },
+          "expect": {
+            "kind": "NotOpen"
+          }
+        }
+      ]
+    },
+    {
+      "name": "another tab's deleteDatabase reaches this tab as VersionChanged with newVersion 0",
+      "covers": [
+        "VersionChanged",
+        "DatabaseDeleted"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "b",
+          "request": {
+            "operation": "deleteDatabase",
+            "database": "db"
+          },
+          "expect": {
+            "kind": "DatabaseDeleted"
+          }
+        },
+        {
+          "facts": "a",
+          "expect": [
+            {
+              "kind": "VersionChanged",
+              "database": "db",
+              "newVersion": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "a transaction commits every operation in order with typed results",
+      "covers": [
+        "Committed"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readwrite",
+            "operations": [
+              {
+                "op": "put",
+                "store": "todos",
+                "value": {
+                  "id": 1,
+                  "due": 3
+                }
+              },
+              {
+                "op": "put",
+                "store": "todos",
+                "value": {
+                  "id": 2,
+                  "due": 1
+                }
+              },
+              {
+                "op": "put",
+                "store": "todos",
+                "value": {
+                  "id": 3,
+                  "due": 2
+                }
+              },
+              {
+                "op": "get",
+                "store": "todos",
+                "key": 2
+              },
+              {
+                "op": "get",
+                "store": "todos",
+                "key": 99
+              },
+              {
+                "op": "query",
+                "store": "todos",
+                "index": "byDue",
+                "limit": 2,
+                "reverse": false
+              },
+              {
+                "op": "delete",
+                "store": "todos",
+                "key": 3
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Put",
+                "key": 1
+              },
+              {
+                "kind": "Put",
+                "key": 2
+              },
+              {
+                "kind": "Put",
+                "key": 3
+              },
+              {
+                "kind": "Found",
+                "value": {
+                  "id": 2,
+                  "due": 1
+                }
+              },
+              {
+                "kind": "Missing"
+              },
+              {
+                "kind": "Queried",
+                "values": [
+                  {
+                    "id": 2,
+                    "due": 1
+                  },
+                  {
+                    "id": 3,
+                    "due": 2
+                  }
+                ]
+              },
+              {
+                "kind": "Deleted"
+              }
+            ]
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readonly",
+            "operations": [
+              {
+                "op": "query",
+                "store": "todos",
+                "limit": 10,
+                "reverse": true
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Queried",
+                "values": [
+                  {
+                    "id": 2,
+                    "due": 1
+                  },
+                  {
+                    "id": 1,
+                    "due": 3
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "LCP-051: an abort at operation n leaves operations 0..n-1 unapplied",
+      "covers": [
+        "Aborted"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readwrite",
+            "operations": [
+              {
+                "op": "put",
+                "store": "todos",
+                "value": {
+                  "id": 10
+                }
+              },
+              {
+                "op": "put",
+                "store": "todos",
+                "value": {
+                  "id": 11
+                }
+              },
+              {
+                "op": "put",
+                "store": "todos",
+                "value": {
+                  "title": "no key"
+                }
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Aborted",
+            "reason": "invalidKey",
+            "operation": 2
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readonly",
+            "operations": [
+              {
+                "op": "get",
+                "store": "todos",
+                "key": 10
+              },
+              {
+                "op": "get",
+                "store": "todos",
+                "key": 11
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Missing"
+              },
+              {
+                "kind": "Missing"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "a unique index violation aborts as constraint",
+      "covers": [
+        "Aborted"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "users",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byEmail",
+                    "keyPath": "email",
+                    "unique": true,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readwrite",
+            "operations": [
+              {
+                "op": "put",
+                "store": "users",
+                "value": {
+                  "id": "a",
+                  "email": "same@example.test"
+                }
+              },
+              {
+                "op": "put",
+                "store": "users",
+                "value": {
+                  "id": "b",
+                  "email": "same@example.test"
+                }
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Aborted",
+            "reason": "constraint",
+            "operation": 1
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readonly",
+            "operations": [
+              {
+                "op": "get",
+                "store": "users",
+                "key": "a"
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Missing"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "an operation on a store the database does not have aborts as unknownStore",
+      "covers": [
+        "Aborted"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readonly",
+            "operations": [
+              {
+                "op": "get",
+                "store": "nope",
+                "key": 1
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Aborted",
+            "reason": "unknownStore",
+            "operation": 0
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readonly",
+            "operations": [
+              {
+                "op": "query",
+                "store": "todos",
+                "index": "nope",
+                "limit": 1,
+                "reverse": false
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Aborted",
+            "reason": "unknownStore",
+            "operation": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "LCP-058: two tabs compare-and-put the same record from the same read: exactly one commits, the other aborts as conflict with the winner's value",
+      "covers": [
+        "Aborted",
+        "Committed"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "b",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 1,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": false
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readwrite",
+            "operations": [
+              {
+                "op": "put",
+                "store": "todos",
+                "value": {
+                  "id": 1,
+                  "rev": 1
+                }
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Put",
+                "key": 1
+              }
+            ]
+          }
+        },
+        {
+          "tab": "b",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readwrite",
+            "operations": [
+              {
+                "op": "putIf",
+                "store": "todos",
+                "value": {
+                  "id": 1,
+                  "rev": 2,
+                  "by": "b"
+                },
+                "expected": {
+                  "id": 1,
+                  "rev": 1
+                }
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Put",
+                "key": 1
+              }
+            ]
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readwrite",
+            "operations": [
+              {
+                "op": "putIf",
+                "store": "todos",
+                "value": {
+                  "id": 1,
+                  "rev": 2,
+                  "by": "a"
+                },
+                "expected": {
+                  "id": 1,
+                  "rev": 1
+                }
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Aborted",
+            "reason": "conflict",
+            "operation": 0,
+            "current": {
+              "id": 1,
+              "rev": 2,
+              "by": "b"
+            }
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readonly",
+            "operations": [
+              {
+                "op": "get",
+                "store": "todos",
+                "key": 1
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Found",
+                "value": {
+                  "id": 1,
+                  "rev": 2,
+                  "by": "b"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "putIf with expected null inserts only if absent; the second insert conflicts and both roll back",
+      "covers": [
+        "Aborted"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readwrite",
+            "operations": [
+              {
+                "op": "putIf",
+                "store": "todos",
+                "value": {
+                  "id": 5,
+                  "v": 1
+                },
+                "expected": null
+              },
+              {
+                "op": "putIf",
+                "store": "todos",
+                "value": {
+                  "id": 5,
+                  "v": 2
+                },
+                "expected": null
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Aborted",
+            "reason": "conflict",
+            "operation": 1,
+            "current": {
+              "id": 5,
+              "v": 1
+            }
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readonly",
+            "operations": [
+              {
+                "op": "get",
+                "store": "todos",
+                "key": 5
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Missing"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "LCP-052: malformed requests are InvalidRequest before anything runs: a write in a readonly transaction, a bad key, a bad limit, an empty name",
+      "covers": [
+        "InvalidRequest"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readonly",
+            "operations": [
+              {
+                "op": "put",
+                "store": "todos",
+                "value": {
+                  "id": 1
+                }
+              }
+            ]
+          },
+          "expect": {
+            "kind": "InvalidRequest",
+            "problem": "operation 0 writes in a readonly transaction"
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readonly",
+            "operations": [
+              {
+                "op": "deleteRange",
+                "store": "todos"
+              }
+            ]
+          },
+          "expect": {
+            "kind": "InvalidRequest",
+            "problem": "operation 0 writes in a readonly transaction"
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readonly",
+            "operations": [
+              {
+                "op": "get",
+                "store": "todos",
+                "key": {
+                  "not": "a key"
+                }
+              }
+            ]
+          },
+          "expect": {
+            "kind": "InvalidRequest",
+            "problem": "operation 0 has an invalid key"
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readonly",
+            "operations": [
+              {
+                "op": "query",
+                "store": "todos",
+                "limit": 0,
+                "reverse": false
+              }
+            ]
+          },
+          "expect": {
+            "kind": "InvalidRequest",
+            "problem": "operation 0 limit must be 1 to 1000"
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "close",
+            "database": ""
+          },
+          "expect": {
+            "kind": "InvalidRequest",
+            "problem": "a database needs a name"
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readonly",
+            "operations": [
+              {
+                "op": "get",
+                "store": "todos",
+                "key": 1
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Missing"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "close answers Closed, then NotOpen; a transaction on a database this tab never opened is NotOpen",
+      "covers": [
+        "Closed",
+        "NotOpen"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "close",
+            "database": "db"
+          },
+          "expect": {
+            "kind": "Closed"
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "close",
+            "database": "db"
+          },
+          "expect": {
+            "kind": "NotOpen"
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readonly",
+            "operations": [
+              {
+                "op": "get",
+                "store": "todos",
+                "key": 1
+              }
+            ]
+          },
+          "expect": {
+            "kind": "NotOpen"
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "other",
+            "mode": "readonly",
+            "operations": [
+              {
+                "op": "get",
+                "store": "todos",
+                "key": 1
+              }
+            ]
+          },
+          "expect": {
+            "kind": "NotOpen"
+          }
+        }
+      ]
+    },
+    {
+      "name": "deleteDatabase answers DatabaseDeleted, and the next open creates it again, empty",
+      "covers": [
+        "DatabaseDeleted",
+        "Opened"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readwrite",
+            "operations": [
+              {
+                "op": "put",
+                "store": "todos",
+                "value": {
+                  "id": 1
+                }
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Put",
+                "key": 1
+              }
+            ]
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "deleteDatabase",
+            "database": "db"
+          },
+          "expect": {
+            "kind": "DatabaseDeleted"
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readonly",
+            "operations": [
+              {
+                "op": "get",
+                "store": "todos",
+                "key": 1
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Missing"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "a request the engine cancelled before it ran answers Cancelled, and nothing is applied",
+      "covers": [
+        "Cancelled"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "todos",
+                "keyPath": "id",
+                "indexes": [
+                  {
+                    "name": "byDue",
+                    "keyPath": "due",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readwrite",
+            "operations": [
+              {
+                "op": "put",
+                "store": "todos",
+                "value": {
+                  "id": 1
+                }
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Cancelled"
+          },
+          "cancelled": true
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readonly",
+            "operations": [
+              {
+                "op": "get",
+                "store": "todos",
+                "key": 1
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Missing"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "LCP-047: a compound key is the tuple; records sort element by element; a prefix range holds one group",
+      "covers": [
+        "Committed"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "entries",
+                "keyPath": "",
+                "keyPaths": [
+                  "ns",
+                  "seq"
+                ],
+                "indexes": [
+                  {
+                    "name": "bySlot",
+                    "keyPath": "",
+                    "keyPaths": [
+                      "owner",
+                      "slot"
+                    ],
+                    "unique": true,
+                    "multiEntry": false
+                  },
+                  {
+                    "name": "byOwner",
+                    "keyPath": "owner",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readwrite",
+            "operations": [
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "ns": "b",
+                  "seq": 1,
+                  "owner": "p",
+                  "slot": 1
+                }
+              },
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "ns": "a",
+                  "seq": 10,
+                  "owner": "o",
+                  "slot": 10
+                }
+              },
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "ns": "a",
+                  "seq": 2,
+                  "owner": "o",
+                  "slot": 2
+                }
+              },
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "ns": "b",
+                  "seq": 0,
+                  "owner": "p",
+                  "slot": 0
+                }
+              },
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "ns": "a",
+                  "seq": 1,
+                  "owner": "o",
+                  "slot": 1
+                }
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Put",
+                "key": [
+                  "b",
+                  1
+                ]
+              },
+              {
+                "kind": "Put",
+                "key": [
+                  "a",
+                  10
+                ]
+              },
+              {
+                "kind": "Put",
+                "key": [
+                  "a",
+                  2
+                ]
+              },
+              {
+                "kind": "Put",
+                "key": [
+                  "b",
+                  0
+                ]
+              },
+              {
+                "kind": "Put",
+                "key": [
+                  "a",
+                  1
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readonly",
+            "operations": [
+              {
+                "op": "get",
+                "store": "entries",
+                "key": [
+                  "a",
+                  2
+                ]
+              },
+              {
+                "op": "query",
+                "store": "entries",
+                "limit": 100,
+                "reverse": false
+              },
+              {
+                "op": "query",
+                "store": "entries",
+                "range": {
+                  "lower": [
+                    "a"
+                  ],
+                  "upper": [
+                    "a",
+                    []
+                  ],
+                  "lowerOpen": false,
+                  "upperOpen": false
+                },
+                "limit": 100,
+                "reverse": false
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Found",
+                "value": {
+                  "ns": "a",
+                  "seq": 2,
+                  "owner": "o",
+                  "slot": 2
+                }
+              },
+              {
+                "kind": "Queried",
+                "values": [
+                  {
+                    "ns": "a",
+                    "seq": 1,
+                    "owner": "o",
+                    "slot": 1
+                  },
+                  {
+                    "ns": "a",
+                    "seq": 2,
+                    "owner": "o",
+                    "slot": 2
+                  },
+                  {
+                    "ns": "a",
+                    "seq": 10,
+                    "owner": "o",
+                    "slot": 10
+                  },
+                  {
+                    "ns": "b",
+                    "seq": 0,
+                    "owner": "p",
+                    "slot": 0
+                  },
+                  {
+                    "ns": "b",
+                    "seq": 1,
+                    "owner": "p",
+                    "slot": 1
+                  }
+                ]
+              },
+              {
+                "kind": "Queried",
+                "values": [
+                  {
+                    "ns": "a",
+                    "seq": 1,
+                    "owner": "o",
+                    "slot": 1
+                  },
+                  {
+                    "ns": "a",
+                    "seq": 2,
+                    "owner": "o",
+                    "slot": 2
+                  },
+                  {
+                    "ns": "a",
+                    "seq": 10,
+                    "owner": "o",
+                    "slot": 10
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "LCP-047: a duplicate tuple in a compound unique index aborts as constraint; a record missing part of its key aborts as invalidKey",
+      "covers": [
+        "Aborted"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "entries",
+                "keyPath": "",
+                "keyPaths": [
+                  "ns",
+                  "seq"
+                ],
+                "indexes": [
+                  {
+                    "name": "bySlot",
+                    "keyPath": "",
+                    "keyPaths": [
+                      "owner",
+                      "slot"
+                    ],
+                    "unique": true,
+                    "multiEntry": false
+                  },
+                  {
+                    "name": "byOwner",
+                    "keyPath": "owner",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readwrite",
+            "operations": [
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "ns": "b",
+                  "seq": 1,
+                  "owner": "p",
+                  "slot": 1
+                }
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Put",
+                "key": [
+                  "b",
+                  1
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readwrite",
+            "operations": [
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "ns": "z",
+                  "seq": 1,
+                  "owner": "solo",
+                  "slot": 1
+                }
+              },
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "ns": "z",
+                  "seq": 2,
+                  "owner": "p",
+                  "slot": 1
+                }
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Aborted",
+            "reason": "constraint",
+            "operation": 1
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readwrite",
+            "operations": [
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "ns": "a"
+                }
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Aborted",
+            "reason": "invalidKey",
+            "operation": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "LCP-047: a change from a single to a compound key path is SchemaMismatch",
+      "covers": [
+        "SchemaMismatch"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "entries",
+                "keyPath": "ns",
+                "indexes": []
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "entries",
+                "keyPath": "",
+                "keyPaths": [
+                  "ns",
+                  "seq"
+                ],
+                "indexes": []
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "SchemaMismatch",
+            "problems": [
+              "store entries keyPath is ns, declared [ns,seq]"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "LCP-054: count agrees with a query of the same range; deleteRange removes the range, or the whole store",
+      "covers": [
+        "Committed"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "entries",
+                "keyPath": "",
+                "keyPaths": [
+                  "ns",
+                  "seq"
+                ],
+                "indexes": [
+                  {
+                    "name": "bySlot",
+                    "keyPath": "",
+                    "keyPaths": [
+                      "owner",
+                      "slot"
+                    ],
+                    "unique": true,
+                    "multiEntry": false
+                  },
+                  {
+                    "name": "byOwner",
+                    "keyPath": "owner",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readwrite",
+            "operations": [
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "ns": "b",
+                  "seq": 1,
+                  "owner": "p",
+                  "slot": 1
+                }
+              },
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "ns": "a",
+                  "seq": 10,
+                  "owner": "o",
+                  "slot": 10
+                }
+              },
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "ns": "a",
+                  "seq": 2,
+                  "owner": "o",
+                  "slot": 2
+                }
+              },
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "ns": "b",
+                  "seq": 0,
+                  "owner": "p",
+                  "slot": 0
+                }
+              },
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "ns": "a",
+                  "seq": 1,
+                  "owner": "o",
+                  "slot": 1
+                }
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Put",
+                "key": [
+                  "b",
+                  1
+                ]
+              },
+              {
+                "kind": "Put",
+                "key": [
+                  "a",
+                  10
+                ]
+              },
+              {
+                "kind": "Put",
+                "key": [
+                  "a",
+                  2
+                ]
+              },
+              {
+                "kind": "Put",
+                "key": [
+                  "b",
+                  0
+                ]
+              },
+              {
+                "kind": "Put",
+                "key": [
+                  "a",
+                  1
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readonly",
+            "operations": [
+              {
+                "op": "count",
+                "store": "entries"
+              },
+              {
+                "op": "count",
+                "store": "entries",
+                "range": {
+                  "lower": [
+                    "a"
+                  ],
+                  "upper": [
+                    "a",
+                    []
+                  ],
+                  "lowerOpen": false,
+                  "upperOpen": false
+                }
+              },
+              {
+                "op": "count",
+                "store": "entries",
+                "index": "byOwner",
+                "range": {
+                  "lower": "p",
+                  "upper": "p",
+                  "lowerOpen": false,
+                  "upperOpen": false
+                }
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Counted",
+                "count": 5
+              },
+              {
+                "kind": "Counted",
+                "count": 3
+              },
+              {
+                "kind": "Counted",
+                "count": 2
+              }
+            ]
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readwrite",
+            "operations": [
+              {
+                "op": "deleteRange",
+                "store": "entries",
+                "range": {
+                  "lower": [
+                    "a"
+                  ],
+                  "upper": [
+                    "a",
+                    []
+                  ],
+                  "lowerOpen": false,
+                  "upperOpen": false
+                }
+              },
+              {
+                "op": "count",
+                "store": "entries"
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "RangeDeleted"
+              },
+              {
+                "kind": "Counted",
+                "count": 2
+              }
+            ]
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readwrite",
+            "operations": [
+              {
+                "op": "deleteRange",
+                "store": "entries"
+              },
+              {
+                "op": "count",
+                "store": "entries"
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "RangeDeleted"
+              },
+              {
+                "kind": "Counted",
+                "count": 0
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "LCP-054: deleteRange inside an aborted transaction removes nothing",
+      "covers": [
+        "Aborted"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "entries",
+                "keyPath": "",
+                "keyPaths": [
+                  "ns",
+                  "seq"
+                ],
+                "indexes": [
+                  {
+                    "name": "bySlot",
+                    "keyPath": "",
+                    "keyPaths": [
+                      "owner",
+                      "slot"
+                    ],
+                    "unique": true,
+                    "multiEntry": false
+                  },
+                  {
+                    "name": "byOwner",
+                    "keyPath": "owner",
+                    "unique": false,
+                    "multiEntry": false
+                  }
+                ]
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readwrite",
+            "operations": [
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "ns": "a",
+                  "seq": 1,
+                  "owner": "o",
+                  "slot": 1
+                }
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Put",
+                "key": [
+                  "a",
+                  1
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readwrite",
+            "operations": [
+              {
+                "op": "deleteRange",
+                "store": "entries"
+              },
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "ns": "x"
+                }
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Aborted",
+            "reason": "invalidKey",
+            "operation": 1
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readonly",
+            "operations": [
+              {
+                "op": "count",
+                "store": "entries"
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Counted",
+                "count": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "LCP-048: two applications on one origin each open 'db'; neither sees the other's writes, and one's delete leaves the other intact",
+      "covers": [
+        "Opened",
+        "DatabaseDeleted"
+      ],
+      "tabs": {
+        "a": {
+          "app": "one"
+        },
+        "b": {
+          "app": "two"
+        }
+      },
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "entries",
+                "keyPath": "id",
+                "indexes": []
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "b",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "entries",
+                "keyPath": "id",
+                "indexes": []
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readwrite",
+            "operations": [
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "id": 1,
+                  "from": "a"
+                }
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Put",
+                "key": 1
+              }
+            ]
+          }
+        },
+        {
+          "tab": "b",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readonly",
+            "operations": [
+              {
+                "op": "get",
+                "store": "entries",
+                "key": 1
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Missing"
+              }
+            ]
+          }
+        },
+        {
+          "tab": "b",
+          "request": {
+            "operation": "deleteDatabase",
+            "database": "db"
+          },
+          "expect": {
+            "kind": "DatabaseDeleted"
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readonly",
+            "operations": [
+              {
+                "op": "get",
+                "store": "entries",
+                "key": 1
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Found",
+                "value": {
+                  "id": 1,
+                  "from": "a"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "deleteDatabase",
+            "database": "../db"
+          },
+          "expect": {
+            "kind": "InvalidRequest",
+            "problem": "a database name may not contain \"/\" (the namespace separator)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "LCP-050: a value at limit-1 and at the limit commits; at limit+1 it is InvalidRequest; an over-limit transaction is InvalidRequest; nothing over a limit is applied",
+      "covers": [
+        "InvalidRequest",
+        "Opened"
+      ],
+      "registration": {
+        "limits": {
+          "maxValueBytes": 64,
+          "maxTransactionBytes": 200
+        }
+      },
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "entries",
+                "keyPath": "id",
+                "indexes": []
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 64,
+              "maxTransactionBytes": 200
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readwrite",
+            "operations": [
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "id": 1,
+                  "pad": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                }
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Put",
+                "key": 1
+              }
+            ]
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readwrite",
+            "operations": [
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "id": 1,
+                  "pad": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                }
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Put",
+                "key": 1
+              }
+            ]
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readwrite",
+            "operations": [
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "id": 1,
+                  "pad": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                }
+              }
+            ]
+          },
+          "expect": {
+            "kind": "InvalidRequest",
+            "problem": "operation 0 value is 65 bytes, over the limit of 64"
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readwrite",
+            "operations": [
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "id": 2,
+                  "pad": "xxxxxxxxxxxxxxxxxxxx"
+                }
+              },
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "id": 3,
+                  "pad": "xxxxxxxxxxxxxxxxxxxx"
+                }
+              },
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "id": 4,
+                  "pad": "xxxxxxxxxxxxxxxxxxxx"
+                }
+              },
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "id": 5,
+                  "pad": "xxxxxxxxxxxxxxxxxxxx"
+                }
+              }
+            ]
+          },
+          "expect": {
+            "kind": "InvalidRequest",
+            "problem": "the transaction is 304 bytes, over the limit of 200"
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readonly",
+            "operations": [
+              {
+                "op": "get",
+                "store": "entries",
+                "key": 1
+              },
+              {
+                "op": "count",
+                "store": "entries"
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Found",
+                "value": {
+                  "id": 1,
+                  "pad": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                }
+              },
+              {
+                "kind": "Counted",
+                "count": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "LCP-050: a transaction the browser fails for quota is Aborted quota with no operation index, and nothing is applied",
+      "covers": [
+        "Aborted"
+      ],
+      "requires": [
+        "inject:quota"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "entries",
+                "keyPath": "id",
+                "indexes": []
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "inject": "quota",
+          "tab": "a"
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readwrite",
+            "operations": [
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "id": 1
+                }
+              },
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "id": 2
+                }
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Aborted",
+            "reason": "quota"
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readonly",
+            "operations": [
+              {
+                "op": "count",
+                "store": "entries"
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Counted",
+                "count": 0
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "an open the browser fails for another reason is Unavailable with the exception name",
+      "covers": [
+        "Unavailable"
+      ],
+      "requires": [
+        "inject:openFails"
+      ],
+      "steps": [
+        {
+          "inject": "openFails",
+          "tab": "a",
+          "error": "UnknownError"
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "entries",
+                "keyPath": "id",
+                "indexes": []
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Unavailable",
+            "reason": "UnknownError"
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "entries",
+                "keyPath": "id",
+                "indexes": []
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "LCP-062: storage cleared under an open connection: ConnectionLost, NotOpen, and a reopen that finds the database newly created",
+      "covers": [
+        "ConnectionLost",
+        "NotOpen",
+        "Opened"
+      ],
+      "requires": [
+        "inject:storageCleared"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "entries",
+                "keyPath": "id",
+                "indexes": []
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readwrite",
+            "operations": [
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "id": 1
+                }
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Put",
+                "key": 1
+              }
+            ]
+          }
+        },
+        {
+          "inject": "storageCleared",
+          "tab": "a"
+        },
+        {
+          "facts": "a",
+          "expect": [
+            {
+              "kind": "ConnectionLost",
+              "database": "db"
+            }
+          ]
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readwrite",
+            "operations": [
+              {
+                "op": "put",
+                "store": "entries",
+                "value": {
+                  "id": 2
+                }
+              }
+            ]
+          },
+          "expect": {
+            "kind": "NotOpen"
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "entries",
+                "keyPath": "id",
+                "indexes": []
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Opened",
+            "version": 1,
+            "upgradedFrom": 0,
+            "limits": {
+              "maxValueBytes": 1048576,
+              "maxTransactionBytes": 8388608
+            },
+            "created": true
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "transact",
+            "database": "db",
+            "mode": "readonly",
+            "operations": [
+              {
+                "op": "count",
+                "store": "entries"
+              }
+            ]
+          },
+          "expect": {
+            "kind": "Committed",
+            "results": [
+              {
+                "kind": "Counted",
+                "count": 0
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "LCP-061/063: with storage APIs present, persist, persisted and estimate answer the browser's values",
+      "covers": [
+        "Persisted",
+        "Persistence",
+        "Estimate"
+      ],
+      "requires": [
+        "storage:present"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "persisted"
+          },
+          "expect": {
+            "kind": "Persistence",
+            "persistent": {
+              "$any": "bool"
+            }
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "persist"
+          },
+          "expect": {
+            "kind": "Persisted",
+            "granted": {
+              "$any": "bool"
+            }
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "estimate"
+          },
+          "expect": {
+            "kind": "Estimate",
+            "usage": {
+              "$any": "int"
+            },
+            "quota": {
+              "$any": "int"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "LCP-061/063: with no storage API, persist, persisted and estimate are Unsupported, never a refusal",
+      "covers": [
+        "Unsupported"
+      ],
+      "requires": [
+        "storage:absent"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "persist"
+          },
+          "expect": {
+            "kind": "Unsupported"
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "persisted"
+          },
+          "expect": {
+            "kind": "Unsupported"
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "estimate"
+          },
+          "expect": {
+            "kind": "Unsupported"
+          }
+        }
+      ]
+    },
+    {
+      "name": "LCP-064: availability is Available when a probe database opens and closes in the namespace",
+      "covers": [
+        "Availability"
+      ],
+      "steps": [
+        {
+          "tab": "a",
+          "request": {
+            "operation": "availability"
+          },
+          "expect": {
+            "kind": "Availability",
+            "availability": "Available"
+          }
+        }
+      ]
+    },
+    {
+      "name": "LCP-064: with no indexedDB, availability is Missing and an open is Unavailable",
+      "covers": [
+        "Availability",
+        "Unavailable"
+      ],
+      "requires": [
+        "inject:missing"
+      ],
+      "steps": [
+        {
+          "inject": "missing",
+          "tab": "a"
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "availability"
+          },
+          "expect": {
+            "kind": "Availability",
+            "availability": "Missing"
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "open",
+            "database": "db",
+            "version": 1,
+            "stores": [
+              {
+                "name": "entries",
+                "keyPath": "id",
+                "indexes": []
+              }
+            ],
+            "dropStores": []
+          },
+          "expect": {
+            "kind": "Unavailable",
+            "reason": "unsupported"
+          }
+        }
+      ]
+    },
+    {
+      "name": "LCP-064: a SecurityError is Refused and any other failure is Broken, with the exception name only",
+      "covers": [
+        "Availability"
+      ],
+      "requires": [
+        "inject:openFails"
+      ],
+      "steps": [
+        {
+          "inject": "openFails",
+          "tab": "a",
+          "error": "SecurityError"
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "availability"
+          },
+          "expect": {
+            "kind": "Availability",
+            "availability": "Refused",
+            "reason": "SecurityError"
+          }
+        },
+        {
+          "inject": "openFails",
+          "tab": "a",
+          "error": "UnknownError"
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "availability"
+          },
+          "expect": {
+            "kind": "Availability",
+            "availability": "Broken",
+            "reason": "UnknownError"
+          }
+        },
+        {
+          "tab": "a",
+          "request": {
+            "operation": "availability"
+          },
+          "expect": {
+            "kind": "Availability",
+            "availability": "Available"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,14 +1,14 @@
 {
   "schemaVersion": 4,
   "project": "arca",
-  "manifestSha256": "42d447e3538801d92fc96b49d3ee357c56c41a66ef008a6b0e159cb2e03e6bfc",
+  "manifestSha256": "b0e00e5668c7ef30ccfc3508eb19e1b427e443fedc423ee8bb537265041e3989",
   "manifest": {
     "schemaVersion": 1,
     "name": "arca",
     "registryAuthority": {
       "kind": "resolved-release-set",
       "path": ".conditor/authority/resolved-release-set.json",
-      "sha256": "f917318c6113caad2290b855e9b93a72077fd8183c90debd20fb7d7549100d48"
+      "sha256": "630aab1f1eeea7f8dac4e83b6396419bdc3dea723635c4a5f08dbf5016b875d0"
     },
     "components": [
       {
@@ -24,6 +24,11 @@
       {
         "id": "communication-engineering",
         "version": "1.0.0",
+        "required": true
+      },
+      {
+        "id": "limen-fsharp",
+        "version": "0.8.0",
         "required": true
       }
     ],
@@ -63,7 +68,45 @@
       "descriptorSha256": "0884274dbd674238af85d32986473e2920955b3d8faf3fc88036335c3b49a8df",
       "authority": "embedded-component-descriptor",
       "sourceReference": "github:kemiller2002/communication-engineering#707396de512065fe35aff6fcf82cd28118df14b3|node:bin/communication-engineering.mjs"
+    },
+    {
+      "id": "limen-fsharp",
+      "version": "0.8.0",
+      "distribution": "nuget",
+      "package": "EchelonFoundry.Limen.Contract,EchelonFoundry.Limen.Guest,EchelonFoundry.Limen.Store",
+      "authority": "registry-resolved-set",
+      "sourceReference": "nuget-feed:kemiller2002/limen@v0.8.0#sha256:c59cf3e1ff8e4f4dd0eaa52db4488c7ad910b6ba05511121514eab0e79a77a2b"
     }
   ],
-  "requirements": []
+  "requirements": [],
+  "reviewSignals": [
+    {
+      "component": "ordo",
+      "code": "SDE-STRUCT-001",
+      "band": "review",
+      "path": "src/Arca.Core/OfflineQueue.fs",
+      "lineCount": 715
+    },
+    {
+      "component": "ordo",
+      "code": "SDE-STRUCT-001",
+      "band": "review",
+      "path": "src/Arca.GitHub/GitHubStorage.fs",
+      "lineCount": 650
+    },
+    {
+      "component": "ordo",
+      "code": "SDE-STRUCT-001",
+      "band": "review",
+      "path": "src/Arca.Core/Location.fs",
+      "lineCount": 530
+    },
+    {
+      "component": "ordo",
+      "code": "SDE-STRUCT-001",
+      "band": "review",
+      "path": "tests/Arca.Tests/MigrationTests.fs",
+      "lineCount": 514
+    }
+  ]
 }

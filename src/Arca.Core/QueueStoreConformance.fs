@@ -164,23 +164,35 @@ module QueueStoreConformance =
             | false -> return ConformanceOutcome.Unsupported "the harness cannot arrange this fault"
         }
 
+    /// Saves `queue` through `store` and loads it back, then through a
+    /// reopened store; answers the verdict and the reopened store, which is
+    /// the one to keep writing through (the old one has stopped).
+    let private roundTripThrough (subject: QueueStoreSubject) (store: QueueStore) (queue: OfflineQueue) =
+        async {
+            match! store.Save queue with
+            | Error error -> return ConformanceOutcome.Failed $"save: {failure error}", store
+            | Ok() ->
+                let! direct = store.Load()
+                let! reopened = subject.Reopen()
+                let! reloaded = reopened.Load()
+
+                let verdict =
+                    match direct, reloaded with
+                    | Ok(Some a), Ok(Some b) when a = queue && b = queue -> ConformanceOutcome.Passed
+                    | Ok(Some a), _ when a <> queue -> ConformanceOutcome.Failed "the loaded queue differs from the saved one"
+                    | _, Ok(Some _) -> ConformanceOutcome.Failed "the reopened store's queue differs from the saved one"
+                    | _ -> ConformanceOutcome.Failed $"load gave {loaded direct}, reopened gave {loaded reloaded}"
+
+                return verdict, reopened
+        }
+
     /// Saving `queue` then loading it, through the store and through a
     /// reopened one, gives back exactly `queue`: order, sequences, states and
     /// policy (LCP-060). Exposed for property tests over generated queues.
     let roundTrip (subject: QueueStoreSubject) (queue: OfflineQueue) =
         async {
-            match! subject.Store.Save queue with
-            | Error error -> return ConformanceOutcome.Failed $"save: {failure error}"
-            | Ok() ->
-                let! direct = subject.Store.Load()
-                let! reopened = subject.Reopen()
-                let! reloaded = reopened.Load()
-
-                match direct, reloaded with
-                | Ok(Some a), Ok(Some b) when a = queue && b = queue -> return ConformanceOutcome.Passed
-                | Ok(Some a), _ when a <> queue -> return ConformanceOutcome.Failed "the loaded queue differs from the saved one"
-                | _, Ok(Some _) -> return ConformanceOutcome.Failed "the reopened store's queue differs from the saved one"
-                | _ -> return ConformanceOutcome.Failed $"load gave {loaded direct}, reopened gave {loaded reloaded}"
+            let! verdict, _ = roundTripThrough subject subject.Store queue
+            return verdict
         }
 
     let private absent (subject: QueueStoreSubject) =
@@ -192,17 +204,17 @@ module QueueStoreConformance =
 
     let private roundTrips (subject: QueueStoreSubject) =
         async {
-            let rec each queues =
+            let rec each (store: QueueStore) queues =
                 async {
                     match queues with
                     | [] -> return ConformanceOutcome.Passed
                     | queue :: rest ->
-                        match! roundTrip subject queue with
-                        | ConformanceOutcome.Passed -> return! each rest
-                        | other -> return other
+                        match! roundTripThrough subject store queue with
+                        | ConformanceOutcome.Passed, reopened -> return! each reopened rest
+                        | other, _ -> return other
                 }
 
-            return! each (samples subject.Namespace)
+            return! each subject.Store (samples subject.Namespace)
         }
 
     let private replaces (subject: QueueStoreSubject) =

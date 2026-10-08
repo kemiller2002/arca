@@ -47,3 +47,8 @@ TestResults/
 verification/browser/build/
 verification/browser/test-results/
 verification/browser/playwright-report/
+
+# Conditor's verified release-asset feed is committed: restore reads it, and
+# `conditor verify` proves its bytes against the Registry (Conditor
+# docs/nuget-feed-contract.md). It must survive the *.nupkg rule above.
+!vendor/nuget/*.nupkg

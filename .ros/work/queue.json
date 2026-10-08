@@ -399,10 +399,10 @@
         "follow-up"
       ],
       "priority": "medium",
-      "status": "captured",
+      "status": "complete",
       "attachments": [],
       "createdAt": "2026-10-08T08:54:26.000Z",
-      "updatedAt": "2026-10-08T15:14:43Z",
+      "updatedAt": "2026-10-08T20:34:55.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",

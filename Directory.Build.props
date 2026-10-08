@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
-    <!-- The release version of both packages (EchelonFoundry.Arca.Core and
-         EchelonFoundry.Arca.GitHub). 0.0.0 means "not released yet": the
+    <!-- The release version of every package (EchelonFoundry.Arca.Core,
+         EchelonFoundry.Arca.GitHub and EchelonFoundry.Arca.Limen). 0.0.0 means "not released yet": the
          release workflow builds, tests and packs it but never publishes it. -->
     <Version>0.2.1</Version>
     <TargetFramework>net10.0</TargetFramework>

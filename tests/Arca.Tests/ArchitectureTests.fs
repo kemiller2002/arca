@@ -107,6 +107,11 @@ let ``Arca.GitHub holds no network, interop, thread or file authority, so it run
     Assert.NotEmpty(sources "Arca.GitHub")
     Assert.Empty(projectViolations "Arca.GitHub")
 
+[<Fact>]
+let ``Arca.Limen holds no network, interop, thread or file authority: its only effects are the host's executors (ARCA-ARCH-002)`` () =
+    Assert.NotEmpty(sources "Arca.Limen")
+    Assert.Empty(projectViolations "Arca.Limen")
+
 let private project name =
     XDocument.Load(Path.Combine(root (), "src", name, $"{name}.fsproj"))
 
@@ -134,9 +139,20 @@ let ``Arca.GitHub depends only on Arca.Core and Aegis's GitHub failure model (AR
     Assert.Equal<string list>([ "../Arca.Core/Arca.Core.fsproj" ], items adapter "ProjectReference")
 
 [<Fact>]
+let ``Arca.Core and Arca.GitHub take no Limen dependency; Arca.Limen is the opt-in bridge (DF-LIMEN-2026-0005, DF-ARCA-2026-0010)`` () =
+    for name in [ "Arca.Core"; "Arca.GitHub" ] do
+        let document = project name
+        let references = items document "PackageReference" @ items document "ProjectReference"
+        Assert.DoesNotContain(references, fun reference -> reference.Contains("Limen", StringComparison.OrdinalIgnoreCase))
+
+    let bridge = project "Arca.Limen"
+    Assert.Equal<string list>([ "EchelonFoundry.Limen.Store"; "EchelonFoundry.Aegis.Core" ], items bridge "PackageReference")
+    Assert.Equal<string list>([ "../Arca.Core/Arca.Core.fsproj"; "../Arca.GitHub/Arca.GitHub.fsproj" ], items bridge "ProjectReference")
+
+[<Fact>]
 let ``no Arca package depends on Fides or any identity package (ARCA-ARCH-005)`` () =
     let references =
-        [ "Arca.Core"; "Arca.GitHub" ]
+        [ "Arca.Core"; "Arca.GitHub"; "Arca.Limen" ]
         |> List.collect (fun name ->
             let document = project name
             items document "PackageReference" @ items document "ProjectReference")
@@ -147,8 +163,11 @@ let ``no Arca package depends on Fides or any identity package (ARCA-ARCH-005)``
     Assert.DoesNotContain("Fides", packages, StringComparison.OrdinalIgnoreCase)
 
 [<Fact>]
-let ``both packages are packable under their Echelon package ids (ARCA-ARCH-006)`` () =
-    for name, id in [ "Arca.Core", "EchelonFoundry.Arca.Core"; "Arca.GitHub", "EchelonFoundry.Arca.GitHub" ] do
+let ``every package is packable under its Echelon package id (ARCA-ARCH-006)`` () =
+    for name, id in
+        [ "Arca.Core", "EchelonFoundry.Arca.Core"
+          "Arca.GitHub", "EchelonFoundry.Arca.GitHub"
+          "Arca.Limen", "EchelonFoundry.Arca.Limen" ] do
         let document = project name
         Assert.Equal(Some "true", property document "IsPackable")
         Assert.Equal(Some id, property document "PackageId")
@@ -180,6 +199,12 @@ let ``the built Arca.GitHub assembly references no network, file, process or int
     let references = referencedAssemblies typeof<Arca.GitHub.HttpRequest>.Assembly
     Assert.Empty(references |> List.filter forbiddenAssembly)
     Assert.Contains("Arca.Core", references)
+
+[<Fact>]
+let ``the built Arca.Limen assembly references no network, file, process or interop assembly`` () =
+    let references = referencedAssemblies typeof<Arca.Limen.QueueRecord>.Assembly
+    Assert.Empty(references |> List.filter forbiddenAssembly)
+    Assert.Contains("Limen.Store", references)
 
 [<Fact>]
 let ``the types consumers persist and handle carry no GitHub concepts (ARCA-ARCH-004)`` () =
