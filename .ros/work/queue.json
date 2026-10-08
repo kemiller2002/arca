@@ -193,10 +193,10 @@
         "github-adapter"
       ],
       "priority": "high",
-      "status": "captured",
+      "status": "ready",
       "attachments": [],
       "createdAt": "2026-10-08T08:03:44.443Z",
-      "updatedAt": "2026-10-08T08:03:44.443Z",
+      "updatedAt": "2026-10-08T09:21:31.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",
