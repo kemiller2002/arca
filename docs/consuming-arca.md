@@ -16,13 +16,15 @@ merged at `8dffc14`). Until a Conditor release carries it, build it from
 dotnet build src/Conditor.Cli -c Release -o <dir>
 ```
 
-echelon-registry `main` at `385949f` selects Arca as an optional project
-binding in echelon-current **1.4.0**. In the consuming repository:
+echelon-registry `main` at `d76ea0c` selects Arca 0.3.0 as an optional
+project binding in echelon-current **1.12.0**, with limen-fsharp 0.9.0 (the
+F# packages `EchelonFoundry.Arca.Limen` needs). In the consuming repository:
 
 1. Declare Arca in `conditor.json`, at exactly the version the set selects:
 
    ```json
-   { "id": "arca", "version": "0.3.0", "required": true }
+   { "id": "arca", "version": "0.3.0", "required": true },
+   { "id": "limen-fsharp", "version": "0.9.0", "required": true }
    ```
 
 2. Plan, review, and apply the exact plan:
@@ -30,7 +32,7 @@ binding in echelon-current **1.4.0**. In the consuming repository:
    ```bash
    conditor upgrade --current --check --target . \
      --resolved-set <echelon-registry>/channels/echelon-current/linux-x64.json \
-     --resolved-set-sha256 83dce711f2f656abfdca3f935e43b82306739c45d928930690b4e38bd9d54ca0
+     --resolved-set-sha256 d6a26a57b1566ee9641d3d408b790d797845075ff683b52b8a574487e718841e
    conditor upgrade --current --target . --resolved-set ... --resolved-set-sha256 ... --authorize <plan digest>
    ```
 
@@ -40,7 +42,7 @@ binding in echelon-current **1.4.0**. In the consuming repository:
    - writes `vendor/nuget/` with `arca.lock`;
    - maps `EchelonFoundry.Arca.Core` and `EchelonFoundry.Arca.GitHub` to that
      feed only, in `NuGet.config`;
-   - verifies the repository, then commits the 1.4.0 authority and the lock.
+   - verifies the repository, then commits the 1.12.0 authority and the lock.
 
    `conditor verify` proves the feed from then on.
 
@@ -59,14 +61,15 @@ binding in echelon-current **1.4.0**. In the consuming repository:
    need `FSharp.Core` 10.1.400 or later, which Aegis 1.0.0 also needs.
 
 Other platforms use their own channel file. The SHA-256 values at registry
-`385949f` are:
+`d76ea0c` (echelon-current 1.12.0) are:
 
 | Platform | SHA-256 |
 |---|---|
-| linux-arm64 | `4156615039897ed35747af36810034f024d3bee76596ab5fa3ee47ab13153a23` |
-| osx-x64 | `44d6835cc7409f66a4ea610212b771da09d8107f10273c86e1421136a2a16d02` |
-| osx-arm64 | `c89a65aa271912749810a80bd778f5cab8140388cba245268b8a0ccdf229d1b5` |
-| win-x64 | `9613ff07564977524d75cd66ca58bab3f7a795d1025f9891555f69f89b03d743` |
+| linux-x64 | `d6a26a57b1566ee9641d3d408b790d797845075ff683b52b8a574487e718841e` |
+| linux-arm64 | `555c48b26d62b889b0bd5570b584f6dafd7c3965d112fd8729ef7a4b29c46602` |
+| osx-x64 | `2f26b6d402be76bc821a05b7a2faa6321c6fa1312bec1a8b13cc691f6e926b86` |
+| osx-arm64 | `23e9e49c8027cc8bc5f06e64c173772c47c175259f9573fe2c54e8e42b26b1cb` |
+| win-x64 | `b5dc65911caf16ae2b603ca997dfb0d8111ab9de4eb55fd72eba464c862f253c` |
 
 To check provenance yourself:
 
@@ -195,10 +198,10 @@ stays authoritative (ARCA-OFF-006).
 It hands you the same, unchanged `QueueStore` port. See DF-ARCA-2026-0010 and
 DF-LIMEN-2026-0005.
 
-**Install.** Declare `arca` 0.3.0 and `limen-fsharp` 0.8.0 in
+**Install.** Declare `arca` 0.3.0 and `limen-fsharp` (0.9.0 in echelon-current 1.12.0; 0.8.0 or later) in
 `conditor.json`, then run `conditor upgrade --current`. Reference
-`EchelonFoundry.Arca.Limen` from the engine. It brings `EchelonFoundry.Limen.Store`
-and `EchelonFoundry.Limen.Contract` 0.8.0. In the host, register the store
+`EchelonFoundry.Arca.Limen` from the engine, and pin `EchelonFoundry.Limen.Store`
+and `EchelonFoundry.Limen.Contract` at the limen-fsharp version. In the host, register the store
 pack with the application namespace,
 `storeCapability({ namespace: "chrona" })`, next to the coordination pack.
 Select `limen.store` version 2 (`Limen.Contract.Store.Contract`) in the

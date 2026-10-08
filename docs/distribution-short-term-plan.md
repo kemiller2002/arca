@@ -40,14 +40,14 @@ until then.
 4. **Verify.** Anyone can check provenance with
    `gh attestation verify <file> --repo kemiller2002/arca`.
 
-## Status (0.2.1, 2026-10-08)
+## Status (0.3.0, 2026-10-08)
 
 | Step | Where |
 |---|---|
-| Release | [`v0.2.1`](https://github.com/kemiller2002/arca/releases/tag/v0.2.1) from `98a60cf` (#21), the multi-tab offline-queue fix (#20, DF-ARCA-2026-0009). Both `.nupkg` files, `checksums.txt` and `echelon-release.json` are attested, and the release run verified them. `v0.2.0` (from `2577cd6`) and `v0.1.0` (from `a3143fc`) remain available. |
-| Registry | `releases/arca/0.2.1.release.json` and echelon-current **1.9.0**, with Arca `>=0.2.1 <1.0.0` as an optional project binding (echelon-registry#51, merge `9c33343`). 0.2.0 came in echelon-registry#47 (echelon-current 1.6.0), and 0.1.0 in #45 (echelon-current 1.4.0). REG-REL-014 lets one NuGet release ship a package family. |
-| Conditor | conditor#59 (merge `8dffc14`): the NuGet release-asset feed (`docs/nuget-feed-contract.md` in Conditor). |
-| Consumers | [`consuming-arca.md`](consuming-arca.md) |
+| Release | [`v0.3.0`](https://github.com/kemiller2002/arca/releases/tag/v0.3.0) from `6f3acc7` (#28). It holds three packages: `EchelonFoundry.Arca.Core`, `.GitHub` and the new `.Limen`, which carries the IndexedDB offline queue, the one-time move from the localStorage queue and the read cache (#23..#27). The three `.nupkg` files, `checksums.txt` and `echelon-release.json` are attested. The release run verified them, and they were verified again independently from an empty directory. `v0.2.1`, `v0.2.0` and `v0.1.0` remain available. |
+| Registry | `releases/arca/0.3.0.release.json` and echelon-current **1.12.0**, with Arca `>=0.3.0 <1.0.0` as an optional project binding (echelon-registry#55, merge `d76ea0c`). Limen 0.8.0 and limen-fsharp came in #52 (1.10.0) and moved to 0.9.0 in #53 (1.11.0). Limen.Store is unchanged between them, and Arca.Limen 0.3.0 was proven on limen-fsharp 0.9.0 from the released assets. 0.2.1 came in #51 (1.9.0). |
+| Conditor | conditor#59 (merge `8dffc14`): the NuGet release-asset feed (`docs/nuget-feed-contract.md` in Conditor). Arca itself installs limen-fsharp through it (`vendor/nuget`). |
+| Consumers | [`consuming-arca.md`](consuming-arca.md). Chrona WI-0059 adopts the IndexedDB queue (section 5a), and WI-0057 the read cache (section 5b). |
 
 ## When `NUGET_USER` is set
 
