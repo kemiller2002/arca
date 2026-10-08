@@ -6,8 +6,8 @@
   "compatibilityAliases": [],
   "provides": [],
   "distribution": {
-    "mechanism": "nuget",
-    "package": "EchelonFoundry.Arca.Core",
+    "mechanism": "github-release",
+    "package": null,
     "url": null
   },
   "artifacts": [
