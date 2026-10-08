@@ -17,4 +17,4 @@
 | WI-0012 | Arca slice 10: rebuildable derived indexes, explicit migration workflow and canonical export (ARCA-MIG-001..003, ARCA-LOC-009) | captured | arca, slice:10, derived-state, migration | medium |
 | WI-0013 | Arca first release 0.1.0: nuget.org Trusted Publishing, NUGET_USER variable and echelon-registry system entry | captured | arca, release, registry | high |
 | WI-0014 | (Deferred, possible future) per-application at-rest encryption for co-located data | captured | arca, deferred, future, encryption | low |
-| WI-0015 | Align Arca to echelon-current 1.3.0 (conditor upgrade --current) and regenerate the test project as a real xUnit dotnet test project (conditor#54) | ready | arca, conditor, release-set, testing | high |
+| WI-0015 | Align Arca to echelon-current 1.3.0 (conditor upgrade --current) and regenerate the test project as a real xUnit dotnet test project (conditor#54) | complete | arca, conditor, release-set, testing | high |
