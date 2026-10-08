@@ -15,7 +15,7 @@
 | WI-0010 | Arca slice 8: storage content is untrusted input - validation, manual-edit and tamper detection (ARCA-INT-001..004) | captured | arca, slice:8, integrity | high |
 | WI-0011 | Arca slice 9: offline change queue as data with durable browser persistence through Limen (ARCA-OFF-001..006) | captured | arca, slice:9, offline | high |
 | WI-0012 | Arca slice 10: rebuildable derived indexes, explicit migration workflow and canonical export (ARCA-MIG-001..003, ARCA-LOC-009) | captured | arca, slice:10, derived-state, migration | medium |
-| WI-0013 | Arca first release: interim distribution as Sigstore-attested GitHub release assets, echelon-registry entry, Conditor local-feed install; nuget.org Trusted Publishing kept dormant until NUGET_USER exists | captured | arca, release, registry | high |
+| WI-0013 | Arca first release: interim distribution as Sigstore-attested GitHub release assets, echelon-registry entry, Conditor local-feed install; nuget.org Trusted Publishing kept dormant until NUGET_USER exists | ready | arca, release, registry | high |
 | WI-0014 | (Deferred, possible future) per-application at-rest encryption for co-located data | captured | arca, deferred, future, encryption | low |
 | WI-0015 | Align Arca to echelon-current 1.3.0 (conditor upgrade --current) and regenerate the test project as a real xUnit dotnet test project (conditor#54) | complete | arca, conditor, release-set, testing | high |
 | WI-0016 | Limen IndexedDB adapter for Arca's offline queue-store port (ARCA-OFF-002), replacing the interim localStorage adapter | captured | arca, offline, limen, indexeddb, follow-up | medium |
