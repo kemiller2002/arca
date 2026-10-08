@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-08T20:54:41.000Z",
+  "updatedAt": "2026-10-08T21:26:11.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -987,13 +987,51 @@
     {
       "id": "WI-0022",
       "type": "task",
-      "state": "active",
-      "semanticState": "active",
-      "evidence": [],
-      "updatedAt": "2026-10-08T20:54:41.000Z",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "src/Arca.Limen/IndexedDbReadCache.fs"
+        },
+        {
+          "type": "tests",
+          "path": "tests/Arca.Tests/LimenReadCacheTests.fs"
+        },
+        {
+          "type": "browser-tests",
+          "path": "verification/browser/tests/limen-queue.spec.mjs"
+        },
+        {
+          "type": "documentation",
+          "path": "docs/consuming-arca.md"
+        }
+      ],
+      "updatedAt": "2026-10-08T21:26:11.000Z",
       "telemetryExecutionIds": [
         "EXE-20261008T205441445Z-9461988d"
-      ]
+      ],
+      "latestCheckpoint": {
+        "id": "384cc101576d0d25befec2cd",
+        "recordedAt": "2026-10-08T21:26:10.000Z",
+        "executionId": "EXE-20261008T205441445Z-9461988d",
+        "repository": "arca",
+        "branch": "limen/wi-0022-read-cache",
+        "commit": "0c56ccb5bd1952df50ecff2ba04eaec918a9bde3",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "limen/wi-0022-read-cache",
+        "remoteCommit": "0c56ccb5bd1952df50ecff2ba04eaec918a9bde3",
+        "summary": "IndexedDB read cache: compound keys, deleteRange per account, LRU budget, best-effort Keep, FreeSpace for the queue, device clear; conformance over FakeStore and in Chromium and WebKit; 319 tests",
+        "nextAction": "Merge on green; then release 0.3.0",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-10-08T21:26:11.000Z"
     }
   ]
 }
