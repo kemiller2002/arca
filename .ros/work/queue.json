@@ -545,10 +545,10 @@
         "indexeddb"
       ],
       "priority": "medium",
-      "status": "captured",
+      "status": "ready",
       "attachments": [],
       "createdAt": "2026-10-08T15:14:31Z",
-      "updatedAt": "2026-10-08T15:14:31Z",
+      "updatedAt": "2026-10-08T20:54:40.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",
