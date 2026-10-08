@@ -30,12 +30,15 @@ type Identity =
     | AsInstallation
 
 /// What the next matching request does instead of being answered normally.
+[<NoEquality; NoComparison>]
 type Fault =
     | Answer of status: int * headers: (string * string) list * body: string
     | Lose of UnknownReason
     /// Apply the request, then report its outcome as unknown.
     | ApplyThenLose of UnknownReason
     | FailNetwork
+    /// Run this (as another client would, concurrently), then answer normally.
+    | Before of (unit -> unit)
 
 /// The simulated GitHub. Mutable, as a server is; tests inspect it.
 type Server(owner: string, name: string) =
@@ -371,7 +374,26 @@ type Server(owner: string, name: string) =
                 this.Respond request |> ignore
                 HttpOutcome.OutcomeUnknown reason
             | FailNetwork -> HttpOutcome.Failed HttpFailure.Network
-        | None -> this.Respond request
+            | Before action ->
+                action ()
+                this.Conditional request
+        | None -> this.Conditional request
+
+    /// Answers with an ETag on every successful GET, and 304 when the
+    /// request's If-None-Match still matches.
+    member private this.Conditional(request: Authorized) : HttpOutcome =
+        match this.Respond request with
+        | HttpOutcome.Response(200, headers, body) when request.Request.Method = HttpMethod.Get ->
+            let etag = "\"" + sha body + "\""
+
+            let matches =
+                request.Request.Headers |> List.exists (fun (name, value) -> name = "If-None-Match" && value = etag)
+
+            if matches then
+                HttpOutcome.Response(304, Map.add "etag" etag headers, "")
+            else
+                HttpOutcome.Response(200, Map.add "etag" etag headers, body)
+        | other -> other
 
     /// A token provider answering with the server's valid token.
     member this.ValidToken() =

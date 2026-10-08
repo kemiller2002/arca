@@ -20,6 +20,7 @@
     <Compile Include="ConcurrencyTests.fs" />
     <Compile Include="FakeGitHub.fs" />
     <Compile Include="CredentialTests.fs" />
+    <Compile Include="GitHubStorageTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />

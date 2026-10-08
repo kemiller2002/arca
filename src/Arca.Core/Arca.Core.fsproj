@@ -26,5 +26,6 @@
     <Compile Include="Merge.fs" />
     <Compile Include="Commit.fs" />
     <Compile Include="Credentials.fs" />
+    <Compile Include="Storage.fs" />
   </ItemGroup>
 </Project>
