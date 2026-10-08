@@ -2,7 +2,7 @@
 id: ARCA-REQ-STORAGE
 title: Arca shared storage requirements
 status: draft
-version: 0.1.0
+version: 0.2.0
 created: 2026-10-08
 updated: 2026-10-08
 owners:
@@ -24,6 +24,16 @@ provenance:
         model: unknown
         runtime: claude-code
       reason: "Derived from Signal, Chrona and Summa requirements and user decisions of 2026-10-08"
+    EXE-20261008T084806354Z-6573ebbf:
+      operations: [modified]
+      at: 2026-10-08T08:54:37.000Z
+      actor:
+        kind: agent
+        id: anthropic/claude-code
+        provider: anthropic
+        model: unknown
+        runtime: claude-code
+      reason: "Record decisions D-008..D-011 and resolve OQ-ARCA-002..004"
 ---
 
 # Arca shared storage requirements
@@ -61,6 +71,10 @@ application decides.
 | ARCA-D-005 | The data repository is configurable per deployment. Each application owns its own namespace inside it, and an application's data must be separable under different permissions. | **Decision**, confirmed by the user 2026-10-08 ([DF-ARCA-2026-0002](../../research/decisions/DF-ARCA-2026-0002--per-deployment-data-location-and-app-owned-namespaces.md)) |
 | ARCA-D-007 | **No at-rest encryption for now.** Permission separation between applications is achieved with separate repositories per permission boundary, using the configurable per-application data location (ARCA-LOC-004). Per-application encryption is deferred: it is a possible future work item, not a requirement. | **Decision**, confirmed by the user 2026-10-08 (DF-ARCA-2026-0002) |
 | ARCA-D-006 | Arca is written in a functional style: immutable data, total functions returning results, effects as data interpreted at the adapter edge. | Decision (user preference) |
+| ARCA-D-008 | Two packages: `EchelonFoundry.Arca.Core` (pure, no I/O) and `EchelonFoundry.Arca.GitHub`. The adapter describes GitHub conversations as data; the host (a Limen kernel's Http effect in the browser) executes them. | **Decision**, user 2026-10-08 ([DF-ARCA-2026-0003](../../research/decisions/DF-ARCA-2026-0003--two-packages-core-and-github-adapter-with-effects-as-data.md)) |
+| ARCA-D-009 | Arca stays separate from Aegis's GitHub event store (different concerns); it reuses only Aegis's GitHub failure model. | **Decision**, user 2026-10-08 ([DF-ARCA-2026-0004](../../research/decisions/DF-ARCA-2026-0004--arca-stays-separate-from-aegis-github-event-store.md)) |
+| ARCA-D-010 | The offline queue persists to localStorage through Limen's Storage effect, behind a queue-store port, until a Limen IndexedDB adapter replaces it. | **Decision**, user-approved 2026-10-08 ([DF-ARCA-2026-0005](../../research/decisions/DF-ARCA-2026-0005--offline-queue-persists-to-localstorage-behind-a-port.md)) |
+| ARCA-D-011 | Until nuget.org Trusted Publishing exists, releases ship as Sigstore-attested GitHub release assets, registered in echelon-registry and installed by Conditor through a local feed. | **Decision**, user 2026-10-08 ([DF-ARCA-2026-0006](../../research/decisions/DF-ARCA-2026-0006--interim-distribution-through-attested-github-release-assets.md)) |
 
 Open design questions that need the user are in [section 14](#14-open-questions-for-the-user).
 
@@ -92,8 +106,9 @@ locator and the adapter. *Sources: SIG ADM-006, SUM0-046.*
 **ARCA-ARCH-005** Arca MUST NOT depend on Fides or any other identity
 package. Credentials arrive through ARCA-AUTH-001. *Source: ARCA-D-002.*
 
-**ARCA-ARCH-006** Arca MUST be published as a versioned NuGet package
-through the Echelon `nuget-library` release contract. A consumer MUST be
+**ARCA-ARCH-006** Arca MUST be published as versioned NuGet packages
+(`EchelonFoundry.Arca.Core`, `EchelonFoundry.Arca.GitHub`) through the Echelon
+`nuget-library` release contract. A consumer MUST be
 able to pin an exact version. *Sources: echelon-registry REG-REL-010/012;
 shared-foundations dependency pinning.*
 
@@ -294,8 +309,10 @@ Applications MUST be able to inspect it. *Sources: CHX-230, CHX-105,
 SIG ADM-070.*
 
 **ARCA-OFF-002** The adapter MUST persist the queue durably in the browser
-through Limen interop (IndexedDB is the intended store; see OQ-ARCA-003), so
-pending work survives refresh and restart. *Sources: CHX-101, CHX-102,
+through Limen interop, behind a queue-store port, so pending work survives
+refresh and restart. The first adapter uses localStorage through Limen's
+Storage effect; a Limen IndexedDB adapter replaces it later without touching
+the core (ARCA-D-010). *Sources: CHX-101, CHX-102,
 CHX-230.*
 
 **ARCA-OFF-003** Unsynchronized data MUST NEVER be presented as globally
@@ -426,9 +443,9 @@ CHX-420, SUM3-022, SIG AER-021..031.*
 | ID | Question | Options | Recommendation |
 |---|---|---|---|
 | OQ-ARCA-001 | *Resolved 2026-10-08.* How should co-located application data be protected, given that GitHub permissions are per repository and not per folder? | (a) separate repositories, (b) per-application encryption, (c) both | **Decided: (a).** Encryption is deferred to a possible future work item (ARCA-D-007, ARCA-LOC-010). |
-| OQ-ARCA-002 | Should Arca be one package, or a core package plus a GitHub adapter package (`EchelonFoundry.Arca` and `EchelonFoundry.Arca.GitHub`, following Aegis's split)? | One package / two packages | Two packages, so a consumer's pure core takes no HTTP dependency. Captured as an Arca work item. |
-| OQ-ARCA-003 | Limen 0.7.x offers only `Http`, `Storage` (localStorage), `Clipboard` and `Navigation` capabilities, with no IndexedDB. The offline queue (ARCA-OFF-002) needs durable browser storage. | Add an IndexedDB capability to Limen / use Limen `Storage` (localStorage, size-limited) at first | Ask Limen for an IndexedDB capability. Until it exists, use localStorage behind the same port. |
-| OQ-ARCA-004 | `EchelonFoundry.Aegis.Store.GitHub` already writes immutable event files to GitHub for Aegis faults. Should Arca reuse it, or should Aegis later move onto Arca? | Reuse / align later / keep separate | Keep separate for now; reuse `Aegis.Integration.GitHub`'s failure model (ARCA-ARCH-007). |
+| OQ-ARCA-002 | *Resolved 2026-10-08.* One package or two? | One / two | **Decided: two** (ARCA-D-008, DF-ARCA-2026-0003). |
+| OQ-ARCA-003 | *Resolved 2026-10-08.* Durable browser storage for the offline queue (ARCA-OFF-002). Correction: Limen 0.7.x *does* ship an IndexedDB store pack (`limen.store`), but its F# binding is not published as a consumable package. | IndexedDB through Limen / localStorage at first | **Decided: localStorage behind a queue-store port now**; a Limen IndexedDB adapter is a follow-up work item (ARCA-D-010, DF-ARCA-2026-0005). |
+| OQ-ARCA-004 | *Resolved 2026-10-08.* Reuse Aegis's GitHub event store, or keep separate? | Reuse / align later / keep separate | **Decided: keep separate** (different concerns); reuse only the failure model (ARCA-D-009, DF-ARCA-2026-0004). |
 | OQ-ARCA-005 | Chrona's legacy monolithic per-user ledger (`kemiller2002/time-tracking-application`, data in `time-tracking-data`) may need read compatibility (CHX-220). Is that Arca's job or Chrona's? | Arca / Chrona | Chrona's. The user expects Chrona to be reconstructed rather than migrated; any data import is a Chrona application-level migration on top of ARCA-MIG-002. |
 
 ## 14a. Build order

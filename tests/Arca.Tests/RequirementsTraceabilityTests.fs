@@ -17,13 +17,13 @@ let ``the requirements document declares requirement IDs`` () =
     Assert.NotEmpty(RequirementsTraceability.declaredRequirements (document ()))
 
 [<Fact>]
-let ``every Arca requirement is named by an open work item`` () =
+let ``every Arca requirement is named by a planned or delivered work item`` () =
     Assert.Empty(RequirementsTraceability.unplanned (document ()) (read ".ros/work/queue.json"))
 
 [<Fact>]
-let ``a requirement that no open work item names is reported`` () =
+let ``a requirement that no planned or delivered work item names is reported`` () =
     let queue =
-        """{"items":[{"status":"captured","title":"covers ARCA-LOC-001..002","description":null}]}"""
+        """{"items":[{"status":"captured","title":"covers ARCA-LOC-001","description":null},{"status":"complete","title":"delivered ARCA-LOC-002","description":null},{"status":"abandoned","title":"dropped ARCA-REC-001","description":null}]}"""
 
     let unplanned =
         RequirementsTraceability.unplanned "**ARCA-LOC-001** **ARCA-LOC-002** **ARCA-REC-001**" queue

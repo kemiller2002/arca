@@ -1,8 +1,9 @@
-/// Every Arca requirement is planned: an open work item in the Praxis queue
-/// (captured, ready, active or blocked) names it, either directly
-/// (`ARCA-LOC-004`) or inside a range of the same family (`ARCA-LOC-001..010`).
-/// A requirement that no open work item names would silently fall out of the
-/// backlog.
+/// Every Arca requirement is planned or delivered: a work item in the Praxis
+/// queue that is not abandoned (captured, ready, active, blocked or complete)
+/// names it, either directly (`ARCA-LOC-004`) or inside a range of the same
+/// family (`ARCA-LOC-001..010`). A requirement that no such work item names
+/// would silently fall out of the backlog. Completed items count because a
+/// delivered slice still accounts for the requirements it delivered.
 module Arca.Tests.RequirementsTraceability
 
 open System.IO
@@ -22,23 +23,20 @@ let declaredRequirements (document: string) =
     |> Seq.map _.Groups[1].Value
     |> Set.ofSeq
 
-let private isOpen (item: JsonElement) =
-    match item.GetProperty("status").GetString() with
-    | "complete"
-    | "abandoned" -> false
-    | _ -> true
+let private isAccountedFor (item: JsonElement) =
+    item.GetProperty("status").GetString() <> "abandoned"
 
 let private text (item: JsonElement) (name: string) =
     match item.TryGetProperty name with
     | true, value when value.ValueKind = JsonValueKind.String -> string (value.GetString())
     | _ -> ""
 
-/// Title and description of every open work item in a Praxis queue.json.
-let openWorkText (queueJson: string) =
+/// Title and description of every work item in a Praxis queue.json that is not abandoned.
+let accountedWorkText (queueJson: string) =
     use queue = JsonDocument.Parse queueJson
 
     queue.RootElement.GetProperty("items").EnumerateArray()
-    |> Seq.filter isOpen
+    |> Seq.filter isAccountedFor
     |> Seq.map (fun item -> text item "title" + "\n" + text item "description")
     |> String.concat "\n"
 
@@ -54,6 +52,6 @@ let namedRequirements (work: string) =
 
     Seq.append direct ranges |> Set.ofSeq
 
-/// Declared requirements that no open work item names.
+/// Declared requirements that no planned or delivered work item names.
 let unplanned (document: string) (queueJson: string) =
-    Set.difference (declaredRequirements document) (namedRequirements (openWorkText queueJson))
+    Set.difference (declaredRequirements document) (namedRequirements (accountedWorkText queueJson))

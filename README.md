@@ -2,10 +2,21 @@
 
 Arca is the shared data layer for Echelon applications. It stores
 authoritative records in GitHub repositories, runs in browser WebAssembly
-behind Limen, and is published as the `EchelonFoundry.Arca` NuGet package. It
-has a pure F# core (record formats, versioning, conflict detection and merge,
-commit/audit format, offline change queue) and a GitHub adapter. It takes a
-token provider and does not depend on Fides.
+behind Limen, and ships as two NuGet packages
+([DF-ARCA-2026-0003](research/decisions/DF-ARCA-2026-0003--two-packages-core-and-github-adapter-with-effects-as-data.md)):
+
+- `EchelonFoundry.Arca.Core`: the pure F# core (data location, record format,
+  versioning, conflict detection and merge, commit/audit format, offline
+  change queue). No I/O.
+- `EchelonFoundry.Arca.GitHub`: the GitHub adapter. It describes each GitHub
+  conversation as data, and the host executes the HTTP requests (a Limen
+  kernel's Http effect in the browser), so it runs in WebAssembly without
+  network or interop authority of its own.
+
+Arca takes a token provider and does not depend on Fides. Until nuget.org
+publishing is set up, releases ship as attested GitHub release assets that
+Conditor installs into a local feed
+([short-term plan](docs/distribution-short-term-plan.md)).
 
 - Requirements: [`docs/requirements/ARCA-STORAGE-REQUIREMENTS.md`](docs/requirements/ARCA-STORAGE-REQUIREMENTS.md)
 - Decisions: [`research/decisions/`](research/decisions/)

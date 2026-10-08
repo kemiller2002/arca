@@ -40,4 +40,4 @@ jobs:
             echo "::error::Tests were skipped. A run that skips tests is not a pass."; exit 1
           fi
       - name: Pack
-        run: dotnet pack src/Arca/Arca.fsproj -c Release --no-build -o dist
+        run: dotnet pack Arca.slnx -c Release --no-build -o dist

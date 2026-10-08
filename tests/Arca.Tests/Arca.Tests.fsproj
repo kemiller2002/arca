@@ -4,16 +4,20 @@
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../src/Arca/Arca.fsproj" />
+    <ProjectReference Include="../../src/Arca.Core/Arca.Core.fsproj" />
+    <ProjectReference Include="../../src/Arca.GitHub/Arca.GitHub.fsproj" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="LibraryTests.fs" />
     <Compile Include="RequirementsTraceability.fs" />
     <Compile Include="RequirementsTraceabilityTests.fs" />
+    <Compile Include="ArchitectureTests.fs" />
+    <Compile Include="CapabilityTests.fs" />
+    <Compile Include="FaultTests.fs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
-    <PackageReference Include="xunit" Version="2.9.2" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="FsCheck.Xunit" />
   </ItemGroup>
 </Project>
