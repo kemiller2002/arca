@@ -2,8 +2,9 @@
 
 Arca is the shared data layer for Echelon applications. It stores
 authoritative records in GitHub repositories, runs in browser WebAssembly
-behind Limen, and ships as two NuGet packages
-([DF-ARCA-2026-0003](research/decisions/DF-ARCA-2026-0003--two-packages-core-and-github-adapter-with-effects-as-data.md)):
+behind Limen, and ships as three NuGet packages of one version
+([DF-ARCA-2026-0003](research/decisions/DF-ARCA-2026-0003--two-packages-core-and-github-adapter-with-effects-as-data.md),
+[DF-ARCA-2026-0010](research/decisions/DF-ARCA-2026-0010--limen-bridge-package-indexeddb-queue-layout-and-composer.md)):
 
 - `EchelonFoundry.Arca.Core`: the pure F# core (data location, record format,
   versioning, conflict detection and merge, commit/audit format, offline
@@ -12,6 +13,11 @@ behind Limen, and ships as two NuGet packages
   conversation as data, and the host executes the HTTP requests (a Limen
   kernel's Http effect in the browser), so it runs in WebAssembly without
   network or interop authority of its own.
+- `EchelonFoundry.Arca.Limen` (from 0.3.0, opt-in): the IndexedDB offline
+  queue over Limen's store pack, with one owner per namespace, fenced saves,
+  a durability-mode composer, and the one-time move from the localStorage
+  queue; and the offline-start read cache. Only applications that reference
+  it take a Limen dependency.
 
 Arca takes a token provider and does not depend on Fides. Until nuget.org
 publishing is set up, releases ship as attested GitHub release assets that
@@ -22,7 +28,7 @@ Conditor installs into a local feed
 - Decisions: [`research/decisions/`](research/decisions/)
 - Backlog: `./praxis work ready` (minimal slices WI-0003..WI-0008 come before Chrona's storage work)
 
-The repository runs Praxis 3.7.2 and Ordo 1.5.0 from echelon-current 1.3.0, installed by Conditor
+The repository runs Praxis 3.7.2 and Ordo 1.5.0, and builds against Limen 0.8.0's F# packages (`limen-fsharp`), from echelon-current 1.10.0, installed by Conditor
 (`conditor.json`). An older installation may also have `./ros`, a
 compatibility alias of `./praxis`.
 

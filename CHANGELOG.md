@@ -9,6 +9,35 @@ release may change the API; pin an exact version.
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-10-08
+
+A minor release. It adds the IndexedDB offline queue and the offline-start
+read cache over Limen 0.8.0, in a new package, `EchelonFoundry.Arca.Limen`,
+released at the same version as the other two. Every 0.2.1 API is
+unchanged. That includes the `QueueStore` port, `LocalStorageQueue.own` and
+the localStorage layout, so an application can stay on the localStorage
+queue. Moving to the new queue changes only the composition root, and the
+queue is moved once, with nothing lost (`docs/consuming-arca.md` section 5a).
+Requires Limen 0.8.0's F# packages (`limen-fsharp`) for `Arca.Limen`.
+
+### Manual iPad Safari checklist (OQ-LIMEN-IDB-006)
+
+Playwright WebKit runs every browser page in CI. It is not iPad Safari, so
+check these by hand on an iPad with an application on this release:
+
+1. **Open:** the queue opens, and its mode shows `IndexedDb`.
+2. **Write:** an offline write is queued, and Safari is asked for
+   persistence then, not at first load.
+3. **Reload:** the queued write is still there.
+4. **Two tabs:** the second tab says another tab holds the unsent changes.
+   "Use this tab instead" takes over, and the first tab's next save is
+   refused.
+5. **Private mode:** the mode shown is what the browser allowed (IndexedDb,
+   LocalStorage or MemoryOnly), and nothing claims durability it lacks.
+
+iOS eviction of script-writable storage cannot be automated. It is detected
+instead, as `LocalQueueLost`.
+
 ### Added
 
 - **`EchelonFoundry.Arca.Limen`**, a new opt-in package. It contains Arca's
