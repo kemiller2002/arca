@@ -24,6 +24,12 @@
       "mediaType": "application/zip"
     },
     {
+      "name": "EchelonFoundry.Arca.Limen.{version}.nupkg",
+      "purpose": "package",
+      "platform": null,
+      "mediaType": "application/zip"
+    },
+    {
       "name": "checksums.txt",
       "purpose": "checksums",
       "platform": null,

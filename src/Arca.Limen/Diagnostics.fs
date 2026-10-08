@@ -163,9 +163,10 @@ module QueueSignOut =
     let unsentOf (account: string) (queue: OfflineQueue) =
         queue.Entries |> List.filter (fun entry -> belongsTo account entry && unsent entry) |> List.length
 
-    /// The queue with the account's discardable entries abandoned and pruned,
-    /// and how many. In-flight and outcome-unknown entries stay: they may have
-    /// landed, so they are reconciled, never dropped.
+    /// The queue without the account's discardable entries (pending,
+    /// conflicted, refused), and how many were removed. In-flight and
+    /// outcome-unknown entries stay: they may have landed, so they are
+    /// reconciled, never dropped. Other accounts' entries are untouched.
     let discard (account: string) (queue: OfflineQueue) =
         let discardable (entry: QueueEntry) =
             belongsTo account entry

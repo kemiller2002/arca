@@ -115,7 +115,8 @@ jobs:
           dotnet pack Arca.slnx -c Release --no-build -p:ContinuousIntegrationBuild=true -o dist/release
           test -f "dist/release/EchelonFoundry.Arca.Core.${VERSION}.nupkg"
           test -f "dist/release/EchelonFoundry.Arca.GitHub.${VERSION}.nupkg"
-          test "$(ls dist/release/*.nupkg | wc -l)" -eq 2
+          test -f "dist/release/EchelonFoundry.Arca.Limen.${VERSION}.nupkg"
+          test "$(ls dist/release/*.nupkg | wc -l)" -eq 3
           (cd dist/release && sha256sum *.nupkg > checksums.txt)
           cat dist/release/checksums.txt
 
@@ -213,7 +214,7 @@ jobs:
         run: |
           set -euo pipefail
           gh release create "v${VERSION}" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Arca v${VERSION}" \
-            --notes "EchelonFoundry.Arca.Core and EchelonFoundry.Arca.GitHub ${VERSION} built from ${GITHUB_SHA}: the NuGet packages, their SHA-256 checksums and the Echelon release manifest, each with a GitHub build-provenance (Sigstore) attestation. Install through Conditor's release-asset feed until the packages are on nuget.org (docs/distribution-short-term-plan.md)." \
+            --notes "EchelonFoundry.Arca.Core, EchelonFoundry.Arca.GitHub and EchelonFoundry.Arca.Limen ${VERSION} built from ${GITHUB_SHA}: the NuGet packages, their SHA-256 checksums and the Echelon release manifest, each with a GitHub build-provenance (Sigstore) attestation. Install through Conditor's release-asset feed until the packages are on nuget.org (docs/distribution-short-term-plan.md)." \
             dist/release/*.nupkg dist/release/checksums.txt dist/release/echelon-release.json
 
       - name: Verify the published assets and their attestations
