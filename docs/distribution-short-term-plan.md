@@ -40,6 +40,15 @@ until then.
 4. **Verify.** Anyone can check provenance with
    `gh attestation verify <file> --repo kemiller2002/arca`.
 
+## Status (0.1.0, 2026-10-08)
+
+| Step | Where |
+|---|---|
+| Release | [`v0.1.0`](https://github.com/kemiller2002/arca/releases/tag/v0.1.0) from `a3143fc`. Both `.nupkg` files, `checksums.txt` and `echelon-release.json` are attested and were verified in the release run. |
+| Registry | echelon-registry#45 (merge `385949f`): `releases/arca/0.1.0.release.json`, the `arca` system, and echelon-current **1.4.0** with Arca as an optional project binding. REG-REL-014 lets one NuGet release ship a package family. |
+| Conditor | conditor#59 (merge `8dffc14`): the NuGet release-asset feed (`docs/nuget-feed-contract.md` in Conditor). |
+| Consumers | [`consuming-arca.md`](consuming-arca.md) |
+
 ## When `NUGET_USER` is set
 
 Nothing else changes in Arca. The dormant nuget.org step pushes both packages
