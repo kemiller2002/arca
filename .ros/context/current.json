@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-08T09:21:31.000Z",
+  "updatedAt": "2026-10-08T09:21:37.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -352,13 +352,43 @@
     {
       "id": "WI-0008",
       "type": "task",
-      "state": "active",
-      "semanticState": "active",
-      "evidence": [],
-      "updatedAt": "2026-10-08T09:21:31.000Z",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "src"
+        },
+        {
+          "type": "tests",
+          "path": "tests"
+        }
+      ],
+      "updatedAt": "2026-10-08T09:21:37.000Z",
       "telemetryExecutionIds": [
         "EXE-20261008T092132160Z-f0361785"
-      ]
+      ],
+      "latestCheckpoint": {
+        "id": "6a36456c19a84ef2fa82a654",
+        "recordedAt": "2026-10-08T09:21:36.000Z",
+        "executionId": "EXE-20261008T092132160Z-f0361785",
+        "repository": "arca",
+        "branch": "slice/06-github-adapter",
+        "commit": "7e38197918e3347a55c1f92542ca9d79172313c0",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "slice/06-github-adapter",
+        "remoteCommit": "7e38197918e3347a55c1f92542ca9d79172313c0",
+        "summary": "Slice 6: GitHub adapter (atomic commits, caching, rate limits, OutcomeUnknown reconciliation, provider)",
+        "nextAction": "PR, CI green, merge; then the first release (WI-0013)",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-10-08T09:21:37.000Z"
     }
   ]
 }

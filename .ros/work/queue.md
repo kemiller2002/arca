@@ -10,7 +10,7 @@
 | WI-0005 | Arca slice 3: canonical JSON record format, stable ids, manifests and schema versioning (ARCA-REC-001..007) | complete | arca, slice:3, minimal, record-format | high |
 | WI-0006 | Arca slice 4: optimistic concurrency, conflict detection, three-way merge and commit/audit format (ARCA-CON-001..004, ARCA-COMMIT-001..006) | complete | arca, slice:4, minimal, concurrency, commit | high |
 | WI-0007 | Arca slice 5: token-provider port, identity resolution and capability snapshot (ARCA-AUTH-001..005) | complete | arca, slice:5, minimal, auth | high |
-| WI-0008 | Arca slice 6: GitHub adapter - atomic commits, conditional requests, rate limits, OutcomeUnknown and idempotency (ARCA-API-001..005, ARCA-OUT-001..002, ARCA-COMMIT-001/006) | ready | arca, slice:6, minimal, github-adapter | high |
+| WI-0008 | Arca slice 6: GitHub adapter - atomic commits, conditional requests, rate limits, OutcomeUnknown and idempotency (ARCA-API-001..005, ARCA-OUT-001..002, ARCA-COMMIT-001/006) | complete | arca, slice:6, minimal, github-adapter | high |
 | WI-0009 | Arca slice 7: provider conformance suite, in-memory provider and real-browser WASM verification (ARCA-TEST-001..004) | captured | arca, slice:7, conformance, testing | high |
 | WI-0010 | Arca slice 8: storage content is untrusted input - validation, manual-edit and tamper detection (ARCA-INT-001..004) | captured | arca, slice:8, integrity | high |
 | WI-0011 | Arca slice 9: offline change queue as data with durable browser persistence through Limen (ARCA-OFF-001..006) | captured | arca, slice:9, offline | high |
