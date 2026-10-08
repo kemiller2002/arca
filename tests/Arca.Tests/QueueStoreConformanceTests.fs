@@ -165,13 +165,17 @@ let ``a fault the harness cannot arrange is Unsupported, never passed`` () =
 let private truncating () =
     async {
         let! subject = QueueStoreConformance.inMemory 4096L chrona
-        let inner = subject.Store
 
-        let store: QueueStore =
+        let truncate (inner: QueueStore) : QueueStore =
             { Load = inner.Load
               Save = fun queue -> inner.Save { queue with Entries = queue.Entries |> List.truncate 1 } }
 
-        return { subject with Store = store }
+        return
+            { subject with
+                Store = truncate subject.Store
+                Reopen = fun () -> async {
+                    let! reopened = subject.Reopen()
+                    return truncate reopened } }
     }
 
 /// A store that saves whatever it is given, past the budget.

@@ -6,6 +6,7 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Arca.Core/Arca.Core.fsproj" />
     <ProjectReference Include="../../src/Arca.GitHub/Arca.GitHub.fsproj" />
+    <ProjectReference Include="../../src/Arca.Limen/Arca.Limen.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="RequirementsTraceability.fs" />
@@ -27,6 +28,8 @@
     <Compile Include="QueueStoreConformanceTests.fs" />
     <Compile Include="MultiTabQueueTests.fs" />
     <Compile Include="MigrationTests.fs" />
+    <Compile Include="LimenHarness.fs" />
+    <Compile Include="LimenQueueTests.fs" />
     <Compile Include="ReadCacheTests.fs" />
   </ItemGroup>
   <ItemGroup>
