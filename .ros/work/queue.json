@@ -141,10 +141,10 @@
         "commit"
       ],
       "priority": "high",
-      "status": "captured",
+      "status": "complete",
       "attachments": [],
       "createdAt": "2026-10-08T08:03:43.836Z",
-      "updatedAt": "2026-10-08T08:03:43.836Z",
+      "updatedAt": "2026-10-08T09:08:23.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",

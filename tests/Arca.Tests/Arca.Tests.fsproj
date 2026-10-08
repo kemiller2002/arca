@@ -17,6 +17,7 @@
     <Compile Include="Generators.fs" />
     <Compile Include="JsonTests.fs" />
     <Compile Include="RecordTests.fs" />
+    <Compile Include="ConcurrencyTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />

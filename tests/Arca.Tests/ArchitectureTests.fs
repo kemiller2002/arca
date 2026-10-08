@@ -180,3 +180,33 @@ let ``the built Arca.GitHub assembly references no network, file, process or int
     let references = referencedAssemblies typeof<Arca.GitHub.HttpRequest>.Assembly
     Assert.Empty(references |> List.filter forbiddenAssembly)
     Assert.Contains("Arca.Core", references)
+
+[<Fact>]
+let ``the types consumers persist and handle carry no GitHub concepts (ARCA-ARCH-004)`` () =
+    let consumerTypes =
+        [ typeof<Arca.Record>
+          typeof<Arca.Change>
+          typeof<Arca.OperationMetadata>
+          typeof<Arca.Conflict>
+          typeof<Arca.MergeResult>
+          typeof<Arca.Entry>
+          typeof<Arca.RecordKey> ]
+
+    let githubTypes =
+        [ typeof<Arca.RepositoryRef>; typeof<Arca.BranchName>; typeof<Arca.ObjectAddress>; typeof<Arca.DataLocation> ]
+
+    let githubWords = [ "Commit"; "Branch"; "Sha"; "Repository"; "Blob"; "Tree" ]
+
+    for consumerType in consumerTypes do
+        let members =
+            Array.append
+                (consumerType.GetProperties(BindingFlags.Public ||| BindingFlags.Instance))
+                (consumerType.GetNestedTypes() |> Array.collect _.GetProperties(BindingFlags.Public ||| BindingFlags.Instance))
+
+        for property in members do
+            Assert.False(List.contains property.PropertyType githubTypes, $"{consumerType.Name}.{property.Name} is a GitHub type")
+
+            Assert.False(
+                githubWords |> List.exists (fun word -> property.Name.Contains(word, StringComparison.Ordinal)),
+                $"{consumerType.Name}.{property.Name} names a GitHub concept"
+            )
