@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-08T20:36:10.000Z",
+  "updatedAt": "2026-10-08T20:53:47.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -938,13 +938,51 @@
     {
       "id": "WI-0020",
       "type": "task",
-      "state": "active",
-      "semanticState": "active",
-      "evidence": [],
-      "updatedAt": "2026-10-08T20:36:10.000Z",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "src/Arca.Limen/IndexedDbQueue.fs"
+        },
+        {
+          "type": "tests",
+          "path": "tests/Arca.Tests/LimenMigrationTests.fs"
+        },
+        {
+          "type": "browser-tests",
+          "path": "verification/browser/tests/limen-migration.spec.mjs"
+        },
+        {
+          "type": "documentation",
+          "path": "docs/consuming-arca.md"
+        }
+      ],
+      "updatedAt": "2026-10-08T20:53:47.000Z",
       "telemetryExecutionIds": [
         "EXE-20261008T203610972Z-c76b2a5a"
-      ]
+      ],
+      "latestCheckpoint": {
+        "id": "37b21e027c89ee18248e139e",
+        "recordedAt": "2026-10-08T20:53:46.000Z",
+        "executionId": "EXE-20261008T203610972Z-c76b2a5a",
+        "repository": "arca",
+        "branch": "limen/wi-0020-migration",
+        "commit": "d31a6b79e55bc5b8d7556c16e6754dc9d88f2ace",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "limen/wi-0020-migration",
+        "remoteCommit": "d31a6b79e55bc5b8d7556c16e6754dc9d88f2ace",
+        "summary": "One-time localStorage-to-IndexedDB move (copy, verify, retire) in the IndexedDB store's load; cut-point tests and property over FakeStore; Chromium and WebKit tests; consumer migration steps",
+        "nextAction": "Merge on green; then WI-0022 IndexedDB read cache",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-10-08T20:53:47.000Z"
     }
   ]
 }
