@@ -754,20 +754,20 @@
         "EXE-20261008T162259351Z-a6d80c30"
       ],
       "latestCheckpoint": {
-        "id": "1b4bb79c2cf9d67825dbe04d",
-        "recordedAt": "2026-10-08T16:23:11.000Z",
+        "id": "4ab66544c2fcda3441efab33",
+        "recordedAt": "2026-10-08T16:51:13.000Z",
         "executionId": "EXE-20261008T162259351Z-a6d80c30",
         "repository": "arca",
-        "branch": "release/0.2.1",
-        "commit": "81522ff56d3eed62813f6aff138ca31b61752153",
+        "branch": "docs/release-0.2.1-status",
+        "commit": "95cf72dc2b5461b406184a5b1ee630500e9029f2",
         "remote": {
           "name": "origin",
           "url": "https://github.com/kemiller2002/arca"
         },
-        "remoteBranch": "release/0.2.1",
-        "remoteCommit": "81522ff56d3eed62813f6aff138ca31b61752153",
-        "summary": "Version 0.2.1, changelog and consumer docs on release/0.2.1",
-        "nextAction": "Merge the release PR (release.yml publishes v0.2.1 on push to main), then record it in echelon-registry",
+        "remoteBranch": "docs/release-0.2.1-status",
+        "remoteCommit": "95cf72dc2b5461b406184a5b1ee630500e9029f2",
+        "summary": "v0.2.1 released and verified; registry echelon-current 1.9.0 merged; Chrona on 0.2.1",
+        "nextAction": "Merge the status PR",
         "verification": {
           "status": "verified",
           "mechanism": "git-remote-observation"
