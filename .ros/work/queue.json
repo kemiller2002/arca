@@ -621,10 +621,10 @@
         "registry"
       ],
       "priority": "high",
-      "status": "ready",
+      "status": "complete",
       "attachments": [],
       "createdAt": "2026-10-08T15:52:44.159Z",
-      "updatedAt": "2026-10-08T16:22:58.000Z",
+      "updatedAt": "2026-10-08T16:51:26.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",
