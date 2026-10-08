@@ -34,6 +34,28 @@ type LocationError =
     /// The same application is configured twice in one deployment.
     | DuplicateApplication of application: string
 
+/// Human-readable text for location errors (no reflection, so it works in a
+/// trimmed WebAssembly host compiled with --reflectionfree).
+[<RequireQualifiedAccess>]
+module LocationError =
+
+    /// The error as one sentence.
+    let describe =
+        function
+        | LocationError.EmptySegment path -> $"'{path}' has an empty path segment"
+        | LocationError.DotSegment segment -> $"'{segment}' is a dot or hidden segment"
+        | LocationError.InvalidCharacter(segment, character) -> $"'{segment}' contains the character '{character}'"
+        | LocationError.SegmentTooLong(segment, limit) -> $"'{segment}' is longer than {limit} characters"
+        | LocationError.PathTooDeep(path, limit) -> $"'{path}' is deeper than {limit} segments"
+        | LocationError.InvalidOwner owner -> $"'{owner}' is not a GitHub owner name"
+        | LocationError.InvalidRepository name -> $"'{name}' is not a GitHub repository name"
+        | LocationError.InvalidBranch branch -> $"'{branch}' is not a valid branch name"
+        | LocationError.InvalidIdentifier(kind, value) -> $"'{value}' is not a valid {kind} identifier"
+        | LocationError.EscapesNamespace(path, root) -> $"'{path}' is outside the namespace '{root}'"
+        | LocationError.NamespaceRootWrite root -> $"a write to the namespace root '{root}' itself"
+        | LocationError.NamespaceOverlap(first, second) -> $"namespaces '{first}' and '{second}' overlap"
+        | LocationError.DuplicateApplication application -> $"application '{application}' is configured twice"
+
 /// One validated path segment: `A-Z a-z 0-9 . _ -`, 1 to 128 characters,
 /// starting with a letter or digit. It cannot be `.`, `..`, or a hidden name.
 type Segment = private Segment of string
@@ -344,7 +366,7 @@ module Namespace =
     let private segment text =
         match Segment.create text with
         | Ok segment -> segment
-        | Error error -> invalidOp $"internal: identifier is not a valid segment: {error}"
+        | Error error -> invalidOp ("internal: identifier is not a valid segment: " + LocationError.describe error)
 
     /// The application's namespace: `<base path>/<application>`.
     let ofApplication (binding: ApplicationBinding) =

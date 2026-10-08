@@ -14,6 +14,10 @@
     <Description>Arca's pure core: Echelon's GitHub-backed data layer as data and total functions (record format, data location, concurrency, merge, commit format, offline queue). No I/O.</Description>
     <PackageTags>echelon;arca;storage;github;fsharp;wasm</PackageTags>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- No reflection-based printing (%A, generated ToString), as Limen's own
+         engines compile: a trimmed browser WebAssembly host keeps no F#
+         printf (ARCA-ARCH-002). -->
+    <OtherFlags>$(OtherFlags) --reflectionfree</OtherFlags>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Capabilities.fs" />
@@ -27,5 +31,7 @@
     <Compile Include="Commit.fs" />
     <Compile Include="Credentials.fs" />
     <Compile Include="Storage.fs" />
+    <Compile Include="InMemory.fs" />
+    <Compile Include="Conformance.fs" />
   </ItemGroup>
 </Project>

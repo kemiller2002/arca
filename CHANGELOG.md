@@ -6,6 +6,31 @@ Notable changes to Arca's packages, `EchelonFoundry.Arca.Core` and
 [semantic versioning](https://semver.org/spec/v2.0.0.html). In `0.x`, a minor
 release may change the API; pin an exact version.
 
+## [Unreleased]
+
+### Added
+
+- **Provider conformance suite** (`Conformance`, ARCA-TEST-001). Eighteen
+  cases run through the provider-neutral interface against a fresh subject
+  each. A harness arranges faults, and one that cannot is reported
+  `Unsupported`, never `Passed`.
+- **In-memory provider** (`InMemory`, `InMemoryStore`). A pure, deterministic
+  implementation of the storage contract, with faults you can arrange
+  (OutcomeUnknown landed or lost, rate limit, revoked credential, read-only,
+  listing limit, size limit), for consumers' tests.
+- **`Operation.requireChangeToken`.** An operation may also be conditioned on
+  the provider's whole state; if the state has moved, the result is a typed
+  `StaleChangeToken`.
+- **`GitHubConfig.MaxObjectBytes` and `ListingLimit`.** The adapter now
+  refuses an oversized write up front with `ObjectTooLarge`.
+
+### Changed
+
+- **Reflection-free compilation.** Both packages compile with
+  `--reflectionfree`, as Limen's engines do, so a trimmed browser WASM host
+  keeps no F# printf. `LocationError.describe` and `JsonError.describe` give
+  readable messages.
+
 ## [0.1.0] — 2026-10-08
 
 The first release: the slices Chrona's storage needs (backlog slices 1–6).

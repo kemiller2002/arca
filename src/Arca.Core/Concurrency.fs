@@ -105,7 +105,8 @@ type Operation =
     private
         { ns: Namespace
           changes: Change list
-          metadata: OperationMetadata }
+          metadata: OperationMetadata
+          expectedToken: ChangeToken option }
 
     /// The namespace every change is in.
     member this.Namespace = this.ns
@@ -113,6 +114,10 @@ type Operation =
     member this.Changes = this.changes
     /// What the application says about the operation.
     member this.Metadata = this.metadata
+    /// When set, the operation applies only if the provider's whole state is
+    /// still exactly this change token; otherwise StaleChangeToken, even when
+    /// the touched records are unchanged (ARCA-CON-001).
+    member this.ExpectedChangeToken = this.expectedToken
 
 /// Why an operation was refused before anything was sent.
 [<RequireQualifiedAccess>]
@@ -188,7 +193,13 @@ module Operation =
         |> Result.map (fun () ->
             { ns = ns
               changes = changes
-              metadata = metadata })
+              metadata = metadata
+              expectedToken = None })
+
+    /// Conditions the operation on the provider's whole state as well: it
+    /// applies only while the change token is still `token`.
+    let requireChangeToken (token: ChangeToken) (operation: Operation) =
+        { operation with expectedToken = Some token }
 
 /// A write found the provider's state different from what it expected
 /// (ARCA-CON-002). It names the object and its actual revision; Arca never
