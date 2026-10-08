@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-08T08:58:48.000Z",
+  "updatedAt": "2026-10-08T08:59:06.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -188,13 +188,43 @@
     {
       "id": "WI-0004",
       "type": "task",
-      "state": "active",
-      "semanticState": "active",
-      "evidence": [],
-      "updatedAt": "2026-10-08T08:58:48.000Z",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "src"
+        },
+        {
+          "type": "tests",
+          "path": "tests"
+        }
+      ],
+      "updatedAt": "2026-10-08T08:59:06.000Z",
       "telemetryExecutionIds": [
         "EXE-20261008T085849882Z-09363844"
-      ]
+      ],
+      "latestCheckpoint": {
+        "id": "6d21bfba14e0429184c02e9a",
+        "recordedAt": "2026-10-08T08:59:05.000Z",
+        "executionId": "EXE-20261008T085849882Z-09363844",
+        "repository": "arca",
+        "branch": "slice/02-data-location",
+        "commit": "319b2b991cb670536e0361eea432478343b755eb",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "slice/02-data-location",
+        "remoteCommit": "319b2b991cb670536e0361eea432478343b755eb",
+        "summary": "Slice 2: data location, namespaces, path safety, visibility and relocation policy",
+        "nextAction": "PR, CI green, merge; then slice 3 (WI-0005)",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-10-08T08:59:06.000Z"
     }
   ]
 }
