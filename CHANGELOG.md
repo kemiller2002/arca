@@ -44,6 +44,19 @@ release may change the API; pin an exact version.
     vectors (pinned by digest), and in real Chromium and WebKit tabs.
 - The browser verification now runs every page in WebKit as well as
   Chromium (OQ-LIMEN-IDB-006), on Limen 0.8.0.
+- **The one-time move of the localStorage queue into IndexedDB**
+  (WI-0020; Limen LCP-066, LCP-067; DF-ARCA-2026-0008). The IndexedDB store
+  runs the move's next step on every `Load`:
+  - **Copy:** a `putIf` of the decoded queue, with the SHA-256 marker of
+    the localStorage text, fenced by the epoch.
+  - **Verify:** it reads the queue back and compares it.
+  - **Retire:** it removes `arca.queue.<app>[.<dataset>]`.
+
+  A matching marker means only the removal remains. If IndexedDB holds
+  entries, the move waits (`LegacyQueuePending`), and nothing is merged or
+  dropped. A corrupt or foreign localStorage queue is left in place
+  (`LegacyQueueUnreadable`). Tested at every cut point over the fake, with
+  a property over arbitrary interruptions, and in Chromium and WebKit tabs.
 
 - **Queue-store conformance suite** (WI-0019; Limen LCP-046, LCP-060,
   LCP-075). `QueueStoreConformance` in `Arca.Core` is one executable
