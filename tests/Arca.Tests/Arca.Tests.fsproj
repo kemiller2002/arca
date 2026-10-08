@@ -32,6 +32,7 @@
     <Compile Include="LimenQueueTests.fs" />
     <Compile Include="LimenVectorsTests.fs" />
     <Compile Include="LimenMigrationTests.fs" />
+    <Compile Include="LimenReadCacheTests.fs" />
     <Compile Include="ReadCacheTests.fs" />
   </ItemGroup>
   <ItemGroup>

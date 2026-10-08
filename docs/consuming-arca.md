@@ -306,6 +306,49 @@ In-flight entries are never discarded.
 7. Keep showing the durability mode. If IndexedDB is unusable in a browser,
    the composer stays on `LocalStorage` with the same key, so nothing moves.
 
+### 5b. The offline-start read cache (`EchelonFoundry.Arca.Limen`, from 0.3.0)
+
+The read cache keeps the partitions an application has read and validated
+from the provider, so the app opens and shows data without GitHub. Example
+partitions are activities by month, a derived index, reference data and
+the roster. It never holds unsent changes, and it is never the basis of a
+write. See Limen LCP-082..LCP-087 and DF-LIMEN-2026-0005 §4.
+
+```fsharp
+let! cache = IndexedDbReadCache.openCache host IndexedDbReadCache.DefaultBudget   // Result
+let! queue = LimenQueue.own host { QueueOptions.standard with FreeSpace = Some cache.FreeSpace } ns
+
+// After a provider read that the application validated (ARCA-INT-001):
+let key = ReadCache.key account ns "activities/2026-10"                             // Result
+let entry = ReadCache.entry key schemaVersion now (Fresh.read token storedObjects)
+do! cache.Keep entry                                                                // never fails the read
+
+// Opening offline: show it "as of" its token and read time.
+match! cache.Show key with
+| Ok(Some cached) -> // Cached.value, Cached.asOf (CachedToken.text), Cached.readAt
+| Ok None -> ()      // read from the provider
+| Error _ -> ()      // a corrupt entry was dropped; read from the provider
+
+// Online: revalidate each shown partition against the provider's token.
+match ReadCache.revalidate (ProviderObservation.Current token) cached with
+| Revalidation.Confirmed fresh -> // current; Fresh.token fresh may condition a write
+| Revalidation.Refresh stale -> // shown stale; re-read, then cache.Keep the new entry
+| Revalidation.Remove key -> // cache.Store.Remove key
+| Revalidation.Unverified cached -> () // provider unreachable: still "as of"
+```
+
+- A `Cached` value's token is a `CachedToken`, not a `ChangeToken`, so it
+  does not compile as a write condition. Write decisions use `Fresh` reads,
+  or are queued and reconciled.
+- **Sign-out.** Apply `SignOut.plan policy unsent choice`. When
+  `ClearCache` is set, call `cache.Store.Clear(CacheScope.Account account)`.
+  It is one `deleteRange`. Under `Ask`, when the person keeps their unsent
+  changes, the cache is kept too (OQ-LIMEN-IDB-002).
+- **Clear this device.** `LimenDevice.clear host` deletes both databases. It
+  answers `Blocked` while another tab holds a connection.
+- **Diagnostics.** `cache.Diagnostics()` reports the size against the
+  budget, the evictions and the last failure.
+
 ## 6. Indexes, export and migration
 
 - **Derived indexes.**

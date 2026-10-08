@@ -43,7 +43,10 @@ type Page =
       Last: string
       Tag: string
       Coordination: bool
-      Store: bool }
+      Store: bool
+      /// The read-cache conformance verdict, once run.
+      Cache: string
+      Runs: int }
 
 let private ok result =
     match result with
@@ -66,7 +69,9 @@ let initial (tag: string) =
       Last = ""
       Tag = tag
       Coordination = false
-      Store = false }
+      Store = false
+      Cache = ""
+      Runs = 0 }
 
 let private operation (key: string) =
     Operation.create
@@ -135,6 +140,57 @@ let onEvent (host: LimenHost) (page: Page) (name: string) =
             match OfflineQueue.enqueue DateTimeOffset.UnixEpoch (operation key) page.Queue with
             | Ok(queue, _) -> return { page with Queue = queue; Last = $"enqueued {key}" }
             | Error _ -> return { page with Last = "enqueue refused" }
+        | "cache-conformance", _ ->
+            // The read-cache conformance suite against IndexedDB in this
+            // browser (WI-0022, LCP-082): each case on a fresh namespace's
+            // entries, reopened as a new connection; a fault this page cannot
+            // produce is reported unsupported, never passed.
+            let run = page.Runs + 1
+
+            let fresh () =
+                async {
+                    let ns =
+                        Namespace.ofApplication
+                            { Application = AppId.create $"cache{run}x{Guid.NewGuid():N}".[..30] |> ok
+                              Environment = { Kind = EnvironmentKind.Test; Name = "browser-verification" }
+                              Location = DataLocation.create "verify-owner" "verify-data" "main" "apps" |> ok }
+                        |> ok
+
+                    match! IndexedDbReadCache.openCache host IndexedDbReadCache.DefaultBudget with
+                    | Error failure -> return invalidOp failure.Code
+                    | Ok cache ->
+                        return
+                            { Namespace = ns
+                              Store = cache.Store
+                              Reopen =
+                                fun () ->
+                                    async {
+                                        match! IndexedDbReadCache.openCache host IndexedDbReadCache.DefaultBudget with
+                                        | Ok reopened -> return reopened.Store
+                                        | Error failure -> return invalidOp failure.Code
+                                    }
+                              Arrange = fun _ -> async { return false } }
+                }
+
+            let! results = ReadCacheConformance.run fresh
+            let count predicate = results |> List.filter (fun result -> predicate result.Outcome) |> List.length
+            let passed = count (fun outcome -> outcome = ConformanceOutcome.Passed)
+            let failed = count (function ConformanceOutcome.Failed _ -> true | _ -> false)
+            let unsupported = count (function ConformanceOutcome.Unsupported _ -> true | _ -> false)
+
+            let failures =
+                results
+                |> List.choose (fun result ->
+                    match result.Outcome with
+                    | ConformanceOutcome.Failed reason -> Some $"{result.Case}: {reason}"
+                    | _ -> None)
+                |> String.concat "; "
+
+            return
+                { page with
+                    Runs = run
+                    Cache = $"passed {passed}, failed {failed}, unsupported {unsupported}"
+                    Last = if failures = "" then "cache conformance run" else failures }
         | "save", Some queue ->
             match! queue.Store.Save page.Queue with
             | Ok() -> return { page with Last = "saved" }
@@ -209,6 +265,7 @@ let private view (page: Page) =
        | _ -> "")
       "entries", string page.Queue.Entries.Length
       "keys", (page.Queue.Entries |> List.map _.Operation.IdempotencyKey |> String.concat ",")
+      "cache", page.Cache
       "last", page.Last ]
 
 let reply (page: Page) (effects: (string * Effect) list) (handshake: (Utf8JsonWriter -> unit) option) =

@@ -120,3 +120,15 @@ test("a tab that takes over fences the old owner: its late save writes nothing",
   expect([...a.errors, ...b.errors]).toEqual([]);
   await context.close();
 });
+
+test("the IndexedDB read cache passes the read-cache conformance suite in this browser", async ({ browser }) => {
+  const context = await browser.newContext();
+  const tab = await openTab(context);
+  await press(tab.page, "Cache conformance", "cache conformance run");
+  // Every case runs against real IndexedDB; the two faults a page cannot
+  // produce (unavailable storage, an entry planted from outside) are
+  // reported unsupported, never passed.
+  await expect(tab.page.locator("#cache")).toHaveText("passed 10, failed 0, unsupported 3");
+  expect(tab.errors).toEqual([]);
+  await context.close();
+});

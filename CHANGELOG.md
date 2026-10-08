@@ -44,6 +44,23 @@ release may change the API; pin an exact version.
     vectors (pinned by digest), and in real Chromium and WebKit tabs.
 - The browser verification now runs every page in WebKit as well as
   Chromium (OQ-LIMEN-IDB-006), on Limen 0.8.0.
+- **The IndexedDB read cache** (WI-0022; Limen LCP-082..LCP-087).
+  `IndexedDbReadCache.openCache host budget` implements the read-cache port
+  over `limen.store`:
+  - Entries are keyed `[account, namespace, partition]`.
+  - Sign-out clears an account with one `deleteRange` over the `[account]`
+    prefix.
+  - Each namespace has a budget. A save evicts the least recently used
+    partitions in the same transaction. `Show` marks a partition used.
+  - `Keep` never fails the read that produced an entry; a failure goes to
+    `CacheDiagnostics`.
+  - `QueueOptions.FreeSpace = Some cache.FreeSpace`: a queue save that hits
+    the browser's quota evicts the cache, then tries once more.
+  - `LimenDevice.clear` deletes the queue and cache databases, typed
+    `Blocked`.
+  - Any tab may write the cache.
+  - Passes the read-cache conformance suite over the fake, and in real
+    Chromium and WebKit.
 - **The one-time move of the localStorage queue into IndexedDB**
   (WI-0020; Limen LCP-066, LCP-067; DF-ARCA-2026-0008). The IndexedDB store
   runs the move's next step on every `Load`:
