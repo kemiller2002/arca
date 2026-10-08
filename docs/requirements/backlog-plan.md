@@ -16,5 +16,12 @@ Captured 2026-10-08 (WI-0002) from [`ARCA-STORAGE-REQUIREMENTS.md`](ARCA-STORAGE
 | 10 | WI-0012 | Arca slice 10: rebuildable derived indexes, explicit migration workflow and canonical export (ARCA-MIG-001..003, ARCA-LOC-009) | WI-0010 |
 | 11 | WI-0013 | Arca first release 0.1.0: nuget.org Trusted Publishing, NUGET_USER variable and echelon-registry system entry | WI-0009 |
 | 12 | WI-0014 | (Deferred, possible future) per-application at-rest encryption for co-located data | - |
+| 13 | WI-0019 | Queue-store port conformance suite (localStorage, in-memory; later IndexedDB) - Limen LCP-046, 060, 075 | - |
+| 14 | WI-0021 | Read-cache port in Arca.Core: Cached/Fresh, token-stamped partitions, in-memory implementation and conformance - Limen LCP-082..086 | - |
+| 15 | WI-0016 | `EchelonFoundry.Arca.Limen`: IndexedDB queue store, fenced single owner, durability-mode composer, diagnostics - Limen LCP-046, 059, 060, 062, 065 | Limen WI-0166 (Limen 0.8.0 with the F# store packages), WI-0019 |
+| 16 | WI-0020 | One-time localStorage-to-IndexedDB queue migration - Limen LCP-066, 067 | WI-0016 |
+| 17 | WI-0022 | IndexedDB read cache in `EchelonFoundry.Arca.Limen` - Limen LCP-082..087 | WI-0016, WI-0021 |
+
+Rows 13-17 were added on 2026-10-08 (WI-0023) from kemiller2002/limen `docs/requirements/LIMEN-INDEXEDDB-REQUIREMENTS.md` and DF-LIMEN-2026-0005.
 
 The backlog itself lives in `.ros/work/queue.json` and is managed only through the Praxis CLI. This table is a readable snapshot from when the slices were captured.

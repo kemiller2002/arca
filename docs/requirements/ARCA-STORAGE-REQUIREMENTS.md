@@ -2,7 +2,7 @@
 id: ARCA-REQ-STORAGE
 title: Arca shared storage requirements
 status: draft
-version: 0.2.0
+version: 0.3.0
 created: 2026-10-08
 updated: 2026-10-08
 owners:
@@ -34,6 +34,16 @@ provenance:
         model: unknown
         runtime: claude-code
       reason: "Record decisions D-008..D-011 and resolve OQ-ARCA-002..004"
+    EXE-20261008T151448783Z-b01c05a2:
+      operations: [modified]
+      at: 2026-10-08T15:15:06.859Z
+      actor:
+        kind: agent
+        id: anthropic/claude-code
+        provider: anthropic
+        model: unknown
+        runtime: claude-code
+      reason: "Cross-reference Limen LCP-043..087 and DF-LIMEN-2026-0005 from ARCA-OFF-002 and OQ-ARCA-003; record the two-tab snapshot hazard"
 ---
 
 # Arca shared storage requirements
@@ -316,6 +326,24 @@ Storage effect; a Limen IndexedDB adapter replaces it later without touching
 the core (ARCA-D-010). *Sources: CHX-101, CHX-102,
 CHX-230.*
 
+> **IndexedDB follow-up (2026-10-08).** The Limen side is specified in
+> kemiller2002/limen `docs/requirements/LIMEN-INDEXEDDB-REQUIREMENTS.md`
+> (LCP-043..087), and the adapter's placement in DF-LIMEN-2026-0005. The
+> adapter is a new package, `EchelonFoundry.Arca.Limen`, and the
+> `QueueStore` port does not change. The work is captured as follows:
+>
+> - WI-0016: the adapter (LCP-046, 059, 060, 062, 065);
+> - WI-0019: queue-store conformance;
+> - WI-0020: the one-time localStorage migration (LCP-066, 067);
+> - WI-0021 and WI-0022: the offline-start read cache Chrona asked for
+>   (LCP-082..087).
+>
+> **Known hazard of the interim adapter.** The port saves the whole queue as
+> one snapshot. Two tabs of one application each save their own snapshot, and
+> the last save wins, so an entry held only by the overwritten tab can be lost
+> from storage. The IndexedDB adapter removes this with one fenced queue
+> owner per namespace (LCP-059).
+
 **ARCA-OFF-003** Unsynchronized data MUST NEVER be presented as globally
 synchronized. Sync state MUST be observable. *Sources: CHX-230, SIG ADM-070.*
 
@@ -445,7 +473,7 @@ CHX-420, SUM3-022, SIG AER-021..031.*
 |---|---|---|---|
 | OQ-ARCA-001 | *Resolved 2026-10-08.* How should co-located application data be protected, given that GitHub permissions are per repository and not per folder? | (a) separate repositories, (b) per-application encryption, (c) both | **Decided: (a).** Encryption is deferred to a possible future work item (ARCA-D-007, ARCA-LOC-010). |
 | OQ-ARCA-002 | *Resolved 2026-10-08.* One package or two? | One / two | **Decided: two** (ARCA-D-008, DF-ARCA-2026-0003). |
-| OQ-ARCA-003 | *Resolved 2026-10-08.* Durable browser storage for the offline queue (ARCA-OFF-002). Correction: Limen 0.7.x *does* ship an IndexedDB store pack (`limen.store`), but its F# binding is not published as a consumable package. | IndexedDB through Limen / localStorage at first | **Decided: localStorage behind a queue-store port now**; a Limen IndexedDB adapter is a follow-up work item (ARCA-D-010, DF-ARCA-2026-0005). |
+| OQ-ARCA-003 | *Resolved 2026-10-08.* Durable browser storage for the offline queue (ARCA-OFF-002). Correction: Limen 0.7.x *does* ship an IndexedDB store pack (`limen.store`), but its F# binding is not published as a consumable package. | IndexedDB through Limen / localStorage at first | **Decided: localStorage behind a queue-store port now**; a Limen IndexedDB adapter is a follow-up work item (ARCA-D-010, DF-ARCA-2026-0005). Limen's requirements are LCP-043..087 (limen `docs/requirements/LIMEN-INDEXEDDB-REQUIREMENTS.md`). The adapter lives in `EchelonFoundry.Arca.Limen` (DF-LIMEN-2026-0005), and the work is WI-0016 and WI-0019..WI-0022. |
 | OQ-ARCA-004 | *Resolved 2026-10-08.* Reuse Aegis's GitHub event store, or keep separate? | Reuse / align later / keep separate | **Decided: keep separate** (different concerns); reuse only the failure model (ARCA-D-009, DF-ARCA-2026-0004). |
 | OQ-ARCA-005 | Chrona's legacy monolithic per-user ledger (`kemiller2002/time-tracking-application`, data in `time-tracking-data`) may need read compatibility (CHX-220). Is that Arca's job or Chrona's? | Arca / Chrona | Chrona's. The user expects Chrona to be reconstructed rather than migrated; any data import is a Chrona application-level migration on top of ARCA-MIG-002. |
 
