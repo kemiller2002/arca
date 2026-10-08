@@ -27,4 +27,4 @@
 | WI-0022 | IndexedDB read cache in EchelonFoundry.Arca.Limen: compound-keyed partitions, online revalidation, policy-driven clearing, budget and least-recently-used eviction (Limen LCP-082..LCP-087) | captured | arca, offline, limen, indexeddb | medium |
 | WI-0023 | Cross-reference Limen's IndexedDB requirements (LCP-043..087, DF-LIMEN-2026-0005) from Arca's requirements and backlog plan; refine WI-0016 and capture WI-0019..WI-0022 | complete | arca, limen, indexeddb | medium |
 | WI-0024 | Fix multi-tab loss in the interim localStorage offline queue: two tabs saving one whole snapshot lose entries (last save wins); single owner per namespace behind the unchanged QueueStore port (Limen LCP-059, LCP-060, DF-LIMEN-2026-0005) | complete | arca, offline, bug, data-loss | high |
-| WI-0025 | Release Arca 0.2.1 (multi-tab localStorage queue fix) as attested GitHub release assets and register it in echelon-registry | captured | arca, release, registry | high |
+| WI-0025 | Release Arca 0.2.1 (multi-tab localStorage queue fix) as attested GitHub release assets and register it in echelon-registry | ready | arca, release, registry | high |

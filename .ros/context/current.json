@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-08T16:16:22.000Z",
+  "updatedAt": "2026-10-08T16:22:58.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -742,6 +742,37 @@
         }
       },
       "completedAt": "2026-10-08T16:16:22.000Z"
+    },
+    {
+      "id": "WI-0025",
+      "type": "task",
+      "state": "active",
+      "semanticState": "active",
+      "evidence": [],
+      "updatedAt": "2026-10-08T16:22:58.000Z",
+      "telemetryExecutionIds": [
+        "EXE-20261008T162259351Z-a6d80c30"
+      ],
+      "latestCheckpoint": {
+        "id": "1b4bb79c2cf9d67825dbe04d",
+        "recordedAt": "2026-10-08T16:23:11.000Z",
+        "executionId": "EXE-20261008T162259351Z-a6d80c30",
+        "repository": "arca",
+        "branch": "release/0.2.1",
+        "commit": "81522ff56d3eed62813f6aff138ca31b61752153",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "release/0.2.1",
+        "remoteCommit": "81522ff56d3eed62813f6aff138ca31b61752153",
+        "summary": "Version 0.2.1, changelog and consumer docs on release/0.2.1",
+        "nextAction": "Merge the release PR (release.yml publishes v0.2.1 on push to main), then record it in echelon-registry",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      }
     }
   ]
 }

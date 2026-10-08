@@ -8,6 +8,11 @@ release may change the API; pin an exact version.
 
 ## [Unreleased]
 
+## [0.2.1] — 2026-10-08
+
+A patch release for the offline queue across browser tabs. The `QueueStore`
+port, the storage layout and every 0.2.0 API are unchanged; `own` is added.
+
 ### Fixed
 
 - **Two tabs no longer lose offline-queue entries** (WI-0024,

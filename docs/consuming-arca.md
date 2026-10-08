@@ -1,6 +1,6 @@
 # Consuming Arca
 
-How an application (Chrona first) takes Arca 0.2.0 and wires it into a Limen
+How an application (Chrona first) takes Arca 0.2.1 and wires it into a Limen
 engine. Distribution follows the short-term plan
 ([`distribution-short-term-plan.md`](distribution-short-term-plan.md)): the
 packages are attested GitHub release assets, which Conditor installs into the
@@ -22,7 +22,7 @@ binding in echelon-current **1.4.0**. In the consuming repository:
 1. Declare Arca in `conditor.json`, at exactly the version the set selects:
 
    ```json
-   { "id": "arca", "version": "0.2.0", "required": true }
+   { "id": "arca", "version": "0.2.1", "required": true }
    ```
 
 2. Plan, review, and apply the exact plan:
@@ -34,7 +34,7 @@ binding in echelon-current **1.4.0**. In the consuming repository:
    conditor upgrade --current --target . --resolved-set ... --resolved-set-sha256 ... --authorize <plan digest>
    ```
 
-   The plan lists `arca: opt in at 0.2.0` under *NuGet release-asset feeds*.
+   The plan lists `arca: opt in at 0.2.1` under *NuGet release-asset feeds*.
    Applying it:
    - downloads both packages and proves them against the Registry digests;
    - writes `vendor/nuget/` with `arca.lock`;
@@ -47,8 +47,8 @@ binding in echelon-current **1.4.0**. In the consuming repository:
 3. Pin the packages (central package management shown):
 
    ```xml
-   <PackageVersion Include="EchelonFoundry.Arca.Core" Version="0.2.0" />
-   <PackageVersion Include="EchelonFoundry.Arca.GitHub" Version="0.2.0" />
+   <PackageVersion Include="EchelonFoundry.Arca.Core" Version="0.2.1" />
+   <PackageVersion Include="EchelonFoundry.Arca.GitHub" Version="0.2.1" />
    ```
 
    Reference `EchelonFoundry.Arca.Core` from the pure domain, and
@@ -68,7 +68,7 @@ Other platforms use their own channel file. The SHA-256 values at registry
 To check provenance yourself:
 
 ```bash
-gh attestation verify vendor/nuget/EchelonFoundry.Arca.Core.0.2.0.nupkg --repo kemiller2002/arca
+gh attestation verify vendor/nuget/EchelonFoundry.Arca.Core.0.2.1.nupkg --repo kemiller2002/arca
 ```
 
 ## 2. Configure storage
