@@ -219,10 +219,10 @@
         "testing"
       ],
       "priority": "high",
-      "status": "ready",
+      "status": "complete",
       "attachments": [],
       "createdAt": "2026-10-08T08:03:44.742Z",
-      "updatedAt": "2026-10-08T09:51:57.000Z",
+      "updatedAt": "2026-10-08T10:00:18.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",

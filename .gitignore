@@ -42,3 +42,8 @@ dist/
 TestResults/
 *.nupkg
 # conditor:build-outputs:end
+
+# Browser verification (verification/browser): the published WASM bundle and Playwright output
+verification/browser/build/
+verification/browser/test-results/
+verification/browser/playwright-report/

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- A Limen engine that runs Arca's GitHub adapter in the browser
+       (ARCA-TEST-003). Application authority only: no browser, network or
+       interop code. Compiled reflection-free, as Limen's own engines are. -->
+  <PropertyGroup>
+    <OtherFlags>$(OtherFlags) --reflectionfree</OtherFlags>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Engine.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../src/Arca.Core/Arca.Core.fsproj" />
+    <ProjectReference Include="../../../src/Arca.GitHub/Arca.GitHub.fsproj" />
+  </ItemGroup>
+</Project>
