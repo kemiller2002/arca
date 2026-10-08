@@ -35,6 +35,25 @@ type QueueRecord =
       /// one was (the migration marker, LCP-066).
       Migrated: string option }
 
+/// The next step of the one-time move of a namespace's localStorage queue
+/// into IndexedDB (WI-0020, LCP-066).
+[<RequireQualifiedAccess>]
+type LegacyStep =
+    /// No localStorage queue: nothing to move.
+    | NoLegacy
+    /// localStorage cannot be read now; try at the next load.
+    | LegacyUnavailable
+    /// A corrupt or foreign localStorage queue: left in place, never deleted.
+    | Unreadable
+    /// The copy already committed (the marker matches): remove the source only.
+    | RetireOnly
+    /// The IndexedDB queue holds entries: wait until it holds none. Two queues
+    /// are never merged, and neither is dropped.
+    | Pending of entries: int
+    /// The IndexedDB queue is empty: copy this queue with this marker, verify,
+    /// then remove the source.
+    | Adopt of queue: OfflineQueue * marker: string
+
 /// What opening the IndexedDB queue produced, with the lock already held.
 [<RequireQualifiedAccess; NoEquality; NoComparison>]
 type IndexedDbOpening =
@@ -201,6 +220,32 @@ module IndexedDbQueue =
         }
 
     // -----------------------------------------------------------------------
+    // The one-time move from the localStorage queue (WI-0020; LCP-066,
+    // LCP-067; DF-ARCA-2026-0008: copy, verify, retire the source).
+    // -----------------------------------------------------------------------
+
+    /// The migration marker of a localStorage text: its SHA-256.
+    let marker (text: string) = Export.hash text
+
+    /// What the move does next, decided from the localStorage answer, the
+    /// IndexedDB record and the queue it holds.
+    let legacyStep (ns: Namespace) (legacy: LocalStorageOutcome) (record: QueueRecord) (current: OfflineQueue option) =
+        match legacy with
+        | LocalStorageOutcome.Failure _ -> LegacyStep.LegacyUnavailable
+        | LocalStorageOutcome.Success None -> LegacyStep.NoLegacy
+        | LocalStorageOutcome.Success(Some text) when record.Migrated = Some(marker text) ->
+            // The copy committed and was verified; only the removal remains.
+            LegacyStep.RetireOnly
+        | LocalStorageOutcome.Success(Some text) as outcome ->
+            match LocalStorageQueue.loaded ns outcome with
+            | Error _ -> LegacyStep.Unreadable
+            | Ok None -> LegacyStep.NoLegacy
+            | Ok(Some legacyQueue) ->
+                match current with
+                | Some queue when not queue.Entries.IsEmpty -> LegacyStep.Pending legacyQueue.Entries.Length
+                | _ -> LegacyStep.Adopt(legacyQueue, marker text)
+
+    // -----------------------------------------------------------------------
     // The owned store: the one stateful edge, an immutable state in one cell.
     // -----------------------------------------------------------------------
 
@@ -270,6 +315,63 @@ module IndexedDbQueue =
                         | Error _ -> ()
             }
 
+        let notify (notice: QueueNotice) = diagnose (QueueDiagnostics.notice notice)
+
+        /// Runs the move's next step during a load, with the record and the
+        /// queue just read; answers the queue the application should hold.
+        let migrate (record: QueueRecord) (current: OfflineQueue option) =
+            async {
+                let! legacy = host.LocalStorage(LocalStorageQueue.loadRequest ns)
+
+                match legacyStep ns legacy record current with
+                | LegacyStep.NoLegacy
+                | LegacyStep.LegacyUnavailable -> return Ok current
+                | LegacyStep.Unreadable ->
+                    notify QueueNotice.LegacyQueueUnreadable
+                    return Ok current
+                | LegacyStep.Pending entries ->
+                    notify (QueueNotice.LegacyQueuePending entries)
+                    return Ok current
+                | LegacyStep.RetireOnly ->
+                    let! _ = host.LocalStorage(LocalStorageRequest.Remove(LocalStorageQueue.key ns))
+                    return Ok current
+                | LegacyStep.Adopt(legacyQueue, digest) ->
+                    match MemoryQueueStore.encodeWithin budget legacyQueue with
+                    | Error _ ->
+                        diagnose (QueueDiagnostics.failed (AdapterFailure.create "migrate" Database (Some Records) FailureClass.Quota "budget" "the localStorage queue is over the IndexedDB budget"))
+                        return Ok current
+                    | Ok text ->
+                        let next = { record with Queue = Some text; Migrated = Some digest }
+
+                        match fits cell.Value.Limits next (Some record) with
+                        | Error(bytes, limit) ->
+                            diagnose (QueueDiagnostics.failed (AdapterFailure.create "migrate" Database (Some Records) FailureClass.Quota "limit" $"{bytes} bytes over the pack's limit of {limit}"))
+                            return Ok current
+                        | Ok() ->
+                            // Copy.
+                            match! write host.Store cell.Value.Connection "migrate" next (Some record) with
+                            | Error(_, Some stored) when stored.Epoch > record.Epoch ->
+                                fenced ()
+                                return Error QueueStoreFailure.Unavailable
+                            | Error(failure, _) ->
+                                // Nothing was applied: both stores are as they were.
+                                fail failure
+                                return Ok current
+                            | Ok() ->
+                                update (fun state -> { state with Observed = next })
+                                // Verify.
+                                match! read host.Store cell.Value.Connection next.Namespace with
+                                | Ok(Some stored) when stored = next && (stored.Queue |> Option.map (MemoryQueueStore.decodeFor ns)) = Some(Ok legacyQueue) ->
+                                    // Retire the source. If this fails, the marker
+                                    // makes the next load remove it only.
+                                    let! _ = host.LocalStorage(LocalStorageRequest.Remove(LocalStorageQueue.key ns))
+                                    notify (QueueNotice.LegacyQueueAdopted legacyQueue.Entries.Length)
+                                    return Ok(Some legacyQueue)
+                                | _ ->
+                                    fail (AdapterFailure.create "migrate" Database (Some Records) FailureClass.Unavailable "verify" "the copied queue did not read back as written; the source is kept")
+                                    return Error QueueStoreFailure.Unavailable
+            }
+
         let load () =
             async {
                 let state = cell.Value
@@ -285,18 +387,23 @@ module IndexedDbQueue =
                     fenced ()
                     return Error QueueStoreFailure.Unavailable
                 | Ok(Some record) ->
-                    match record.Queue with
-                    | None ->
-                        update (fun state -> { state with Observed = record; Last = None; Diagnostics = QueueDiagnostics.loaded None state.Diagnostics })
-                        return Ok None
-                    | Some text ->
-                        match MemoryQueueStore.decodeFor ns text with
+                    let current =
+                        match record.Queue with
+                        | None -> Ok None
+                        | Some text -> MemoryQueueStore.decodeFor ns text |> Result.map Some
+
+                    match current with
+                    | Error failure ->
+                        fail (AdapterFailure.create "load" Database (Some Records) FailureClass.Undecodable "queue" "the stored queue is not one this Arca reads")
+                        return Error failure
+                    | Ok current ->
+                        update (fun state -> { state with Observed = record })
+
+                        match! migrate record current with
                         | Ok queue ->
-                            update (fun state -> { state with Observed = record; Last = Some queue; Diagnostics = QueueDiagnostics.loaded (Some queue) state.Diagnostics })
-                            return Ok(Some queue)
-                        | Error failure ->
-                            fail (AdapterFailure.create "load" Database (Some Records) FailureClass.Undecodable "queue" "the stored queue is not one this Arca reads")
-                            return Error failure
+                            update (fun state -> { state with Last = queue; Diagnostics = QueueDiagnostics.loaded queue state.Diagnostics })
+                            return Ok queue
+                        | Error failure -> return Error failure
             }
 
         let save (queue: OfflineQueue) =

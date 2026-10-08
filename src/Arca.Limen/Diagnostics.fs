@@ -112,8 +112,28 @@ module QueueDiagnostics =
 
     let persisted (granted: bool) (diagnostics: QueueDiagnostics) = { diagnostics with Persisted = Some granted }
 
+    let private sameKind (a: QueueNotice) (b: QueueNotice) =
+        match a, b with
+        | QueueNotice.LocalQueueLost, QueueNotice.LocalQueueLost
+        | QueueNotice.LegacyQueueUnreadable, QueueNotice.LegacyQueueUnreadable
+        | QueueNotice.LegacyQueuePending _, QueueNotice.LegacyQueuePending _
+        | QueueNotice.LegacyQueueAdopted _, QueueNotice.LegacyQueueAdopted _ -> true
+        | _ -> false
+
+    /// Adds a notice, replacing an earlier one of the same kind. An adopted
+    /// legacy queue is no longer pending.
     let notice (notice: QueueNotice) (diagnostics: QueueDiagnostics) =
-        { diagnostics with Notices = diagnostics.Notices @ [ notice ] }
+        let kept =
+            diagnostics.Notices
+            |> List.filter (fun existing ->
+                not (sameKind existing notice)
+                && not (
+                    match notice, existing with
+                    | QueueNotice.LegacyQueueAdopted _, QueueNotice.LegacyQueuePending _ -> true
+                    | _ -> false
+                ))
+
+        { diagnostics with Notices = kept @ [ notice ] }
 
     let discarded (count: int) (diagnostics: QueueDiagnostics) =
         { diagnostics with Discarded = diagnostics.Discarded + count }

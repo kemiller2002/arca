@@ -179,6 +179,133 @@ write offline uses `ReadOnlyWhenOffline` and gets a read-only degraded mode.
 The queue holds operations, not records. Reads always go to GitHub, which
 stays authoritative (ARCA-OFF-006).
 
+### 5a. The IndexedDB queue (`EchelonFoundry.Arca.Limen`, from 0.3.0)
+
+`EchelonFoundry.Arca.Limen` keeps the queue in IndexedDB through Limen
+0.8.0's store pack. It keeps the semantics `LocalStorageQueue.own` has today:
+
+- one owner per namespace;
+- the next tab takes over when the owner closes;
+- nothing is sent twice;
+- every save is fenced.
+
+It hands you the same, unchanged `QueueStore` port. See DF-ARCA-2026-0010 and
+DF-LIMEN-2026-0005.
+
+**Install.** Declare `arca` 0.3.0 and `limen-fsharp` 0.8.0 in
+`conditor.json`, then run `conditor upgrade --current`. Reference
+`EchelonFoundry.Arca.Limen` from the engine. It brings `EchelonFoundry.Limen.Store`
+and `EchelonFoundry.Limen.Contract` 0.8.0. In the host, register the store
+pack with the application namespace,
+`storeCapability({ namespace: "chrona" })`, next to the coordination pack.
+Select `limen.store` version 2 (`Limen.Contract.Store.Contract`) in the
+engine's handshake.
+
+**Wire it.** The host supplies four executors, the only effects:
+
+```fsharp
+open Arca.Limen
+
+let host: LimenHost =
+    { Store = storeExecutor          // StoreRequest -> Async<StoreResult>: the limen.store pack
+      Lock = coordinationExecutor    // CoordinationRequest -> Async<CoordinationResult>: the coordination pack
+      LocalStorage = storageExecutor // LocalStorageRequest -> Async<LocalStorageOutcome>: Core's Storage effect
+      Now = clock }                  // for diagnostics' times only
+
+match! LimenQueue.own host QueueOptions.standard ns with
+| QueueOpening.Owned queue ->
+    // queue.Store is the QueueStore: Load, recover, OfflineSync as in section 5.
+    // Show queue.Mode (IndexedDb | LocalStorage budget | MemoryOnly) wherever
+    // sync state is shown; under MemoryOnly, warn before an offline write or
+    // refuse offline writes (LCP-065).
+    // Show queue.Notices, and (queue.Diagnostics()).Notices after each Load.
+    ()
+| QueueOpening.OwnedElsewhere ->
+    // "Another tab holds this device's unsent changes." Offer "use this tab
+    // instead": LimenQueue.takeOver host QueueOptions.standard ns.
+    // While online this tab may write directly (OQ-LIMEN-IDB-001).
+    ()
+| QueueOpening.OwnershipUnsupported
+| QueueOpening.NothingUsable _ -> () // no offline writes
+```
+
+What the composer does:
+
+- **Store order.** It tries IndexedDB, then localStorage, then memory, and
+  obtains exactly one of them.
+- **Lock.** It takes the namespace's Web Lock first. The lock is the same
+  `arca.queue/<app>` lock that `LocalStorageQueue.own` takes, so a tab on the
+  old adapter and a tab on the new one exclude each other.
+- **Takeover.** `takeOver` raises the fencing epoch. The old owner's next
+  save writes nothing and fails as `Unavailable`, and its diagnostics show
+  `OwnedElsewhere`.
+- **In-flight entries.** The new owner reconciles whatever was in flight,
+  so it is never sent twice.
+
+**Diagnostics** (`queue.Diagnostics()`) is a value with these fields:
+
+- `Mode`;
+- `Ownership`;
+- `Depth`, by state;
+- `SnapshotSize` against `Budget`;
+- `LastSave` and `LastSync`;
+- `Persisted`;
+- `Notices`;
+- `LastFailure`, an `AdapterFailure` with a stable `arca.limen.*` code. Use
+  `AdapterFailure.mapping` with Aegis;
+- `Discarded`.
+
+**Persistence.** The adapter asks for it after the first offline write and
+never at open (OQ-LIMEN-IDB-004).
+
+**`LocalQueueLost`.** This notice means the database was found recreated
+after this device held unsent changes. Tell the person those changes are
+gone.
+
+**Sign-out** (`SharedDevicePolicy`, `SignOut.plan`):
+
+1. Count the account's unsent entries with `QueueSignOut.unsentOf account
+   queue`.
+2. Offer `SignOut.offered policy`.
+3. Apply the plan:
+   - to discard, call `queue.Discard account currentQueue`;
+   - if `plan.ClearCache`, clear the account's read cache.
+
+In-flight entries are never discarded.
+
+#### Moving Chrona from the localStorage queue (no entry is lost)
+
+1. Upgrade to Arca 0.3.0 and Limen 0.8.0 (above). Keep `QueueStore`,
+   `OfflineQueue` and `OfflineSync` code as it is.
+2. At the composition root, replace
+   `LocalStorageQueue.own lock execute budget ns` with
+   `LimenQueue.own host QueueOptions.standard ns`. Map `Owned queue` to the
+   old `Owned queue.Store`. `OwnedElsewhere` and `OwnershipUnsupported` keep
+   their meaning.
+3. `Load` as before. On the first load that owns the namespace with
+   IndexedDB available, the adapter moves the localStorage snapshot
+   (`arca.queue.chrona`) into IndexedDB exactly once:
+   - **Copy:** a `putIf` of the decoded queue, with a SHA-256 marker of the
+     localStorage text.
+   - **Verify:** it reads the queue back and compares it.
+   - **Retire:** it removes the localStorage key.
+
+   The load returns the moved queue, and diagnostics carry
+   `LegacyQueueAdopted n`.
+4. If IndexedDB already holds entries, the move waits. Diagnostics carry
+   `LegacyQueuePending n`. Once a sync drains the IndexedDB queue and you
+   save it pruned, the next `Load` adopts the old queue whole. Two queues
+   are never merged, and neither is dropped.
+5. A corrupt or foreign localStorage queue is left untouched, and
+   diagnostics carry `LegacyQueueUnreadable`.
+6. The move survives any interruption: a reload, a crash, a lost lock, or a
+   quota failure at the commit.
+   - Before the commit, nothing changed, and the next load copies again.
+   - After the commit, the marker matches, and the next load only removes
+     the localStorage key.
+7. Keep showing the durability mode. If IndexedDB is unusable in a browser,
+   the composer stays on `LocalStorage` with the same key, so nothing moves.
+
 ## 6. Indexes, export and migration
 
 - **Derived indexes.**
