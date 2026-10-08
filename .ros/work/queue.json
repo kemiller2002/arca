@@ -320,10 +320,10 @@
         "registry"
       ],
       "priority": "high",
-      "status": "ready",
+      "status": "complete",
       "attachments": [],
       "createdAt": "2026-10-08T08:03:45.935Z",
-      "updatedAt": "2026-10-08T09:23:22.000Z",
+      "updatedAt": "2026-10-08T09:44:56.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",
