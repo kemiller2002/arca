@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "repository": "arca",
-  "nextSeq": 17,
+  "nextSeq": 18,
   "items": [
     {
       "id": "WI-0001",
@@ -403,6 +403,27 @@
       "attachments": [],
       "createdAt": "2026-10-08T08:54:26.000Z",
       "updatedAt": "2026-10-08T08:54:26.000Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0017",
+      "title": "Release Arca 0.2.0 (slices 7-10) as attested GitHub release assets and register it in echelon-registry",
+      "description": null,
+      "tags": [],
+      "priority": "medium",
+      "status": "ready",
+      "attachments": [],
+      "createdAt": "2026-10-08T10:27:32.000Z",
+      "updatedAt": "2026-10-08T10:27:36.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",
