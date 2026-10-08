@@ -22,7 +22,7 @@
 | WI-0017 | Release Arca 0.2.0 (slices 7-10) as attested GitHub release assets and register it in echelon-registry | complete |  | medium |
 | WI-0018 | Namespace-scoped change tokens: condition a commit on the application's own namespace, not the whole repository | captured |  | medium |
 | WI-0019 | Queue-store port conformance suite: one executable contract that the localStorage, in-memory and (later) IndexedDB QueueStore implementations all pass (ARCA-OFF-002; Limen LCP-046, LCP-060, LCP-075) | complete | arca, offline, limen, indexeddb | medium |
-| WI-0020 | One-time move of the localStorage queue into IndexedDB: idempotent, drain-then-adopt, safe at every interruption point (ARCA-OFF-002, ARCA-MIG-002; Limen LCP-066, LCP-067) | captured | arca, offline, limen, indexeddb | medium |
+| WI-0020 | One-time move of the localStorage queue into IndexedDB: idempotent, drain-then-adopt, safe at every interruption point (ARCA-OFF-002, ARCA-MIG-002; Limen LCP-066, LCP-067) | ready | arca, offline, limen, indexeddb | medium |
 | WI-0021 | Read-cache port in Arca.Core: Cached and Fresh values, token-stamped partitions, freshness rules, an in-memory implementation and a read-cache conformance suite (Limen LCP-082..LCP-086) | complete | arca, offline, limen, indexeddb | medium |
 | WI-0022 | IndexedDB read cache in EchelonFoundry.Arca.Limen: compound-keyed partitions, online revalidation, policy-driven clearing, budget and least-recently-used eviction (Limen LCP-082..LCP-087) | captured | arca, offline, limen, indexeddb | medium |
 | WI-0023 | Cross-reference Limen's IndexedDB requirements (LCP-043..087, DF-LIMEN-2026-0005) from Arca's requirements and backlog plan; refine WI-0016 and capture WI-0019..WI-0022 | complete | arca, limen, indexeddb | medium |
