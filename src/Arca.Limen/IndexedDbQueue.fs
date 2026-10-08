@@ -269,7 +269,7 @@ module IndexedDbQueue =
 
     /// The owned store over an opened, claimed database. `handle` is the
     /// namespace's lock, released by `Release`.
-    let private owned (host: LimenHost) (budget: int64) (ns: Namespace) (handle: Limen.Contract.Coordination.Types.LockHandle) (initial: State) =
+    let private owned (host: LimenHost) (budget: int64) (freeSpace: (unit -> Async<bool>) option) (ns: Namespace) (handle: Limen.Contract.Coordination.Types.LockHandle) (initial: State) =
         let cell = ref initial
         let update f = cell.Value <- f cell.Value
         let diagnose f = update (fun state -> { state with Diagnostics = f state.Diagnostics })
@@ -427,7 +427,24 @@ module IndexedDbQueue =
                         diagnose (QueueDiagnostics.failed (AdapterFailure.create "save" Database (Some Records) FailureClass.Quota "limit" $"{bytes} bytes over the pack's limit of {limit}"))
                         return Error(QueueStoreFailure.QuotaExceeded(bytes, limit))
                     | Ok() ->
-                        match! write host.Store state.Connection "save" next (Some state.Observed) with
+                        let attempt () = write host.Store state.Connection "save" next (Some state.Observed)
+
+                        let! written =
+                            async {
+                                match! attempt () with
+                                | Error({ Class = FailureClass.Quota }, _) as refused ->
+                                    // The queue holds the person's unsent work; the cache
+                                    // is rebuildable, so it gives up its space first.
+                                    match freeSpace with
+                                    | Some free ->
+                                        match! free () with
+                                        | true -> return! attempt ()
+                                        | false -> return refused
+                                    | None -> return refused
+                                | other -> return other
+                            }
+
+                        match written with
                         | Ok() ->
                             let at = host.Now()
 
@@ -482,7 +499,7 @@ module IndexedDbQueue =
     /// and fails as Unavailable. When the database was found newly created
     /// and this device's evidence says it held unsent changes, the queue
     /// opens with `LocalQueueLost` (LCP-062).
-    let openOwned (host: LimenHost) (budget: int64) (ns: Namespace) (handle: Limen.Contract.Coordination.Types.LockHandle) =
+    let openOwned (host: LimenHost) (budget: int64) (freeSpace: (unit -> Async<bool>) option) (ns: Namespace) (handle: Limen.Contract.Coordination.Types.LockHandle) =
         async {
             match! openDatabase host.Store with
             | Error failure -> return IndexedDbOpening.Failed failure
@@ -519,5 +536,5 @@ module IndexedDbQueue =
                               AskedPersist = false
                               Diagnostics = QueueDiagnostics.create DurabilityMode.IndexedDb (OwnershipState.Owner claimed.Epoch) budget notices }
 
-                        return IndexedDbOpening.Opened(owned host budget ns handle state)
+                        return IndexedDbOpening.Opened(owned host budget freeSpace ns handle state)
         }

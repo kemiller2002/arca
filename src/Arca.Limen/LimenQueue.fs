@@ -12,11 +12,16 @@ type DurabilityChoice =
     | MemoryOnly
 
 /// What the composer tries, in order, and the budgets.
+[<NoEquality; NoComparison>]
 type QueueOptions =
     { Order: DurabilityChoice list
       IndexedDbBudget: int64
       LocalStorageBudget: int64
-      MemoryBudget: int64 }
+      MemoryBudget: int64
+      /// Frees browser storage the queue needs: when a save fails on the
+      /// browser's quota, this runs (for example `IndexedDbCache.FreeSpace`,
+      /// evicting the read cache) and the save is tried once more (LCP-087).
+      FreeSpace: (unit -> Async<bool>) option }
 
 /// What opening the offline queue produced (LCP-059, LCP-065). Only `Owned`
 /// carries a store; every other answer leaves this tab without a queue.
@@ -43,7 +48,8 @@ module QueueOptions =
         { Order = [ DurabilityChoice.IndexedDb; DurabilityChoice.LocalStorage; DurabilityChoice.MemoryOnly ]
           IndexedDbBudget = IndexedDbQueue.DefaultBudget
           LocalStorageBudget = LocalStorageQueue.DefaultBudget
-          MemoryBudget = LocalStorageQueue.DefaultBudget }
+          MemoryBudget = LocalStorageQueue.DefaultBudget
+          FreeSpace = None }
 
 /// The offline queue over Limen (WI-0016): one owner per namespace, in the
 /// most durable store this browser offers, reported as a mode.
@@ -151,7 +157,7 @@ module LimenQueue =
                 | DurabilityChoice.IndexedDb :: rest ->
                     match! Store.availability host.Store with
                     | Ok Availability.Available ->
-                        match! IndexedDbQueue.openOwned host options.IndexedDbBudget ns handle with
+                        match! IndexedDbQueue.openOwned host options.IndexedDbBudget options.FreeSpace ns handle with
                         | IndexedDbOpening.Opened queue -> return QueueOpening.Owned queue
                         | IndexedDbOpening.Contended ->
                             do! QueueLock.release host.Lock handle

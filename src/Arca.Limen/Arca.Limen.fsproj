@@ -27,6 +27,7 @@
     <Compile Include="Diagnostics.fs" />
     <Compile Include="IndexedDbQueue.fs" />
     <Compile Include="LimenQueue.fs" />
+    <Compile Include="IndexedDbReadCache.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Arca.Core/Arca.Core.fsproj" />
