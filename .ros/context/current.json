@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-08T10:27:36.000Z",
+  "updatedAt": "2026-10-08T10:36:08.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -614,13 +614,43 @@
     {
       "id": "WI-0017",
       "type": "task",
-      "state": "active",
-      "semanticState": "active",
-      "evidence": [],
-      "updatedAt": "2026-10-08T10:27:36.000Z",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "Directory.Build.props"
+        },
+        {
+          "type": "tests",
+          "path": "docs/distribution-short-term-plan.md"
+        }
+      ],
+      "updatedAt": "2026-10-08T10:36:08.000Z",
       "telemetryExecutionIds": [
         "EXE-20261008T102737074Z-b36d13a7"
-      ]
+      ],
+      "latestCheckpoint": {
+        "id": "2097e780e46225d45ebb5b08",
+        "recordedAt": "2026-10-08T10:36:07.000Z",
+        "executionId": "EXE-20261008T102737074Z-b36d13a7",
+        "repository": "arca",
+        "branch": "docs/release-0.2.0-status",
+        "commit": "70e19d6987accb0692e088fec8665efd2df9d2b9",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "docs/release-0.2.0-status",
+        "remoteCommit": "70e19d6987accb0692e088fec8665efd2df9d2b9",
+        "summary": "v0.2.0 released with verified attestations and recorded in echelon-registry (echelon-current 1.6.0)",
+        "nextAction": "None",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-10-08T10:36:08.000Z"
     }
   ]
 }
