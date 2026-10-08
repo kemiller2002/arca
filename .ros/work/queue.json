@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "repository": "arca",
-  "nextSeq": 26,
+  "nextSeq": 27,
   "items": [
     {
       "id": "WI-0001",
@@ -625,6 +625,31 @@
       "attachments": [],
       "createdAt": "2026-10-08T15:52:44.159Z",
       "updatedAt": "2026-10-08T16:51:26.000Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0026",
+      "title": "Release Arca 0.3.0 (EchelonFoundry.Arca.Core, .GitHub and the new .Limen: IndexedDB queue, migration, read cache) as attested GitHub release assets and register it in echelon-registry",
+      "description": "Ships WI-0016, WI-0019, WI-0020, WI-0021, WI-0022 at 0.3.0, the new package at the same version. Then echelon-registry: releases/arca/0.3.0.release.json and echelon-current 1.11.0. Consumers: Chrona WI-0059 and WI-0057.",
+      "tags": [
+        "arca",
+        "release",
+        "registry"
+      ],
+      "priority": "high",
+      "status": "ready",
+      "attachments": [],
+      "createdAt": "2026-10-08T21:26:39.000Z",
+      "updatedAt": "2026-10-08T21:26:43.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",
