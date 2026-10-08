@@ -24,6 +24,7 @@
     <Compile Include="ConformanceTests.fs" />
     <Compile Include="IntegrityTests.fs" />
     <Compile Include="OfflineQueueTests.fs" />
+    <Compile Include="QueueStoreConformanceTests.fs" />
     <Compile Include="MultiTabQueueTests.fs" />
     <Compile Include="MigrationTests.fs" />
   </ItemGroup>

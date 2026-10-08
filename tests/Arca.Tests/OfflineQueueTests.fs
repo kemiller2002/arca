@@ -278,7 +278,8 @@ let ``transitions apply only to the entry and state they name`` () =
 // Properties
 // ---------------------------------------------------------------------------
 
-let private stateGen =
+/// Any entry state, with text that needs escaping.
+let stateGen =
     Gen.oneof
         [ Gen.constant EntryState.Pending
           Gen.elements [ "t1"; "t2" ] |> Gen.map EntryState.InFlight
@@ -288,7 +289,8 @@ let private stateGen =
           Gen.elements [ "nope"; "\"quoted\"\n" ] |> Gen.map EntryState.Refused
           Gen.elements [ "superseded"; "é 😀" ] |> Gen.map EntryState.Abandoned ]
 
-let private queueGen =
+/// Arbitrary queues of up to six entries in every state, under either policy.
+let queueGen =
     gen {
         let! count = Gen.choose (0, 6)
         let! chosen = Gen.listOfLength count stateGen
