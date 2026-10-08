@@ -66,6 +66,33 @@ release may change the API; pin an exact version.
     with `QuotaExceeded` and is never truncated (DF-ARCA-2026-0005). A Limen
     IndexedDB adapter can replace it later (WI-0016).
 
+- **Snapshots** (`Snapshot.take`). A snapshot is every object a namespace
+  holds, read between two equal change tokens.
+  - It excludes the application's dataset sub-namespaces.
+  - A partial listing fails as `Incomplete`. If the namespace keeps changing,
+    the result is `Unstable`.
+- **Rebuildable derived indexes** (`Derived`, ARCA-MIG-001).
+  - An `IndexDefinition` is a pure projection over validated records.
+  - Each index records its source set (count, and a hash over each path and
+    content hash) and is stored under `derived/indexes/`.
+  - `check` returns Current, Stale, OtherVersion or Missing, and `compare`
+    gives the differences between two indexes.
+  - `rebuild` is idempotent and conditioned on the change token. It refuses
+    to build on a record that does not validate.
+- **Canonical export** (`Export`, ARCA-MIG-003). An export is a canonical JSON
+  archive of everything a namespace stores, byte for byte, with each object's
+  SHA-256. `decode` verifies every hash.
+- **Migration workflow** (`Migration`, ARCA-MIG-002, ARCA-LOC-009;
+  DF-ARCA-2026-0008).
+  - It validates, copies, verifies and activates into a different location,
+    with an optional record transform for schema migrations.
+  - Progress is kept in the target manifest, so a run is resumable and
+    idempotent. The source is untouched until `Migration.retire`, an explicit
+    step conditioned on the source being unchanged.
+  - Manifest phases gain `completed` and `retired`, and `ManifestProblem`
+    gains `Retired`.
+- **`Layout.keyOf`.** It returns the record key an authoritative path names.
+
 ### Changed
 
 - **Reflection-free compilation.** Both packages compile with

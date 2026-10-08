@@ -75,6 +75,7 @@ application decides.
 | ARCA-D-009 | Arca stays separate from Aegis's GitHub event store (different concerns); it reuses only Aegis's GitHub failure model. | **Decision**, user 2026-10-08 ([DF-ARCA-2026-0004](../../research/decisions/DF-ARCA-2026-0004--arca-stays-separate-from-aegis-github-event-store.md)) |
 | ARCA-D-010 | The offline queue persists to localStorage through Limen's Storage effect, behind a queue-store port, until a Limen IndexedDB adapter replaces it. | **Decision**, user-approved 2026-10-08 ([DF-ARCA-2026-0005](../../research/decisions/DF-ARCA-2026-0005--offline-queue-persists-to-localstorage-behind-a-port.md)) |
 | ARCA-D-011 | Until nuget.org Trusted Publishing exists, releases ship as Sigstore-attested GitHub release assets, registered in echelon-registry and installed by Conditor through a local feed. | **Decision**, user 2026-10-08 ([DF-ARCA-2026-0006](../../research/decisions/DF-ARCA-2026-0006--interim-distribution-through-attested-github-release-assets.md)) |
+| ARCA-D-012 | Migrations always copy to a different location (repository, branch or base path), record their progress in the target manifest, and retire the source only by an explicit step conditioned on the source being unchanged. Derived data is rebuilt at the target, not copied. | **Design**, slice 10 ([DF-ARCA-2026-0008](../../research/decisions/DF-ARCA-2026-0008--migrations-copy-to-a-new-location-and-retire-the-source-explicitly.md)) |
 
 Open design questions that need the user are in [section 14](#14-open-questions-for-the-user).
 
