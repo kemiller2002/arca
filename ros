@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+# Compatibility alias: `ros` is the pre-rename name of this project's
+# `praxis` launcher (DF-ROS-2026-A050). New instructions use ./praxis.
+exec "$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)/praxis" "$@"

@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Arca/Arca.fsproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Arca.Tests/Arca.Tests.fsproj" />
+  </Folder>
+</Solution>

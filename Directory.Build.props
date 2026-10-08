@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup>
+    <!-- The release version. 0.0.0 means "not released yet": the release
+         workflow builds, tests and packs it but never publishes it. -->
+    <Version>0.0.0</Version>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+</Project>

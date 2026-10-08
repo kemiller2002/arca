@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "1.0.0",
+  "repository": "arca",
+  "nextSeq": 1,
+  "items": [
+    {
+      "id": "WI-0001",
+      "title": "Bootstrap Arca with Conditor: Praxis 3.7.2, Ordo 1.5.0, Communication Engineering 1.0.0 from echelon-current 1.2.0, plus the fsharp-nuget-library scaffold (foundations, build-and-test, release workflow)",
+      "description": "Establish everything the ecosystem expects of a new package repository through Conditor (conditor.json, Registry authority echelon-current 1.2.0 linux-x64 sha256 ea1b39a0..., lifecycle components and the fsharp-nuget-library scaffold added by conditor#52 and conditor#53). No product code: the library is the scaffold placeholder.",
+      "tags": [
+        "bootstrap",
+        "conditor"
+      ],
+      "priority": "high",
+      "status": "ready",
+      "attachments": [],
+      "createdAt": "2026-10-08T08:02:57.000Z",
+      "updatedAt": "2026-10-08T08:02:57.000Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    }
+  ]
+}
