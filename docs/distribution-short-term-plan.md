@@ -40,12 +40,12 @@ until then.
 4. **Verify.** Anyone can check provenance with
    `gh attestation verify <file> --repo kemiller2002/arca`.
 
-## Status (0.2.0, 2026-10-08)
+## Status (0.2.1, 2026-10-08)
 
 | Step | Where |
 |---|---|
-| Release | [`v0.2.0`](https://github.com/kemiller2002/arca/releases/tag/v0.2.0) from `2577cd6`. Both `.nupkg` files, `checksums.txt` and `echelon-release.json` are attested, and the release run verified them. `v0.1.0` (from `a3143fc`) remains available. |
-| Registry | `releases/arca/0.2.0.release.json` and echelon-current **1.6.0**, with Arca `>=0.2.0 <1.0.0` as an optional project binding (echelon-registry `61a81f0`, records in #47). 0.1.0 came in echelon-registry#45 (merge `385949f`, echelon-current 1.4.0). REG-REL-014 lets one NuGet release ship a package family. |
+| Release | [`v0.2.1`](https://github.com/kemiller2002/arca/releases/tag/v0.2.1) from `98a60cf` (#21), the multi-tab offline-queue fix (#20, DF-ARCA-2026-0009). Both `.nupkg` files, `checksums.txt` and `echelon-release.json` are attested, and the release run verified them. `v0.2.0` (from `2577cd6`) and `v0.1.0` (from `a3143fc`) remain available. |
+| Registry | `releases/arca/0.2.1.release.json` and echelon-current **1.9.0**, with Arca `>=0.2.1 <1.0.0` as an optional project binding (echelon-registry#51, merge `9c33343`). 0.2.0 came in echelon-registry#47 (echelon-current 1.6.0), and 0.1.0 in #45 (echelon-current 1.4.0). REG-REL-014 lets one NuGet release ship a package family. |
 | Conditor | conditor#59 (merge `8dffc14`): the NuGet release-asset feed (`docs/nuget-feed-contract.md` in Conditor). |
 | Consumers | [`consuming-arca.md`](consuming-arca.md) |
 
