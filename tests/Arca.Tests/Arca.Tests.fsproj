@@ -13,6 +13,7 @@
     <Compile Include="ArchitectureTests.fs" />
     <Compile Include="CapabilityTests.fs" />
     <Compile Include="FaultTests.fs" />
+    <Compile Include="LocationTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
