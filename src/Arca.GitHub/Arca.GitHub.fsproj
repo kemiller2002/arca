@@ -20,6 +20,9 @@
     <Compile Include="Http.fs" />
     <Compile Include="Faults.fs" />
     <Compile Include="Provider.fs" />
+    <Compile Include="Conversation.fs" />
+    <Compile Include="Api.fs" />
+    <Compile Include="Identity.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Arca.Core/Arca.Core.fsproj" />
