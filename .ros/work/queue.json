@@ -167,10 +167,10 @@
         "auth"
       ],
       "priority": "high",
-      "status": "ready",
+      "status": "complete",
       "attachments": [],
       "createdAt": "2026-10-08T08:03:44.140Z",
-      "updatedAt": "2026-10-08T09:14:23.000Z",
+      "updatedAt": "2026-10-08T09:14:27.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",
