@@ -114,10 +114,10 @@
         "record-format"
       ],
       "priority": "high",
-      "status": "ready",
+      "status": "complete",
       "attachments": [],
       "createdAt": "2026-10-08T08:03:43.530Z",
-      "updatedAt": "2026-10-08T09:04:29.000Z",
+      "updatedAt": "2026-10-08T09:04:33.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",

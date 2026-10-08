@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-08T09:04:29.000Z",
+  "updatedAt": "2026-10-08T09:04:33.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -229,13 +229,43 @@
     {
       "id": "WI-0005",
       "type": "task",
-      "state": "active",
-      "semanticState": "active",
-      "evidence": [],
-      "updatedAt": "2026-10-08T09:04:29.000Z",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "src"
+        },
+        {
+          "type": "tests",
+          "path": "tests"
+        }
+      ],
+      "updatedAt": "2026-10-08T09:04:33.000Z",
       "telemetryExecutionIds": [
         "EXE-20261008T090429848Z-ac8b98de"
-      ]
+      ],
+      "latestCheckpoint": {
+        "id": "5ea787b8b711abe781c22abb",
+        "recordedAt": "2026-10-08T09:04:32.000Z",
+        "executionId": "EXE-20261008T090429848Z-ac8b98de",
+        "repository": "arca",
+        "branch": "slice/03-record-format",
+        "commit": "7eb1729f9cf64a1d6c1493992adb6189cc045199",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "slice/03-record-format",
+        "remoteCommit": "7eb1729f9cf64a1d6c1493992adb6189cc045199",
+        "summary": "Slice 3: canonical JSON, record envelope, schema support, layout, manifests",
+        "nextAction": "PR, CI green, merge; then slice 4 (WI-0006)",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-10-08T09:04:33.000Z"
     }
   ]
 }
