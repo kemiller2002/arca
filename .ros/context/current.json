@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-08T10:01:09.000Z",
+  "updatedAt": "2026-10-08T10:05:08.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -475,13 +475,43 @@
     {
       "id": "WI-0010",
       "type": "task",
-      "state": "active",
-      "semanticState": "active",
-      "evidence": [],
-      "updatedAt": "2026-10-08T10:01:09.000Z",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "src/Arca.Core/Integrity.fs"
+        },
+        {
+          "type": "tests",
+          "path": "tests/Arca.Tests/IntegrityTests.fs"
+        }
+      ],
+      "updatedAt": "2026-10-08T10:05:08.000Z",
       "telemetryExecutionIds": [
         "EXE-20261008T100110263Z-7fe6d228"
-      ]
+      ],
+      "latestCheckpoint": {
+        "id": "8a9bb0b93c78defb952e7fdd",
+        "recordedAt": "2026-10-08T10:05:07.000Z",
+        "executionId": "EXE-20261008T100110263Z-7fe6d228",
+        "repository": "arca",
+        "branch": "slice/08-integrity",
+        "commit": "b8b5cdd6ba6a599e3d9a45e90a9e851e35554ce6",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "slice/08-integrity",
+        "remoteCommit": "b8b5cdd6ba6a599e3d9a45e90a9e851e35554ce6",
+        "summary": "Slice 8: integrity validation, history with origins, write guards, conformance cases",
+        "nextAction": "PR, CI green, merge; then slice 9 (WI-0011)",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-10-08T10:05:08.000Z"
     }
   ]
 }
