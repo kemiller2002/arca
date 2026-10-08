@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-08T19:27:48.000Z",
+  "updatedAt": "2026-10-08T20:34:55.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -881,13 +881,59 @@
     {
       "id": "WI-0016",
       "type": "task",
-      "state": "active",
-      "semanticState": "active",
-      "evidence": [],
-      "updatedAt": "2026-10-08T19:27:48.000Z",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "src/Arca.Limen/IndexedDbQueue.fs"
+        },
+        {
+          "type": "implementation",
+          "path": "src/Arca.Limen/LimenQueue.fs"
+        },
+        {
+          "type": "tests",
+          "path": "tests/Arca.Tests/LimenQueueTests.fs"
+        },
+        {
+          "type": "tests",
+          "path": "tests/Arca.Tests/LimenVectorsTests.fs"
+        },
+        {
+          "type": "browser-tests",
+          "path": "verification/browser/tests/limen-queue.spec.mjs"
+        },
+        {
+          "type": "decision",
+          "path": "research/decisions/DF-ARCA-2026-0010--limen-bridge-package-indexeddb-queue-layout-and-composer.md"
+        }
+      ],
+      "updatedAt": "2026-10-08T20:34:55.000Z",
       "telemetryExecutionIds": [
         "EXE-20261008T192749303Z-b0d26ee7"
-      ]
+      ],
+      "latestCheckpoint": {
+        "id": "384bef8c4bcf2cbde452c9c3",
+        "recordedAt": "2026-10-08T20:34:54.000Z",
+        "executionId": "EXE-20261008T192749303Z-b0d26ee7",
+        "repository": "arca",
+        "branch": "limen/wi-0016-queue-adapter",
+        "commit": "83730d15e137bf0883bcaac36341a5d27bcfa7c1",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "limen/wi-0016-queue-adapter",
+        "remoteCommit": "83730d15e137bf0883bcaac36341a5d27bcfa7c1",
+        "summary": "EchelonFoundry.Arca.Limen: IndexedDB QueueStore with epoch fence, composer, diagnostics, LocalQueueLost; FakeStore tests, Limen vectors, Chromium and WebKit tabs; 294 tests pass",
+        "nextAction": "Merge on green; then WI-0020 migration",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-10-08T20:34:55.000Z"
     }
   ]
 }
