@@ -596,10 +596,10 @@
         "data-loss"
       ],
       "priority": "high",
-      "status": "ready",
+      "status": "complete",
       "attachments": [],
       "createdAt": "2026-10-08T15:52:43.728Z",
-      "updatedAt": "2026-10-08T15:52:53.000Z",
+      "updatedAt": "2026-10-08T16:16:22.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",
