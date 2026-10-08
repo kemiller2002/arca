@@ -62,10 +62,10 @@
         "architecture"
       ],
       "priority": "high",
-      "status": "ready",
+      "status": "complete",
       "attachments": [],
       "createdAt": "2026-10-08T08:03:42.934Z",
-      "updatedAt": "2026-10-08T08:48:05.000Z",
+      "updatedAt": "2026-10-08T08:55:05.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",
