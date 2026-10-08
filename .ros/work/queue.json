@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "repository": "arca",
-  "nextSeq": 1,
+  "nextSeq": 15,
   "items": [
     {
       "id": "WI-0001",
@@ -16,6 +16,340 @@
       "attachments": [],
       "createdAt": "2026-10-08T08:02:57.000Z",
       "updatedAt": "2026-10-08T08:03:25.000Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0002",
+      "title": "Derive Arca's storage requirements from Signal, Chrona and Summa, record the decisions, re-anchor the charter, and capture the dependency-ordered backlog",
+      "description": "Write docs/requirements/ARCA-STORAGE-REQUIREMENTS.md, deriving Arca's requirements from Signal (ADM-*, AER-*), Chrona (CHX-*) and Summa (SUM0-*, SUM3-*) and citing their IDs. Record DF-ARCA-2026-0001 (GitHub only behind a storage interface, pure core plus adapter, WASM, no Fides dependency) and DF-ARCA-2026-0002 (per-deployment data location, application-owned namespaces, separate repositories per permission boundary, no at-rest encryption). Replace the boilerplate charter and context. Capture slices in build order (the minimal slices before Chrona's storage). Add a test that every requirement is named by an open work item.",
+      "tags": [
+        "planning",
+        "requirements"
+      ],
+      "priority": "high",
+      "status": "ready",
+      "attachments": [],
+      "createdAt": "2026-10-08T08:03:41.000Z",
+      "updatedAt": "2026-10-08T08:03:42.000Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0003",
+      "title": "Arca slice 1: package layout - pure core and GitHub adapter packages, WASM-safe, Aegis-bound (ARCA-ARCH-001..007)",
+      "description": "Minimal slice, needed before Chrona's storage work (build order: Arca and Fides minimal slices -> Chrona -> Summa -> rest). Requirements: docs/requirements/ARCA-STORAGE-REQUIREMENTS.md ARCA-ARCH-001..007, decisions ARCA-D-001..006. Split the scaffolded EchelonFoundry.Arca into a pure core (no I/O, clock, randomness or browser access; effects as data) and an EchelonFoundry.Arca.GitHub adapter (OQ-ARCA-002, recommended). Prove that both build and run in the .NET browser-WASM runtime that Limen hosts. Bind Aegis for operational failures and reuse EchelonFoundry.Aegis.Integration.GitHub's failure model. No Fides reference (ARCA-D-002). Functional style. Acceptance: an architecture test fails if the core references System.Net, System.IO file APIs, DateTime.Now or Random. A WASM smoke test loads both assemblies. Foundations verify passes with Aegis required.",
+      "tags": [
+        "arca",
+        "slice:1",
+        "minimal",
+        "architecture"
+      ],
+      "priority": "high",
+      "status": "captured",
+      "attachments": [],
+      "createdAt": "2026-10-08T08:03:42.934Z",
+      "updatedAt": "2026-10-08T08:03:42.934Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0004",
+      "title": "Arca slice 2: per-deployment data location, app-owned namespaces and path safety (ARCA-LOC-001..010)",
+      "description": "Minimal slice. Depends on WI-0003. Implements the user's decisions ARCA-D-005 and ARCA-D-007 (DF-ARCA-2026-0002). The location (owner, repository, branch, base path) is configured per deployment and never hard-coded. Each application owns its namespace and never assumes it owns the repository or the root. Each application can point at its own repository or a shared one; a permission boundary means a separate repository, because GitHub permissions are per repository, not per folder. Per-organization sub-namespaces carry immutable ids. Discovery is deterministic, through manifests. Environment identity and repository visibility are exposed (public-repository refusal hook). Path traversal and writes outside the namespace are refused. No at-rest encryption (ARCA-LOC-010). Acceptance: property tests show that no generated path escapes its namespace, two applications configured against one repository never collide, and a location change is refused outside the migration workflow (ARCA-LOC-009).",
+      "tags": [
+        "arca",
+        "slice:2",
+        "minimal",
+        "data-location"
+      ],
+      "priority": "high",
+      "status": "captured",
+      "attachments": [],
+      "createdAt": "2026-10-08T08:03:43.242Z",
+      "updatedAt": "2026-10-08T08:03:43.242Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0005",
+      "title": "Arca slice 3: canonical JSON record format, stable ids, manifests and schema versioning (ARCA-REC-001..007)",
+      "description": "Minimal slice. Depends on WI-0004. Canonical JSON encoding (equal content gives equal bytes and equal hash), one record per object or event, deterministic partitioned paths, stable internal ids, the application manifest and the dataset/organization manifest, per-record schema versions with explicit refusal of unsupported versions, authoritative and derived data kept separate by type and path, and external artifact references. Acceptance: round-trip and canonicalization property tests, plus golden vectors.",
+      "tags": [
+        "arca",
+        "slice:3",
+        "minimal",
+        "record-format"
+      ],
+      "priority": "high",
+      "status": "captured",
+      "attachments": [],
+      "createdAt": "2026-10-08T08:03:43.530Z",
+      "updatedAt": "2026-10-08T08:03:43.530Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0006",
+      "title": "Arca slice 4: optimistic concurrency, conflict detection, three-way merge and commit/audit format (ARCA-CON-001..004, ARCA-COMMIT-001..006)",
+      "description": "Minimal slice. Depends on WI-0005. Pure core: expected-revision preconditions; typed conflicts that list the changed records; a three-way merge in which independent additions commute and same-record edits are reported as semantic conflicts, never auto-resolved; one logical operation as one atomic multi-record change set; a deterministic commit message and trailers (namespace prefix, actor kind human/agent/service/integration, actor id, execution id, correlation id, idempotency key); no tokens or business content in metadata. Acceptance: property and model-based tests for determinism, commutativity and no lost update.",
+      "tags": [
+        "arca",
+        "slice:4",
+        "minimal",
+        "concurrency",
+        "commit"
+      ],
+      "priority": "high",
+      "status": "captured",
+      "attachments": [],
+      "createdAt": "2026-10-08T08:03:43.836Z",
+      "updatedAt": "2026-10-08T08:03:43.836Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0007",
+      "title": "Arca slice 5: token-provider port, identity resolution and capability snapshot (ARCA-AUTH-001..005)",
+      "description": "Minimal slice. Depends on WI-0003. The token-provider abstraction (a function that yields a token or a typed failure: none, expired, revoked) is the only way credentials enter Arca, so there is no Fides dependency (ARCA-D-002); Fides supplies an implementation (Fides FID-CLI-001). Resolve the acting identity from GitHub. Derive a non-secret capability snapshot (read, write, branch writable, archived, visibility) and revalidate it after errors. Refuse a credential that resolves the location to a different repository identity. Never persist tokens. Acceptance: tests show that tokens never appear in any serialized output, commit, queue entry or fault.",
+      "tags": [
+        "arca",
+        "slice:5",
+        "minimal",
+        "auth"
+      ],
+      "priority": "high",
+      "status": "captured",
+      "attachments": [],
+      "createdAt": "2026-10-08T08:03:44.140Z",
+      "updatedAt": "2026-10-08T08:03:44.140Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0008",
+      "title": "Arca slice 6: GitHub adapter - atomic commits, conditional requests, rate limits, OutcomeUnknown and idempotency (ARCA-API-001..005, ARCA-OUT-001..002, ARCA-COMMIT-001/006)",
+      "description": "Minimal slice; the last one Chrona's storage work needs. Depends on WI-0006 and WI-0007. Uses the Git data API (blobs, tree, commit, then a conditional ref update) so one operation becomes one atomic commit against an expected base. Uses ETag conditional reads and caches immutable objects by hash. Observes rate limits (remaining budget, reset, retry-after) with exponential backoff and jitter and no spinning. Pages and batches, with no repository-wide scans. Reports a typed OutcomeUnknown and reconciles it by inspecting state before any retry, keyed by the idempotency key. Detects protected or archived branches and fails explicitly. Runs over Limen Http in the browser.",
+      "tags": [
+        "arca",
+        "slice:6",
+        "minimal",
+        "github-adapter"
+      ],
+      "priority": "high",
+      "status": "captured",
+      "attachments": [],
+      "createdAt": "2026-10-08T08:03:44.443Z",
+      "updatedAt": "2026-10-08T08:03:44.443Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0009",
+      "title": "Arca slice 7: provider conformance suite, in-memory provider and real-browser WASM verification (ARCA-TEST-001..004)",
+      "description": "Depends on WI-0008. A shared conformance suite (round-trip, conditional write, CAS, concurrent modification, idempotent repeat, OutcomeUnknown reconciliation, missing and corrupt objects, unsupported capability, pagination, rate limit, oversized object, auth failure, read-only, stale change token) that both the GitHub adapter and an in-memory provider pass. The in-memory provider ships for consumer tests. The adapter is verified in a real browser through Limen (Playwright). Telemetry and faults carry ids only.",
+      "tags": [
+        "arca",
+        "slice:7",
+        "conformance",
+        "testing"
+      ],
+      "priority": "high",
+      "status": "captured",
+      "attachments": [],
+      "createdAt": "2026-10-08T08:03:44.742Z",
+      "updatedAt": "2026-10-08T08:03:44.742Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0010",
+      "title": "Arca slice 8: storage content is untrusted input - validation, manual-edit and tamper detection (ARCA-INT-001..004)",
+      "description": "Depends on WI-0005 and WI-0008. Validate everything read: path, size, canonical encoding, schema version, content hash, dataset/namespace identity and type. Detect manual edits made outside Arca (hash changes, commits without Arca trailers) and unexpected modification of records declared immutable, and leave room for a later hash chain. Refuse writes when validity cannot be established (integrity before availability).",
+      "tags": [
+        "arca",
+        "slice:8",
+        "integrity"
+      ],
+      "priority": "high",
+      "status": "captured",
+      "attachments": [],
+      "createdAt": "2026-10-08T08:03:45.030Z",
+      "updatedAt": "2026-10-08T08:03:45.030Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0011",
+      "title": "Arca slice 9: offline change queue as data with durable browser persistence through Limen (ARCA-OFF-001..006)",
+      "description": "Depends on WI-0006 and WI-0008. Needed by Chrona's offline timer and entry (CHX-230). Pure queue model (ordered entries, idempotency keys, base revisions, states pending/in-flight/synchronized/conflicted/outcome-unknown), observable sync state, and reconnect reconciliation that never discards either side. Offline writes are opt-in per application; Signal uses read-only degraded mode instead. Persistence goes through Limen interop. Limen 0.7.x has no IndexedDB capability (OQ-ARCA-003): request one from Limen, and use Limen Storage (localStorage) behind the same port until it exists.",
+      "tags": [
+        "arca",
+        "slice:9",
+        "offline"
+      ],
+      "priority": "high",
+      "status": "captured",
+      "attachments": [],
+      "createdAt": "2026-10-08T08:03:45.330Z",
+      "updatedAt": "2026-10-08T08:03:45.330Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0012",
+      "title": "Arca slice 10: rebuildable derived indexes, explicit migration workflow and canonical export (ARCA-MIG-001..003, ARCA-LOC-009)",
+      "description": "Depends on WI-0010. Derived indexes record the authoritative source set they were built from and can be validated, rebuilt and compared. Versioned, resumable, idempotent migrations (schema and location: validate, copy, verify, activate; the source stays untouched until explicitly retired). Canonical export for backup and escape hatch.",
+      "tags": [
+        "arca",
+        "slice:10",
+        "derived-state",
+        "migration"
+      ],
+      "priority": "medium",
+      "status": "captured",
+      "attachments": [],
+      "createdAt": "2026-10-08T08:03:45.618Z",
+      "updatedAt": "2026-10-08T08:03:45.618Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0013",
+      "title": "Arca first release 0.1.0: nuget.org Trusted Publishing, NUGET_USER variable and echelon-registry system entry",
+      "description": "Depends on WI-0009. The release workflow from Conditor's fsharp-nuget-library scaffold never publishes 0.0.0, and it refuses to publish without the NUGET_USER repository variable. Create the nuget.org Trusted Publishing policy for the EchelonFoundry.Arca* packages naming kemiller2002/arca and .github/workflows/release.yml (a user action). Extend the release to pack both packages (EchelonFoundry.Arca and EchelonFoundry.Arca.GitHub) with the release input listing both nupkgs. Bump Directory.Build.props to 0.1.0. Add Arca to echelon-registry registry/systems-v2.json (distribution class nuget-library) and to the echelon-current channel so applications can pin it through conditor.json.",
+      "tags": [
+        "arca",
+        "release",
+        "registry"
+      ],
+      "priority": "high",
+      "status": "captured",
+      "attachments": [],
+      "createdAt": "2026-10-08T08:03:45.935Z",
+      "updatedAt": "2026-10-08T08:03:45.935Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0014",
+      "title": "(Deferred, possible future) per-application at-rest encryption for co-located data",
+      "description": "Not a requirement. The user decided on 2026-10-08 (ARCA-D-007, DF-ARCA-2026-0002) that there is no at-rest encryption for now: permission separation uses separate repositories per permission boundary. This item records the possible future option (b): per-application keys, possibly through Aegis, as an explicit provider capability. Key custody and rotation, keys never stored beside ciphertext, explicit lost-key state, and canonical hashes unchanged (SIG ADM-025). Do not start without a new user decision.",
+      "tags": [
+        "arca",
+        "deferred",
+        "future",
+        "encryption"
+      ],
+      "priority": "low",
+      "status": "captured",
+      "attachments": [],
+      "createdAt": "2026-10-08T08:03:46.267Z",
+      "updatedAt": "2026-10-08T08:03:46.267Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",

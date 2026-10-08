@@ -1,7 +1,18 @@
 # Arca
 
-This repository is a greenfield pilot running Praxis 3.7.2, Echelon Foundry's
-repository operating system. An older installation may also have `./ros`, a
+Arca is the shared data layer for Echelon applications. It stores
+authoritative records in GitHub repositories, runs in browser WebAssembly
+behind Limen, and is published as the `EchelonFoundry.Arca` NuGet package. It
+has a pure F# core (record formats, versioning, conflict detection and merge,
+commit/audit format, offline change queue) and a GitHub adapter. It takes a
+token provider and does not depend on Fides.
+
+- Requirements: [`docs/requirements/ARCA-STORAGE-REQUIREMENTS.md`](docs/requirements/ARCA-STORAGE-REQUIREMENTS.md)
+- Decisions: [`research/decisions/`](research/decisions/)
+- Backlog: `./praxis work ready` (minimal slices WI-0003..WI-0008 come before Chrona's storage work)
+
+The repository runs Praxis 3.7.2 and Ordo 1.5.0, installed by Conditor
+(`conditor.json`). An older installation may also have `./ros`, a
 compatibility alias of `./praxis`.
 
 ## Start here

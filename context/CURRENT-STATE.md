@@ -2,26 +2,30 @@
 
 ## Repository status
 
-Newly initialized with Praxis 3.7.2.
+Bootstrapped by Conditor on 2026-10-08 (WI-0001): Praxis 3.7.2, Ordo 1.5.0,
+Communication Engineering 1.0.0, and the `fsharp-nuget-library` scaffold. The
+library is a placeholder. Requirements and the backlog were captured in
+WI-0002.
 
 ## Observed facts
 
-- No domain evidence has been accepted.
-- No vertical slice has been selected.
-- No discipline-boundary claim has been tested.
+- No storage behaviour exists yet. `src/Arca/Library.fs` is the scaffold placeholder.
+- The requirements are derived from Signal, Chrona and Summa and cite their IDs.
+- The release workflow never publishes 0.0.0 and needs `NUGET_USER` to publish.
 
-## Assumptions
+## Decisions
 
-- A small, concrete communication problem can exercise the operating model.
+- DF-ARCA-2026-0001: GitHub only, behind a storage interface; pure core plus adapter; WASM; no Fides dependency.
+- DF-ARCA-2026-0002: per-deployment data location; application-owned namespaces; separate repositories per permission boundary; no at-rest encryption for now.
 
 ## Active work
 
-Complete the charter and select the first bounded pilot slice.
+Slice 1 (WI-0003), then slices 2-6 for Chrona, which the user builds first.
 
 ## Largest decision-relevant unknown
 
-Which first use case will provide measurable value while exposing the important
-communication constraints?
+Durable browser storage for the offline queue: Limen has no IndexedDB
+capability yet (OQ-ARCA-003).
 
 ## Baseline
 

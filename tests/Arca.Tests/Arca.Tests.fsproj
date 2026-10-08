@@ -7,6 +7,7 @@
     <ProjectReference Include="../../src/Arca/Arca.fsproj" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="RequirementsTraceability.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 </Project>
