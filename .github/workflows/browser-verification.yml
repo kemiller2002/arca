@@ -9,6 +9,10 @@ name: Browser verification
 # It also runs the offline queue in two tabs of one browser context (WI-0024):
 # one owner per namespace through the coordination pack's Web Lock, hand-off
 # when the owner closes, and a stale save refused rather than overwriting.
+# The IndexedDB queue (WI-0016, EchelonFoundry.Arca.Limen) runs the same way
+# through Limen's store pack: one owner, hand-off at a higher fencing epoch,
+# and a taken-over tab's late save fenced. Every page runs in Chromium and in
+# WebKit (OQ-LIMEN-IDB-006).
 
 on:
   pull_request:
@@ -38,8 +42,8 @@ jobs:
           node-version: "22"
       - name: Install Limen and Playwright
         run: npm ci --no-audit --no-fund
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+      - name: Install Chromium and WebKit
+        run: npx playwright install --with-deps chromium webkit
       - name: Publish the engine to WebAssembly
         run: npm run build:wasm
       - name: Run the browser verification
