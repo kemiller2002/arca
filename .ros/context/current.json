@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-08T21:26:43.000Z",
+  "updatedAt": "2026-10-08T21:43:01.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -1036,33 +1036,47 @@
     {
       "id": "WI-0026",
       "type": "task",
-      "state": "active",
-      "semanticState": "active",
-      "evidence": [],
-      "updatedAt": "2026-10-08T21:26:43.000Z",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "Directory.Build.props"
+        },
+        {
+          "type": "implementation",
+          "path": "docs/distribution-short-term-plan.md"
+        },
+        {
+          "type": "tests",
+          "path": ".github/workflows/release.yml"
+        }
+      ],
+      "updatedAt": "2026-10-08T21:43:01.000Z",
       "telemetryExecutionIds": [
         "EXE-20261008T212643695Z-1df796d9"
       ],
       "latestCheckpoint": {
-        "id": "9af0627a834fd8f35e69ed0b",
-        "recordedAt": "2026-10-08T21:29:52.000Z",
+        "id": "f9f61d5845ae78554aa18f6d",
+        "recordedAt": "2026-10-08T21:42:59.000Z",
         "executionId": "EXE-20261008T212643695Z-1df796d9",
         "repository": "arca",
-        "branch": "release/0.3.0",
-        "commit": "48162efae16b07c4c7d7afe5a919b6210a71f7f3",
+        "branch": "docs/release-0.3.0-status",
+        "commit": "c21b8ec936080649aff3595f88c108be913278e1",
         "remote": {
           "name": "origin",
           "url": "https://github.com/kemiller2002/arca"
         },
-        "remoteBranch": "release/0.3.0",
-        "remoteCommit": "48162efae16b07c4c7d7afe5a919b6210a71f7f3",
-        "summary": "Version 0.3.0, changelog with iPad checklist, README and consumer guide; release PR open",
-        "nextAction": "Merge on green; verify the v0.3.0 release; registry PR for echelon-current 1.11.0",
+        "remoteBranch": "docs/release-0.3.0-status",
+        "remoteCommit": "c21b8ec936080649aff3595f88c108be913278e1",
+        "summary": "v0.3.0 released and verified; registry #55 merged (echelon-current 1.12.0); status docs updated",
+        "nextAction": "Merge the status PR; Chrona WI-0059 and WI-0057 can adopt 0.3.0",
         "verification": {
           "status": "verified",
           "mechanism": "git-remote-observation"
         }
-      }
+      },
+      "completedAt": "2026-10-08T21:43:01.000Z"
     }
   ]
 }
