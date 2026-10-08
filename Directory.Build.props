@@ -3,7 +3,7 @@
     <!-- The release version of both packages (EchelonFoundry.Arca.Core and
          EchelonFoundry.Arca.GitHub). 0.0.0 means "not released yet": the
          release workflow builds, tests and packs it but never publishes it. -->
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <TargetFramework>net10.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>

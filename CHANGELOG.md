@@ -8,6 +8,12 @@ release may change the API; pin an exact version.
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-10-08
+
+Backlog slices 7–10: conformance and an in-memory provider, integrity of
+stored content, the offline change queue, and derived indexes, export and
+migration.
+
 ### Added
 
 - **Provider conformance suite** (`Conformance`, ARCA-TEST-001). Eighteen

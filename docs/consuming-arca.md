@@ -1,6 +1,6 @@
 # Consuming Arca
 
-How an application (Chrona first) takes Arca 0.1.0 and wires it into a Limen
+How an application (Chrona first) takes Arca 0.2.0 and wires it into a Limen
 engine. Distribution follows the short-term plan
 ([`distribution-short-term-plan.md`](distribution-short-term-plan.md)): the
 packages are attested GitHub release assets, which Conditor installs into the
@@ -22,7 +22,7 @@ binding in echelon-current **1.4.0**. In the consuming repository:
 1. Declare Arca in `conditor.json`, at exactly the version the set selects:
 
    ```json
-   { "id": "arca", "version": "0.1.0", "required": true }
+   { "id": "arca", "version": "0.2.0", "required": true }
    ```
 
 2. Plan, review, and apply the exact plan:
@@ -34,7 +34,7 @@ binding in echelon-current **1.4.0**. In the consuming repository:
    conditor upgrade --current --target . --resolved-set ... --resolved-set-sha256 ... --authorize <plan digest>
    ```
 
-   The plan lists `arca: opt in at 0.1.0` under *NuGet release-asset feeds*.
+   The plan lists `arca: opt in at 0.2.0` under *NuGet release-asset feeds*.
    Applying it:
    - downloads both packages and proves them against the Registry digests;
    - writes `vendor/nuget/` with `arca.lock`;
@@ -47,8 +47,8 @@ binding in echelon-current **1.4.0**. In the consuming repository:
 3. Pin the packages (central package management shown):
 
    ```xml
-   <PackageVersion Include="EchelonFoundry.Arca.Core" Version="0.1.0" />
-   <PackageVersion Include="EchelonFoundry.Arca.GitHub" Version="0.1.0" />
+   <PackageVersion Include="EchelonFoundry.Arca.Core" Version="0.2.0" />
+   <PackageVersion Include="EchelonFoundry.Arca.GitHub" Version="0.2.0" />
    ```
 
    Reference `EchelonFoundry.Arca.Core` from the pure domain, and
@@ -68,7 +68,7 @@ Other platforms use their own channel file. The SHA-256 values at registry
 To check provenance yourself:
 
 ```bash
-gh attestation verify vendor/nuget/EchelonFoundry.Arca.Core.0.1.0.nupkg --repo kemiller2002/arca
+gh attestation verify vendor/nuget/EchelonFoundry.Arca.Core.0.2.0.nupkg --repo kemiller2002/arca
 ```
 
 ## 2. Configure storage
@@ -130,7 +130,7 @@ so the engine stays inside Limen's boundary rules. Outside the browser,
 `GitHubStorage.provider host config` exposes Arca's provider-neutral
 `StorageProvider`.
 
-## 5. Offline writes (unreleased)
+## 5. Offline writes
 
 Offline writes are opt-in (ARCA-OFF-005). Create the queue with
 `OfflineQueue.create OfflinePolicy.QueueWrites`. An application that must not
@@ -161,7 +161,7 @@ write offline uses `ReadOnlyWhenOffline` and gets a read-only degraded mode.
 The queue holds operations, not records. Reads always go to GitHub, which
 stays authoritative (ARCA-OFF-006).
 
-## 6. Indexes, export and migration (unreleased)
+## 6. Indexes, export and migration
 
 - **Derived indexes.**
   - Define an index as an `IndexDefinition`: a name, a version, the record
@@ -182,11 +182,10 @@ stays authoritative (ARCA-OFF-006).
   - Later, call `Migration.retire`. Put the application into read-only mode
     while it migrates.
 
-## 7. Pending work and what to expect
+## 7. What comes next
 
-- **Unreleased.** The conformance suite with an in-memory provider, integrity
-  checks on read, the offline queue, derived indexes, export and migration
-  are on `main` for the next release.
+- **Follow-ups.** WI-0016 adds a Limen IndexedDB adapter for the offline
+  queue-store port, once Limen publishes its F# store binding.
 - **Moving to nuget.org.** When the packages are on nuget.org, remove the
   `EchelonFoundry.Arca.*` mapping from `NuGet.config`. The package ids and
   versions do not change.
