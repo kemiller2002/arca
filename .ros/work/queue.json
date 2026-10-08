@@ -88,10 +88,10 @@
         "data-location"
       ],
       "priority": "high",
-      "status": "captured",
+      "status": "complete",
       "attachments": [],
       "createdAt": "2026-10-08T08:03:43.242Z",
-      "updatedAt": "2026-10-08T08:03:43.242Z",
+      "updatedAt": "2026-10-08T08:59:06.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",

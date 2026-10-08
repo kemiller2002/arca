@@ -17,5 +17,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Capabilities.fs" />
+    <Compile Include="Location.fs" />
   </ItemGroup>
 </Project>
