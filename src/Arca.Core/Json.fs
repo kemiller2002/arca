@@ -62,6 +62,19 @@ type JsonError =
     /// Nesting deeper than the limit.
     | TooDeep of limit: int
 
+/// Human-readable text for JSON errors.
+[<RequireQualifiedAccess>]
+module JsonError =
+
+    /// The error as one sentence.
+    let describe =
+        function
+        | JsonError.Malformed detail -> $"malformed JSON: {detail}"
+        | JsonError.DuplicateKey key -> $"duplicate key '{key}'"
+        | JsonError.UnsupportedNumber text -> $"the number {text} cannot be held exactly"
+        | JsonError.InvalidString -> "a string holds a lone surrogate"
+        | JsonError.TooDeep limit -> $"nesting deeper than {limit}"
+
 /// Canonical JSON: construction, parsing, the canonical encoding and content hashes.
 ///
 /// The canonical form (Arca canonical JSON, format 1):
@@ -95,7 +108,7 @@ module Json =
     let objectOf (members: (string * Json) list) =
         match object members with
         | Ok value -> value
-        | Error error -> invalidArg (nameof members) $"duplicate key: {error}"
+        | Error error -> invalidArg (nameof members) (JsonError.describe error)
 
     /// A member's value, when the value is an object that has it.
     let field (key: string) (value: Json) =

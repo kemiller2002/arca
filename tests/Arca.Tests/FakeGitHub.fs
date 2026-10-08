@@ -73,6 +73,8 @@ type Server(owner: string, name: string) =
     member val Rules: string list = [] with get, set
     /// Paths whose ref updates GitHub refuses as a protected branch.
     member val ProtectedRefUpdate = false with get, set
+    /// When set, directory listings return at most this many entries.
+    member val ListingLimit: int option = None with get, set
 
     member _.Requests = requests |> List.ofSeq
     member _.Owner = owner
@@ -241,6 +243,11 @@ type Server(owner: string, name: string) =
                                 | slash -> rest.Substring(0, slash), "dir", sha (prefix + rest.Substring(0, slash)), 0L)
                             |> List.distinctBy (fun (n, _, _, _) -> n)
 
+                        let children =
+                            match this.ListingLimit with
+                            | Some most -> List.truncate most children
+                            | None -> children
+
                         if children.IsEmpty then
                             status 404 "Not Found"
                         else
@@ -311,7 +318,9 @@ type Server(owner: string, name: string) =
                 let node = body ()
                 let target = textOf "sha" node
 
-                if this.ProtectedRefUpdate then
+                if not this.CanPush then
+                    status 403 "Resource not accessible by integration"
+                elif this.ProtectedRefUpdate then
                     status 422 "Protected branch update failed for refs/heads/main."
                 elif not (refs.ContainsKey branch) then
                     status 422 "Reference does not exist"

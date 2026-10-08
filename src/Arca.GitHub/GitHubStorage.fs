@@ -18,10 +18,6 @@ open Arca
 [<RequireQualifiedAccess>]
 module GitHubStorage =
 
-    /// Paths listed per directory; GitHub's contents API returns at most this many.
-    [<Literal>]
-    let ListingLimit = 1000
-
     /// Git's blob SHA-1 of UTF-8 content: the revision GitHub will report for it.
     let blobRevision (content: string) =
         let bytes = Encoding.UTF8.GetBytes content
@@ -31,6 +27,13 @@ module GitHubStorage =
     let private isCommitSha (text: string) =
         text.Length = 40 && text |> Seq.forall (fun c -> Char.IsAsciiDigit c || (c >= 'a' && c <= 'f'))
 
+    let private unavailableReason =
+        function
+        | TokenUnavailable.NoToken -> "no token"
+        | TokenUnavailable.Expired -> "expired"
+        | TokenUnavailable.Revoked -> "revoked"
+        | TokenUnavailable.ProviderFailed detail -> $"token provider failed: {detail}"
+
     let private token: Op<AccessToken> =
         fun session ->
             Conversation.token
@@ -38,14 +41,7 @@ module GitHubStorage =
                 match result with
                 | Ok token -> Ok token, session
                 | Error unavailable ->
-                    let reason =
-                        match unavailable with
-                        | TokenUnavailable.NoToken -> "no token"
-                        | TokenUnavailable.Expired -> "expired"
-                        | TokenUnavailable.Revoked -> "revoked"
-                        | TokenUnavailable.ProviderFailed detail -> $"token provider failed: {detail}"
-
-                    Error(StorageFailure.Refused(WriteRefusal.CredentialUnavailable reason)), session)
+                    Error(StorageFailure.Refused(WriteRefusal.CredentialUnavailable(unavailableReason unavailable))), session)
 
     let private parseBody (parse: JsonElement -> 'a option) (response: Response) : Op<'a> =
         fun session ->
@@ -73,7 +69,7 @@ module GitHubStorage =
         fun session ->
             match Namespace.resolve ns path with
             | Ok address -> Done(Ok address, session)
-            | Error error -> Done(Error(StorageFailure.ProviderFailed("ARCA.INVALID_PATH", false, $"{error}")), session)
+            | Error error -> Done(Error(StorageFailure.ProviderFailed("ARCA.INVALID_PATH", false, LocationError.describe error)), session)
 
     /// The branch head: the change token for the configured location.
     let private head (credential: AccessToken) : Op<ChangeToken> =
@@ -160,6 +156,7 @@ module GitHubStorage =
     /// provider's size limit is ObjectTooLarge, never truncated (ARCA-API-004).
     let read (ns: Namespace) (path: RelativePath) : Op<ReadOutcome> =
         op {
+            let! session = Op.session
             do! checkLocation ns
             let! target = address ns path
             let! credential = token
@@ -170,8 +167,8 @@ module GitHubStorage =
             match contents with
             | Missing -> return ReadOutcome.Absent
             | Folder _ -> return! Op.fail (StorageFailure.ProviderFailed("ARCA.NOT_AN_OBJECT", false, $"{target.Path} is a folder"))
-            | File(_, size, _) when size > Provider.MaxObjectBytes ->
-                return! Op.fail (StorageFailure.ObjectTooLarge(target.Path, size, Provider.MaxObjectBytes))
+            | File(_, size, _) when size > session.Config.MaxObjectBytes ->
+                return! Op.fail (StorageFailure.ObjectTooLarge(target.Path, size, session.Config.MaxObjectBytes))
             | File(_, _, None) -> return! Op.fail (StorageFailure.ProviderFailed("AEGIS.GITHUB.INVALID_RESPONSE", false, $"{target.Path} has no readable UTF-8 content"))
             | File(sha, _, Some content) ->
                 return
@@ -192,7 +189,7 @@ module GitHubStorage =
                 fun session ->
                     match RelativePath.append ns.Root prefix with
                     | Ok full -> Done(Ok full, session)
-                    | Error error -> Done(Error(StorageFailure.ProviderFailed("ARCA.INVALID_PATH", false, $"{error}")), session)
+                    | Error error -> Done(Error(StorageFailure.ProviderFailed("ARCA.INVALID_PATH", false, LocationError.describe error)), session)
 
             let! credential = token
             let! tip = head credential
@@ -203,9 +200,11 @@ module GitHubStorage =
             | Missing -> return { Entries = []; Complete = true }
             | File _ -> return! Op.fail (StorageFailure.ProviderFailed("ARCA.NOT_A_FOLDER", false, $"{RelativePath.render full} is an object"))
             | Folder entries ->
+                let! session = Op.session
+
                 return
                     { Entries = entries
-                      Complete = entries.Length < ListingLimit }
+                      Complete = entries.Length < session.Config.ListingLimit }
         }
 
     /// Measures object count and size under a prefix by walking its folders,
@@ -236,7 +235,7 @@ module GitHubStorage =
     let private resolveError (error: ResolveError) =
         match error with
         | ResolveError.CredentialUnavailable unavailable ->
-            StorageFailure.Refused(WriteRefusal.CredentialUnavailable(sprintf "%A" unavailable))
+            StorageFailure.Refused(WriteRefusal.CredentialUnavailable(unavailableReason unavailable))
         | ResolveError.CredentialRejected -> StorageFailure.Refused(WriteRefusal.CredentialUnavailable "rejected by GitHub")
         | ResolveError.RepositoryNotFound repository ->
             StorageFailure.ProviderFailed("AEGIS.GITHUB.REPOSITORY_NOT_FOUND", false, $"{repository} was not found or is not visible")
@@ -465,6 +464,11 @@ module GitHubStorage =
                 let! tip = head credential
                 let (ChangeToken headCommit) = tip
 
+                do!
+                    match operation.ExpectedChangeToken with
+                    | Some expected when expected <> tip -> Op.fail (StorageFailure.StaleChangeToken(expected, tip))
+                    | _ -> Op.ret ()
+
                 // Expectations are checked at this exact head (ARCA-CON-001).
                 let rec current (pending: (Change * ObjectAddress) list) found : Op<Map<string, Revision option>> =
                     match pending with
@@ -539,8 +543,23 @@ module GitHubStorage =
                         | Error _ -> return! Op.fail (StorageFailure.OutcomeUnknown pending)
             }
 
+        let oversized (limit: int64) =
+            operation.Changes
+            |> List.tryPick (fun change ->
+                match Change.content change with
+                | Some content when int64 (Encoding.UTF8.GetByteCount content) > limit ->
+                    Some(StorageFailure.ObjectTooLarge(RelativePath.render (Change.path change), int64 (Encoding.UTF8.GetByteCount content), limit))
+                | _ -> None)
+
         op {
             do! checkLocation ns
+            let! session = Op.session
+
+            do!
+                match oversized session.Config.MaxObjectBytes with
+                | Some failure -> Op.fail failure
+                | None -> Op.ret ()
+
             let! known = snapshot
             do! permitsWrite known
             let! credential = token
@@ -557,7 +576,7 @@ module GitHubStorage =
                         (Ok [])
                     |> function
                         | Ok found -> Done(Ok(List.rev found), session)
-                        | Error error -> Done(Error(StorageFailure.ProviderFailed("ARCA.INVALID_PATH", false, $"{error}")), session)
+                        | Error error -> Done(Error(StorageFailure.ProviderFailed("ARCA.INVALID_PATH", false, LocationError.describe error)), session)
 
             return! attempt credential addresses 1
         }

@@ -314,7 +314,7 @@ module Layout =
     let private segment text =
         match Segment.create text with
         | Ok segment -> segment
-        | Error error -> invalidOp $"internal: not a valid segment: {error}"
+        | Error error -> invalidOp ("internal: not a valid segment: " + LocationError.describe error)
 
     /// The path of an authoritative record, relative to its namespace.
     let recordPath (key: RecordKey) =

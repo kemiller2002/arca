@@ -246,7 +246,7 @@ module Manifest =
                 match Decode.text "owner" location, Decode.text "repository" location, Decode.text "branch" location, Decode.text "basePath" location with
                 | Ok owner, Ok repository, Ok branch, Ok basePath ->
                     DataLocation.create owner repository branch basePath
-                    |> Result.mapError (fun error -> DecodeError.InvalidField("location", $"{error}"))
+                    |> Result.mapError (fun error -> DecodeError.InvalidField("location", LocationError.describe error))
                 | Error error, _, _, _
                 | _, Error error, _, _
                 | _, _, Error error, _

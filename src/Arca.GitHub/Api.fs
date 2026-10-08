@@ -11,7 +11,12 @@ type GitHubConfig =
       ApiBase: string
       Location: DataLocation
       /// How long the host waits on one request.
-      TimeoutMs: int }
+      TimeoutMs: int
+      /// The largest object read or written, in bytes (ARCA-API-004).
+      MaxObjectBytes: int64
+      /// Entries GitHub returns per directory listing; a listing that reaches
+      /// it is reported as partial (ARCA-API-004).
+      ListingLimit: int }
 
 /// Configuration defaults.
 [<RequireQualifiedAccess>]
@@ -25,7 +30,9 @@ module GitHubConfig =
     let create location =
         { ApiBase = PublicApi
           Location = location
-          TimeoutMs = 30000 }
+          TimeoutMs = 30000
+          MaxObjectBytes = Provider.MaxObjectBytes
+          ListingLimit = 1000 }
 
 /// Why a GitHub call produced no usable response.
 [<RequireQualifiedAccess>]
