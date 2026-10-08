@@ -72,11 +72,13 @@ type FakeLocks() =
 type FakeLocalStorage() =
     let items = Dictionary<string, string>()
     member val Unavailable = false with get, set
+    /// Removals fail, as a tab closed between the copy and the removal.
+    member val FailRemoves = false with get, set
     member _.Items = items
 
     member this.Execute(request: LocalStorageRequest) =
         async {
-            match this.Unavailable, request with
+            match this.Unavailable || (this.FailRemoves && (match request with LocalStorageRequest.Remove _ -> true | _ -> false)), request with
             | true, _ -> return LocalStorageOutcome.Failure LocalStorageFailure.Unavailable
             | false, LocalStorageRequest.Get key ->
                 match items.TryGetValue key with
