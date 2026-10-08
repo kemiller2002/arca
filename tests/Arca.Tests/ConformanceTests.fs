@@ -55,7 +55,10 @@ let ``the suite covers every case ARCA-TEST-001 names`` () =
           "oversized object"
           "authentication failure"
           "read-only mode"
-          "stale change token" ] do
+          "stale change token"
+          "immutable record protected"
+          "corrupt record not overwritten"
+          "external edit detected" ] do
         Assert.Contains(required, names)
 
 [<Fact>]
@@ -102,7 +105,8 @@ let private githubSubject () =
                   Read = fun ns path -> provider.Value.Read ns path
                   List = fun ns prefix -> provider.Value.List ns prefix
                   Commit = fun operation -> provider.Value.Commit operation
-                  Reconcile = fun ns pending -> provider.Value.Reconcile ns pending }
+                  Reconcile = fun ns pending -> provider.Value.Reconcile ns pending
+                  History = fun ns path -> provider.Value.History ns path }
               Namespace = chrona
               WriteExternally =
                 fun relative content ->

@@ -470,7 +470,7 @@ module GitHubStorage =
                     | _ -> Op.ret ()
 
                 // Expectations are checked at this exact head (ARCA-CON-001).
-                let rec current (pending: (Change * ObjectAddress) list) found : Op<Map<string, Revision option>> =
+                let rec current (pending: (Change * ObjectAddress) list) found : Op<Map<string, Revision option * string option>> =
                     match pending with
                     | [] -> Op.ret found
                     | (change, target) :: rest ->
@@ -479,19 +479,30 @@ module GitHubStorage =
 
                             let actual =
                                 match contents with
-                                | File(sha, _, _) -> Some(Revision sha)
-                                | Folder _ -> Some(Revision "folder")
-                                | Missing -> None
+                                | File(sha, _, content) -> Some(Revision sha), content
+                                | Folder _ -> Some(Revision "folder"), None
+                                | Missing -> None, None
 
                             return! current rest (Map.add (RelativePath.render (Change.path change)) actual found)
                         }
 
                 let! actual = current addresses Map.empty
-                let lookup path = Map.tryFind (RelativePath.render path) actual |> Option.flatten
+                let lookup path = Map.tryFind (RelativePath.render path) actual |> Option.bind fst
+                let contentAt path = Map.tryFind (RelativePath.render path) actual |> Option.bind snd
 
-                match Concurrency.conflicts lookup operation.Changes with
-                | _ :: _ as conflicts -> return! Op.fail (StorageFailure.Conflicted conflicts)
-                | [] ->
+                // What is stored at this head must be safe to write over
+                // (ARCA-INT-003, ARCA-INT-004).
+                let refused =
+                    operation.Changes
+                    |> List.tryPick (fun change ->
+                        match Integrity.guard change (contentAt (Change.path change)) with
+                        | Error refusal -> Some(StorageFailure.IntegrityRefused(RelativePath.render (Change.path change), refusal))
+                        | Ok() -> None)
+
+                match Concurrency.conflicts lookup operation.Changes, refused with
+                | (_ :: _ as conflicts), _ -> return! Op.fail (StorageFailure.Conflicted conflicts)
+                | [], Some failure -> return! Op.fail failure
+                | [], None ->
                     let! headTree =
                         op {
                             let! response = Session.get credential true $"{repo}/git/commits/{headCommit}"
@@ -581,6 +592,39 @@ module GitHubStorage =
             return! attempt credential addresses 1
         }
 
+    /// The recent commits that touched an object (at most 100), newest first,
+    /// each with its origin: an Arca operation (its trailers) or an edit made
+    /// outside Arca (ARCA-INT-002). Evidence only, never domain state
+    /// (ARCA-COMMIT-005).
+    let history (ns: Namespace) (path: RelativePath) : Op<HistoryEntry list> =
+        op {
+            do! checkLocation ns
+            let! target = address ns path
+            let! credential = token
+            let! session = Op.session
+            let url = $"{Api.repositoryPath session.Config}/commits?sha={Api.branchPath session.Config}&path={Api.filePath target.Path}&per_page=100"
+            let! response = Session.get credential false url
+
+            match response.Status with
+            | 200 ->
+                return!
+                    parseBody
+                        (fun element ->
+                            Api.items element
+                            |> Option.map (
+                                List.choose (fun item ->
+                                    match Api.text "sha" item, Api.child "commit" item |> Option.bind (Api.text "message") with
+                                    | Some sha, Some message ->
+                                        Some
+                                            { ChangeToken = ChangeToken sha
+                                              Origin = Integrity.origin message }
+                                    | _ -> None)
+                            ))
+                        response
+            | 401 -> return! rejected
+            | _ -> return! unexpected response
+        }
+
     /// The rate-limit evidence from the last response (ARCA-API-003).
     let budget (session: GitHubSession) = session.Budget
 
@@ -602,4 +646,5 @@ module GitHubStorage =
           Read = fun ns path -> run (read ns path)
           List = fun ns prefix -> run (list ns prefix)
           Commit = fun operation -> run (commit operation)
-          Reconcile = fun ns pending -> run (reconcile ns pending) }
+          Reconcile = fun ns pending -> run (reconcile ns pending)
+          History = fun ns path -> run (history ns path) }

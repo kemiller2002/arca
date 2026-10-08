@@ -99,6 +99,7 @@ let private failureText =
     | StorageFailure.StaleChangeToken _ -> "StaleChangeToken"
     | StorageFailure.RateLimited _ -> "RateLimited"
     | StorageFailure.WrongLocation _ -> "WrongLocation"
+    | StorageFailure.IntegrityRefused(path, _) -> $"IntegrityRefused {path}"
     | StorageFailure.ProviderFailed(code, _, detail) -> $"ProviderFailed {code}: {detail}"
 
 let private summarize (result: Result<CommitReceipt * ReadOutcome, StorageFailure>) =

@@ -33,6 +33,21 @@ release may change the API; pin an exact version.
     `OutcomeUnknown`, and Arca reconciles it as landed without resending.
   - CI runs it on every pull request (`browser-verification.yml`).
 
+- **Integrity of stored content** (ARCA-INT-001..004).
+  - `Integrity.validate` checks every record read: size, canonical envelope,
+    the id and type its path names, and schema support. Each failure is a
+    typed `IntegrityFailure`.
+  - `Integrity.unchanged` and `immutableUnchanged` detect content-hash
+    changes.
+  - `Integrity.origin` and `externalEdits` tell Arca commits from edits made
+    outside the application.
+  - `StorageProvider.History` (both providers) lists the commits that
+    touched an object, with their origin.
+  - Both providers refuse, as `IntegrityRefused`, to update or delete a record
+    whose stored state is not a valid record, and to change or delete an
+    immutable record.
+  - Three new conformance cases cover this.
+
 ### Changed
 
 - **Reflection-free compilation.** Both packages compile with

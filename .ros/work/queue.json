@@ -244,10 +244,10 @@
         "integrity"
       ],
       "priority": "high",
-      "status": "captured",
+      "status": "ready",
       "attachments": [],
       "createdAt": "2026-10-08T08:03:45.030Z",
-      "updatedAt": "2026-10-08T08:03:45.030Z",
+      "updatedAt": "2026-10-08T10:01:09.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",

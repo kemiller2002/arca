@@ -54,17 +54,19 @@ type ConformanceResult =
 [<RequireQualifiedAccess>]
 module Conformance =
 
-    let private recordText (id: string) (body: string) =
+    let private recordWith (mutability: Mutability) (id: string) (body: string) =
         let record =
             { Id = RecordId.create id |> Result.defaultWith (fun _ -> invalidOp "fixture id")
               Type = RecordType.create "conformance.note" |> Result.defaultWith (fun _ -> invalidOp "fixture type")
               SchemaVersion = 1
-              Mutability = Mutability.Mutable
+              Mutability = mutability
               Body = Json.objectOf [ "text", Json.String body ] }
 
         match Record.encode Int64.MaxValue record with
         | Ok text -> text
         | Error _ -> invalidOp "fixture record"
+
+    let private recordText id body = recordWith Mutability.Mutable id body
 
     let private path (text: string) =
         RelativePath.parse text |> Result.defaultWith (fun _ -> invalidOp "fixture path")
@@ -104,6 +106,7 @@ module Conformance =
         | Error(StorageFailure.StaleChangeToken _) -> "StaleChangeToken"
         | Error(StorageFailure.RateLimited _) -> "RateLimited"
         | Error(StorageFailure.WrongLocation _) -> "WrongLocation"
+        | Error(StorageFailure.IntegrityRefused _) -> "IntegrityRefused"
         | Error(StorageFailure.ProviderFailed(code, _, _)) -> $"ProviderFailed {code}"
 
     let private revisionOf subject text =
@@ -372,6 +375,55 @@ module Conformance =
             | other -> return failed $"an operation with one stale change: {describe other}"
         }
 
+    let private immutableProtected (subject: ConformanceSubject) =
+        async {
+            let! _ = commit subject "conf-immutable-1" [ Change.Create(path "records/e.json", recordWith Mutability.Immutable "E" "posted") ]
+
+            match! revisionOf subject "records/e.json" with
+            | None -> return failed "the immutable record cannot be read"
+            | Some current ->
+                let! changed = commit subject "conf-immutable-2" [ Change.Update(path "records/e.json", recordWith Mutability.Immutable "E" "edited", current) ]
+                let! deleted = commit subject "conf-immutable-3" [ Change.Delete(path "records/e.json", current) ]
+
+                match changed, deleted with
+                | Error(StorageFailure.IntegrityRefused(_, IntegrityRefusal.ImmutableRecord)), Error(StorageFailure.IntegrityRefused(_, IntegrityRefusal.ImmutableRecord)) ->
+                    let! still = revisionOf subject "records/e.json"
+                    return expect (still = Some current) "a refused write changed the immutable record"
+                | _ -> return failed $"changing an immutable record: {describe changed}; deleting it: {describe deleted}"
+        }
+
+    let private corruptNotOverwritten (subject: ConformanceSubject) =
+        async {
+            do! subject.WriteExternally (path "records/broken.json") (Some "{\"edited\":\"by hand\"}")
+
+            match! revisionOf subject "records/broken.json" with
+            | None -> return failed "the corrupt record cannot be read"
+            | Some current ->
+                let! guessed = commit subject "conf-corrupt-write" [ Change.Update(path "records/broken.json", recordText "B" "guess", current) ]
+
+                match guessed with
+                | Error(StorageFailure.IntegrityRefused(_, IntegrityRefusal.CorruptRecord _)) -> return ConformanceOutcome.Passed
+                | other -> return failed $"overwriting a record whose state cannot be established: {describe other}"
+        }
+
+    let private externalEditDetected (subject: ConformanceSubject) =
+        async {
+            let! _ = commit subject "conf-history-1" [ Change.Create(path "records/h.json", recordText "H" "mine") ]
+            do! subject.WriteExternally (path "records/h.json") (Some(recordText "H" "edited outside"))
+
+            match! subject.Provider.History subject.Namespace (path "records/h.json") with
+            | Ok(newest :: older) ->
+                let arcaKey =
+                    older
+                    |> List.exists (fun entry ->
+                        match entry.Origin with
+                        | CommitOrigin.Arca trailers -> IdempotencyKey.value trailers.IdempotencyKey = "conf-history-1"
+                        | CommitOrigin.External -> false)
+
+                return expect (newest.Origin = CommitOrigin.External && arcaKey) "the history does not show the external edit after Arca's commit"
+            | other -> return failed $"history: {describe other}"
+        }
+
     /// Every case: name, requirement and check.
     let cases: (string * string * (ConformanceSubject -> Async<ConformanceOutcome>)) list =
         [ "round-trip", "ARCA-REC-001", roundTrip
@@ -391,7 +443,10 @@ module Conformance =
           "oversized object", "ARCA-API-004", oversizedObject
           "authentication failure", "ARCA-AUTH-004", authenticationFailure
           "read-only mode", "ARCA-COMMIT-006", readOnlyMode
-          "stale change token", "ARCA-API-004", staleChangeToken ]
+          "stale change token", "ARCA-API-004", staleChangeToken
+          "immutable record protected", "ARCA-INT-003", immutableProtected
+          "corrupt record not overwritten", "ARCA-INT-004", corruptNotOverwritten
+          "external edit detected", "ARCA-INT-002", externalEditDetected ]
 
     /// Runs every case, each against a fresh subject.
     let run (fresh: unit -> Async<ConformanceSubject>) : Async<ConformanceResult list> =

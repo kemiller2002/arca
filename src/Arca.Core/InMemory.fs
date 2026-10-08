@@ -26,7 +26,9 @@ type InMemoryFault =
 /// One commit in the in-memory history.
 type InMemoryCommit =
     { Token: ChangeToken
-      Message: string }
+      Message: string
+      /// The objects the commit touched.
+      Touched: Set<string> }
 
 /// The in-memory provider's whole state: plain data, changed only by the
 /// pure transitions in `InMemory`.
@@ -66,7 +68,7 @@ module InMemory =
     /// An empty store.
     let empty =
         { Objects = Map.empty
-          History = [ { Token = ChangeToken "mem-0"; Message = "initial" } ]
+          History = [ { Token = ChangeToken "mem-0"; Message = "initial"; Touched = Set.empty } ]
           Sequence = 0
           Pending = []
           Standing = [] }
@@ -187,6 +189,12 @@ module InMemory =
     let private apply (operation: Operation) (state: InMemoryState) =
         let ns = operation.Namespace
 
+        let touched =
+            operation.Changes
+            |> List.choose (fun change -> Namespace.resolve ns (Change.path change) |> Result.toOption)
+            |> List.map (fun address -> key ns.Location address.Path)
+            |> Set.ofList
+
         let objects =
             operation.Changes
             |> List.fold
@@ -213,7 +221,7 @@ module InMemory =
         { state with
             Objects = objects
             Sequence = sequence
-            History = { Token = token; Message = Commit.message operation } :: state.History },
+            History = { Token = token; Message = Commit.message operation; Touched = touched } :: state.History },
         token
 
     /// Commits one operation atomically, conditioned on every change's
@@ -256,9 +264,22 @@ module InMemory =
                     | Some failure, _ -> Error failure, next
                     | None, Some expected when expected <> head next -> Error(StorageFailure.StaleChangeToken(expected, head next)), next
                     | None, _ ->
-                        match Concurrency.conflicts current operation.Changes with
-                        | _ :: _ as conflicts -> Error(StorageFailure.Conflicted conflicts), next
-                        | [] ->
+                        let currentContent path =
+                            match resolve ns path with
+                            | Ok address -> Map.tryFind (key ns.Location address.Path) next.Objects |> Option.map _.Content
+                            | Error _ -> None
+
+                        let refused =
+                            operation.Changes
+                            |> List.tryPick (fun change ->
+                                match Integrity.guard change (currentContent (Change.path change)) with
+                                | Error refusal -> Some(StorageFailure.IntegrityRefused(RelativePath.render (Change.path change), refusal))
+                                | Ok() -> None)
+
+                        match Concurrency.conflicts current operation.Changes, refused with
+                        | _ :: _ as conflicts, _ -> Error(StorageFailure.Conflicted conflicts), next
+                        | [], Some failure -> Error failure, next
+                        | [], None ->
                             let pending =
                                 { IdempotencyKey = operation.Metadata.IdempotencyKey
                                   Base = head next
@@ -305,7 +326,28 @@ module InMemory =
         { state with
             Objects = objects
             Sequence = sequence
-            History = { Token = ChangeToken $"mem-{sequence}"; Message = "edited outside Arca" } :: state.History }
+            History =
+                { Token = ChangeToken $"mem-{sequence}"
+                  Message = "edited outside Arca"
+                  Touched = Set.singleton objectKey }
+                :: state.History }
+
+    /// The commits that touched an object, newest first (at most 100).
+    let history (ns: Namespace) (path: RelativePath) (state: InMemoryState) =
+        match gate state with
+        | Error failure, next -> Error failure, next
+        | Ok(), next ->
+            match resolve ns path with
+            | Error failure -> Error failure, next
+            | Ok address ->
+                let objectKey = key ns.Location address.Path
+
+                next.History
+                |> List.filter (fun commit -> commit.Touched.Contains objectKey)
+                |> List.truncate 100
+                |> List.map (fun commit -> { ChangeToken = commit.Token; Origin = Integrity.origin commit.Message })
+                |> Ok,
+                next
 
 /// A stateful handle on an in-memory store, for tests: the provider, external
 /// writes and faults all act on the same state.
@@ -333,7 +375,8 @@ type InMemoryStore(initial: InMemoryState) =
           Read = fun ns path -> step (InMemory.read ns path)
           List = fun ns prefix -> step (InMemory.list ns prefix)
           Commit = fun operation -> step (InMemory.commit operation)
-          Reconcile = fun ns pending -> step (InMemory.reconcile ns pending) }
+          Reconcile = fun ns pending -> step (InMemory.reconcile ns pending)
+          History = fun ns path -> step (InMemory.history ns path) }
 
     /// Arranges a fault.
     member _.Arrange(fault: InMemoryFault) = state <- InMemory.arrange fault state
