@@ -65,6 +65,30 @@ type GrowthMeasure =
       /// False when a listing was partial or the walk hit its budget.
       Complete: bool }
 
+/// Why a write was refused because of what is stored now (ARCA-INT-003,
+/// ARCA-INT-004).
+[<RequireQualifiedAccess>]
+type IntegrityRefusal =
+    /// The record to update or delete is not a valid record: its state
+    /// cannot be established, so it is not overwritten on a guess.
+    | CorruptRecord of DecodeError
+    /// The record is declared immutable.
+    | ImmutableRecord
+
+/// Where a commit came from (ARCA-INT-002).
+[<RequireQualifiedAccess>]
+type CommitOrigin =
+    /// A commit Arca wrote, with the trailers it carries.
+    | Arca of Commit.Trailers
+    /// A commit without Arca's trailers: an edit made outside the
+    /// application, which is untrusted.
+    | External
+
+/// One commit that touched an object, newest first in a history.
+type HistoryEntry =
+    { ChangeToken: ChangeToken
+      Origin: CommitOrigin }
+
 /// Why a storage call did not produce its result. Every case is a fact the
 /// application can act on; none is an exception.
 [<RequireQualifiedAccess>]
@@ -84,6 +108,8 @@ type StorageFailure =
     | RateLimited of retryAfter: TimeSpan option * resetAt: int64 option
     /// The namespace is not at the location the provider serves.
     | WrongLocation of expected: string * actual: string
+    /// What is stored now makes the write unsafe (ARCA-INT-003, ARCA-INT-004).
+    | IntegrityRefused of path: string * reason: IntegrityRefusal
     /// An operational failure. `code` is the Aegis fault code
     /// (ARCA-ARCH-007); `transient` says whether retrying later may help.
     | ProviderFailed of code: string * transient: bool * detail: string
@@ -101,4 +127,8 @@ type StorageProvider =
       /// One operation, one atomic commit, conditioned on every change's expectation.
       Commit: Operation -> Async<Result<CommitReceipt, StorageFailure>>
       /// Settles an unknown outcome by inspecting provider state (ARCA-OUT-002).
-      Reconcile: Namespace -> PendingReconciliation -> Async<Result<ReconcileOutcome, StorageFailure>> }
+      Reconcile: Namespace -> PendingReconciliation -> Async<Result<ReconcileOutcome, StorageFailure>>
+      /// The recent commits that touched an object, newest first, each with
+      /// its origin, so edits made outside Arca are detectable (ARCA-INT-002).
+      /// It is evidence, never a source of domain state (ARCA-COMMIT-005).
+      History: Namespace -> RelativePath -> Async<Result<HistoryEntry list, StorageFailure>> }

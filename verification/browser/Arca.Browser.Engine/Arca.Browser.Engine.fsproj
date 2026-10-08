@@ -5,6 +5,7 @@
   <PropertyGroup>
     <OtherFlags>$(OtherFlags) --reflectionfree</OtherFlags>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Engine.fs" />

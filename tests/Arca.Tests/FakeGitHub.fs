@@ -348,12 +348,27 @@ type Server(owner: string, name: string) =
                 let start = queryValue "sha" |> Option.defaultValue "main"
                 let start = if refs.ContainsKey start then refs[start] else start
                 let limit = queryValue "per_page" |> Option.map int |> Option.defaultValue 30
+                let file = queryValue "path"
+
+                // With `path`, only commits that changed that file, as GitHub filters.
+                let touches (id: string) =
+                    match file with
+                    | None -> true
+                    | Some file ->
+                        let mine = commits[id].Tree |> Map.tryFind file
+
+                        let parents =
+                            commits[id].Parents |> List.choose (fun parent -> if commits.ContainsKey parent then Some(commits[parent].Tree |> Map.tryFind file) else None)
+
+                        match parents with
+                        | [] -> mine.IsSome
+                        | first :: _ -> first <> mine
 
                 let rec walk (id: string) acc =
                     if List.length acc >= limit || not (commits.ContainsKey id) then
                         List.rev acc
                     else
-                        let next = id :: acc
+                        let next = if touches id then id :: acc else acc
 
                         match commits[id].Parents with
                         | parent :: _ -> walk parent next
