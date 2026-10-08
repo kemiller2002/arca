@@ -24,6 +24,27 @@ release may change the API; pin an exact version.
 - **`MemoryQueueStore`**: a `QueueStore` in memory. It encodes, budgets and
   checks the namespace like a durable store, so it serves tests and the
   memory-only durability mode.
+- **Read-cache port** (WI-0021; Limen LCP-082..LCP-086, DF-LIMEN-2026-0005
+  section 4), pure, in `Arca.Core`:
+  - `CacheEntry`: keyed by `[account, namespace, partition]`. It carries the
+    change token it reflects, every record's content hash, the record schema
+    version and the read time. Only a `Fresh` provider read makes one
+    (`ReadCache.entry`).
+  - `Cached<'T>` and `Fresh<'T>` are distinct types. A cached value's token
+    is a `CachedToken`, not a `ChangeToken`, so it cannot condition a write.
+    A compile-failure fixture proves this (LCP-085).
+  - `ReadCache.revalidate`: an equal token confirms (`Fresh` at the
+    provider's token); a different one asks for a refresh and is shown
+    stale; a removed partition is removed; an unreachable provider leaves
+    the entry shown as of its token.
+  - `ReadCache.load` validates the token and hashes. A failing entry is
+    `Corrupt` and is dropped.
+  - The `ReadCacheStore` port, the `MemoryReadCache` implementation, and a
+    `ReadCacheConformance` suite of 13 cases.
+  - `SharedDevicePolicy` (`Ask` | `DiscardOnSignOut`) and `SignOut.plan`.
+    Under `Ask`, keeping the unsent changes keeps the account's cache
+    (OQ-LIMEN-IDB-002); otherwise sign-out clears it. `Keep` is not offered
+    under `DiscardOnSignOut`.
 
 ## [0.2.1] — 2026-10-08
 

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Compile-failure fixtures (WI-0021, Limen LCP-085). This project must
+       NOT compile: ReadCacheTests builds it and expects exactly the type
+       errors named there. It is not in Arca.slnx and is never packed. -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="FreshTokenAsWriteCondition.fs" />
+    <Compile Include="CachedTokenAsWriteCondition.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Arca.Core/Arca.Core.fsproj" />
+  </ItemGroup>
+</Project>
