@@ -1,0 +1,107 @@
+{
+  "schemaVersion": "1.0.0",
+  "protocolVersion": "1.0.0",
+  "repository": "arca",
+  "actor": "ros-bootstrap",
+  "startedAt": "2026-10-08T07:50:21.907Z",
+  "updatedAt": "2026-10-08T08:04:59.000Z",
+  "baselineDirtyPaths": [],
+  "workItems": [
+    {
+      "id": "ROS-INSTALL-3-7-2",
+      "type": "mechanical",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "installation",
+          "path": ".ros/installation.json"
+        }
+      ],
+      "updatedAt": "2026-10-08T07:50:21.907Z",
+      "completedAt": "2026-10-08T07:50:21.907Z"
+    },
+    {
+      "id": "WI-0001",
+      "type": "task",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "conditor.json"
+        },
+        {
+          "type": "tests",
+          "path": "tests/Arca.Tests/Program.fs"
+        }
+      ],
+      "updatedAt": "2026-10-08T08:03:25.000Z",
+      "telemetryExecutionIds": [
+        "EXE-20261008T080258011Z-5eda7590"
+      ],
+      "latestCheckpoint": {
+        "id": "1fab3f2285879d2033f4e82d",
+        "recordedAt": "2026-10-08T08:03:25.000Z",
+        "executionId": "EXE-20261008T080258011Z-5eda7590",
+        "repository": "arca",
+        "branch": "bootstrap/conditor",
+        "commit": "0adc288a02f10a268ed082008f975eaa7226fe67",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "bootstrap/conditor",
+        "remoteCommit": "0adc288a02f10a268ed082008f975eaa7226fe67",
+        "summary": "Arca bootstrapped through Conditor; builds, tests, packs, foundations pass",
+        "nextAction": "Derive storage requirements and capture the backlog (WI-0002)",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-10-08T08:03:25.000Z"
+    },
+    {
+      "id": "WI-0002",
+      "type": "task",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "docs/requirements/ARCA-STORAGE-REQUIREMENTS.md"
+        },
+        {
+          "type": "tests",
+          "path": "tests/Arca.Tests/RequirementsTraceability.fs"
+        }
+      ],
+      "updatedAt": "2026-10-08T08:04:59.000Z",
+      "telemetryExecutionIds": [
+        "EXE-20261008T080342508Z-ce85c57b"
+      ],
+      "latestCheckpoint": {
+        "id": "0a034aa0c9ac107e2a676dcb",
+        "recordedAt": "2026-10-08T08:04:58.000Z",
+        "executionId": "EXE-20261008T080342508Z-ce85c57b",
+        "repository": "arca",
+        "branch": "bootstrap/conditor",
+        "commit": "1a9aa3825a8e4b39bc387cd811c546fd40aa8c2b",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "bootstrap/conditor",
+        "remoteCommit": "1a9aa3825a8e4b39bc387cd811c546fd40aa8c2b",
+        "summary": "Requirements, decisions, charter and 12 backlog slices committed; traceability test passes",
+        "nextAction": "PR, CI green, merge after conditor#53",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-10-08T08:04:59.000Z"
+    }
+  ]
+}

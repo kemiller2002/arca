@@ -1,0 +1,32 @@
+name: Build and test
+
+# Build the library and run its tests on every pull request and on main.
+# The test project is a plain executable that exits non-zero on any failed
+# check, so an empty or skipped run cannot pass.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - name: Build
+        run: dotnet build Arca.slnx -c Release
+      - name: Test
+        run: dotnet run --project tests/Arca.Tests/Arca.Tests.fsproj -c Release --no-build
+      - name: Pack
+        run: dotnet pack src/Arca/Arca.fsproj -c Release --no-build -o dist

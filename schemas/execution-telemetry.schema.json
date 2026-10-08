@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repository-operating-system.local/schemas/execution-telemetry.schema.json",
+  "title": "Praxis provider-neutral execution telemetry record",
+  "type": "object",
+  "required": ["schemaVersion", "executionId", "workItemId", "status", "startedAt", "identity", "provenance", "classification", "capabilities", "metrics", "rawTelemetry", "events", "repository", "links"],
+  "properties": {
+    "schemaVersion": {"const": "1.0.0"},
+    "executionId": {"type": "string", "pattern": "^EXE-[A-Za-z0-9._-]+$"},
+    "workItemId": {"type": "string", "minLength": 1},
+    "instanceId": {"type": ["string", "null"], "description": "Locally authoritative Praxis instance identity when available."},
+    "status": {"enum": ["active", "finalized"]},
+    "startedAt": {"type": "string", "format": "date-time"},
+    "finalizedAt": {"type": ["string", "null"], "format": "date-time"},
+    "identity": {
+      "type": "object",
+      "required": ["provider", "runtime"],
+      "properties": {
+        "provider": {"type": "string", "minLength": 1},
+        "model": {"type": ["string", "null"]},
+        "modelVersion": {"type": ["string", "null"]},
+        "runtime": {"type": "string", "minLength": 1},
+        "runtimeVersion": {"type": ["string", "null"]},
+        "sessionId": {"type": ["string", "null"]},
+        "conversationId": {"type": ["string", "null"]},
+        "runId": {"type": ["string", "null"]},
+        "agentId": {"type": ["string", "null"]},
+        "subagentId": {"type": ["string", "null"]},
+        "parentExecutionId": {"type": ["string", "null"]},
+        "actorKind": {"description": "Kind of actor that performed this execution (RQ-ROS-2026-A002); absent on records written before actor attribution, which are projected from provenance.sources.", "type": "string", "pattern": "^(agent|human|automation|unknown|x-[a-z0-9][a-z0-9-]*)$"},
+        "orchestration": {"type": "object", "additionalProperties": true},
+        "assurance": {"description": "How the identity was obtained. Present only as 'asserted-by-request' on executions created for a praxis.remote request (DF-ROS-2026-A041); absent means self-reported by the local process.", "const": "asserted-by-request"}
+      },
+      "additionalProperties": true
+    },
+    "executor": {
+      "description": "Observed facts about the runner that executed a praxis.remote request (DF-ROS-2026-A041 section 7). Recorded next to, never instead of, the identity; absent on local executions.",
+      "type": "object",
+      "required": ["kind", "praxisVersion", "assurance"],
+      "properties": {
+        "kind": {"type": "string", "minLength": 1},
+        "runId": {"type": ["string", "null"]},
+        "runAttempt": {"type": ["string", "null"]},
+        "workflowRef": {"type": ["string", "null"]},
+        "repository": {"type": ["string", "null"]},
+        "host": {"type": ["string", "null"]},
+        "principal": {"type": ["string", "null"]},
+        "praxisVersion": {"type": "string", "minLength": 1},
+        "assurance": {"const": "observed-by-executor"}
+      },
+      "additionalProperties": true
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["collector", "collectorVersion", "discoveredAt"],
+      "properties": {
+        "collector": {"const": "ros"},
+        "collectorVersion": {"type": "string"},
+        "discoveredAt": {"type": "string", "format": "date-time"},
+        "sources": {"type": "array", "items": {"$ref": "#/$defs/source"}}
+      },
+      "additionalProperties": true
+    },
+    "classification": {
+      "type": "object",
+      "required": ["types"],
+      "properties": {
+        "types": {"type": "array", "minItems": 1, "items": {"type": "string"}, "uniqueItems": true},
+        "rationale": {"type": ["string", "null"]},
+        "evidence": {"type": "array", "items": {"type": "string"}},
+        "rd": {"type": ["object", "null"], "additionalProperties": true}
+      },
+      "additionalProperties": true
+    },
+    "capabilities": {"type": "array", "items": {"$ref": "#/$defs/capability"}},
+    "metrics": {"type": "array", "items": {"$ref": "#/$defs/metric"}},
+    "rawTelemetry": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["snapshotId", "adapter", "collectedAt", "source", "payload", "discoveredFields", "redactions"],
+        "properties": {
+          "snapshotId": {"type": "string"},
+          "adapter": {"type": "string"},
+          "schemaVersion": {"type": ["string", "null"]},
+          "collectedAt": {"type": "string", "format": "date-time"},
+          "source": {"$ref": "#/$defs/source"},
+          "payload": {},
+          "payloadBytes": {"type": "integer", "minimum": 0},
+          "discoveredFields": {"type": "array", "items": {"type": "string"}},
+          "redactions": {"type": "array", "items": {"type": "string"}}
+        },
+        "additionalProperties": true
+      }
+    },
+    "events": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
+    "repository": {"type": "object", "additionalProperties": true},
+    "scope": {"type": "object", "additionalProperties": true},
+    "qualitySignals": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
+    "links": {"type": "object", "additionalProperties": true},
+    "steps": {"type": "array", "items": {"$ref": "#/$defs/step"}}
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "required": ["type", "name", "mechanism"],
+      "properties": {
+        "type": {"type": "string", "minLength": 1},
+        "name": {"type": "string", "minLength": 1},
+        "mechanism": {"type": "string", "minLength": 1},
+        "provider": {"type": "string"},
+        "runtime": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "capability": {
+      "type": "object",
+      "required": ["status", "source", "discoveredAt"],
+      "anyOf": [
+        {"required": ["metricId"]},
+        {"required": ["providerField"]}
+      ],
+      "properties": {
+        "metricId": {"type": "string", "minLength": 1},
+        "providerField": {"type": ["string", "null"]},
+        "status": {"enum": ["supported-observed", "supported-unavailable", "unsupported", "unknown", "derived", "estimated"]},
+        "reason": {"type": ["string", "null"]},
+        "source": {"$ref": "#/$defs/source"},
+        "discoveredAt": {"type": "string", "format": "date-time"},
+        "lastAssessedAt": {"type": "string", "format": "date-time"},
+        "recordedAt": {"type": "string", "format": "date-time"},
+        "history": {"type": "array", "items": {"$ref": "#/$defs/capabilityObservation"}},
+        "historyOmitted": {"type": "integer", "minimum": 1}
+      },
+      "additionalProperties": true
+    },
+    "capabilityObservation": {
+      "type": "object",
+      "required": ["status", "source", "discoveredAt"],
+      "properties": {
+        "status": {"enum": ["supported-observed", "supported-unavailable", "unsupported", "unknown", "derived", "estimated"]},
+        "reason": {"type": ["string", "null"]},
+        "source": {"$ref": "#/$defs/source"},
+        "discoveredAt": {"type": "string", "format": "date-time"},
+        "lastAssessedAt": {"type": "string", "format": "date-time"},
+        "recordedAt": {"type": "string", "format": "date-time"}
+      },
+      "additionalProperties": true
+    },
+    "metric": {
+      "type": "object",
+      "required": ["measurementId", "id", "value", "unit", "quality", "scope", "aggregation", "source", "collectedAt"],
+      "properties": {
+        "measurementId": {"type": "string", "minLength": 1},
+        "id": {"type": "string", "minLength": 1},
+        "value": {"type": "number"},
+        "unit": {"type": "string", "minLength": 1},
+        "currency": {"type": ["string", "null"], "pattern": "^[A-Z]{3}$"},
+        "quality": {"enum": ["observed", "derived", "estimated"]},
+        "confidence": {
+          "oneOf": [
+            {"type": "number", "minimum": 0, "maximum": 1},
+            {"enum": ["low", "medium", "high"]},
+            {"type": "null"}
+          ]
+        },
+        "scope": {"enum": ["operation", "turn", "tool", "step", "execution", "session", "work-item", "repository"]},
+        "stepId": {"type": "string", "pattern": "^STEP-[A-Za-z0-9._-]+$"},
+        "aggregation": {"enum": ["sum", "latest", "latest-per-session", "maximum", "none"]},
+        "dimensions": {"type": "object", "additionalProperties": {"type": ["string", "number", "boolean", "null"]}},
+        "pricing": {
+          "type": ["object", "null"],
+          "properties": {
+            "source": {"type": "string", "minLength": 1},
+            "version": {"type": "string", "minLength": 1},
+            "effectiveAt": {"type": ["string", "null"], "format": "date-time"},
+            "method": {"type": ["string", "null"]},
+            "model": {"type": ["string", "null"]},
+            "tokenMeasurementIds": {"type": "array", "items": {"type": "string"}}
+          },
+          "required": ["source", "version"],
+          "additionalProperties": true
+        },
+        "source": {"$ref": "#/$defs/source"},
+        "collectedAt": {"type": "string", "format": "date-time"}
+      },
+      "additionalProperties": true
+    },
+    "step": {
+      "type": "object",
+      "required": ["schemaVersion", "stepId", "executionId", "workItemId", "sequence", "siblingSequence", "name", "classification", "status", "plannedAt", "actor", "identity", "telemetry", "relationships", "transitions"],
+      "properties": {
+        "schemaVersion": {"const": "1.0.0"},
+        "stepId": {"type": "string", "pattern": "^STEP-[A-Za-z0-9._-]+$"},
+        "executionId": {"type": "string", "pattern": "^EXE-[A-Za-z0-9._-]+$"},
+        "workItemId": {"type": "string", "minLength": 1},
+        "instanceId": {"type": ["string", "null"]},
+        "sequence": {"type": "integer", "minimum": 1},
+        "siblingSequence": {"type": "integer", "minimum": 1},
+        "parentStepId": {"type": ["string", "null"], "pattern": "^STEP-[A-Za-z0-9._-]+$"},
+        "name": {"type": "string", "minLength": 1},
+        "description": {"type": ["string", "null"]},
+        "classification": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "status": {"enum": ["planned", "active", "completed", "blocked", "abandoned"]},
+        "plannedAt": {"type": "string", "format": "date-time"},
+        "startedAt": {"type": ["string", "null"], "format": "date-time"},
+        "completedAt": {"type": ["string", "null"], "format": "date-time"},
+        "endedAt": {"type": ["string", "null"], "format": "date-time"},
+        "updatedAt": {"type": "string", "format": "date-time"},
+        "actor": {"type": "object", "required": ["kind", "id"], "additionalProperties": true},
+        "identity": {"type": "object", "required": ["provider", "runtime"], "additionalProperties": true},
+        "telemetry": {
+          "type": "object",
+          "required": ["measurementIds", "rawSnapshotIds", "checkpoints", "deltas", "capabilities"],
+          "properties": {
+            "measurementIds": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+            "rawSnapshotIds": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+            "checkpoints": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
+            "deltas": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+            "capabilities": {"type": "array", "items": {"$ref": "#/$defs/capability"}}
+          },
+          "additionalProperties": true
+        },
+        "relationships": {"type": "object", "additionalProperties": {"type": "array"}},
+        "transitions": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": true}}
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

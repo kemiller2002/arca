@@ -1,0 +1,7 @@
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+# The Windows launchers ship with CRLF line endings and are verified byte for
+# byte; `praxis init` and `upgrade` keep these two lines in any .gitattributes.
+praxis.cmd text eol=crlf
+ros.cmd text eol=crlf

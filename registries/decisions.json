@@ -1,0 +1,88 @@
+[
+  {
+    "created": "2026-10-08",
+    "id": "DF-ARCA-2026-0001",
+    "owners": [
+      "arca"
+    ],
+    "path": "research/decisions/DF-ARCA-2026-0001--github-only-behind-a-storage-interface.md",
+    "provenance": {
+      "contributions": {
+        "EXE-20261008T080342508Z-ce85c57b": {
+          "actor": {
+            "id": "anthropic/claude-code",
+            "kind": "agent",
+            "model": "unknown",
+            "provider": "anthropic",
+            "runtime": "claude-code"
+          },
+          "at": "2026-10-08T08:04:42.674Z",
+          "operations": [
+            "created"
+          ],
+          "reason": "Derived from Signal, Chrona and Summa requirements and user decisions of 2026-10-08"
+        }
+      }
+    },
+    "related_documents": [
+      "docs/requirements/ARCA-STORAGE-REQUIREMENTS.md"
+    ],
+    "review_cycle": "on-trigger",
+    "status": "accepted",
+    "superseded_by": [],
+    "supersedes": [],
+    "tags": [
+      "architecture",
+      "storage",
+      "github",
+      "wasm",
+      "provider"
+    ],
+    "title": "Arca supports GitHub only, behind a provider-neutral storage interface, as a pure F# core plus a GitHub adapter that runs in browser WASM and never depends on Fides",
+    "updated": "2026-10-08",
+    "version": "1.0.0"
+  },
+  {
+    "created": "2026-10-08",
+    "id": "DF-ARCA-2026-0002",
+    "owners": [
+      "arca"
+    ],
+    "path": "research/decisions/DF-ARCA-2026-0002--per-deployment-data-location-and-app-owned-namespaces.md",
+    "provenance": {
+      "contributions": {
+        "EXE-20261008T080342508Z-ce85c57b": {
+          "actor": {
+            "id": "anthropic/claude-code",
+            "kind": "agent",
+            "model": "unknown",
+            "provider": "anthropic",
+            "runtime": "claude-code"
+          },
+          "at": "2026-10-08T08:04:43.010Z",
+          "operations": [
+            "created"
+          ],
+          "reason": "Derived from Signal, Chrona and Summa requirements and user decisions of 2026-10-08"
+        }
+      }
+    },
+    "related_documents": [
+      "docs/requirements/ARCA-STORAGE-REQUIREMENTS.md"
+    ],
+    "review_cycle": "on-trigger",
+    "status": "accepted",
+    "superseded_by": [],
+    "supersedes": [],
+    "tags": [
+      "storage",
+      "data-location",
+      "permissions",
+      "encryption",
+      "multi-application"
+    ],
+    "title": "The data repository is configured per deployment, each application owns its namespace, permission separation uses separate repositories, and there is no at-rest encryption for now",
+    "updated": "2026-10-08",
+    "version": "1.0.0"
+  }
+]

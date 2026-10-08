@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "application": "Arca",
+  "capabilities": {
+    "aegis": {
+      "required": false,
+      "boundaryManifest": "aegis-boundaries.json"
+    },
+    "forma": {
+      "required": false
+    },
+    "folio": {
+      "required": false
+    },
+    "limen": {
+      "required": false
+    },
+    "ordo": {
+      "required": true,
+      "version": "1.5.0"
+    },
+    "percepta": {
+      "required": false
+    },
+    "praxis": {
+      "required": true,
+      "version": "3.7.2"
+    }
+  }
+}
