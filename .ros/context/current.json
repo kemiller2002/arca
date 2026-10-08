@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-08T09:08:19.000Z",
+  "updatedAt": "2026-10-08T09:08:23.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -270,13 +270,43 @@
     {
       "id": "WI-0006",
       "type": "task",
-      "state": "active",
-      "semanticState": "active",
-      "evidence": [],
-      "updatedAt": "2026-10-08T09:08:19.000Z",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "src"
+        },
+        {
+          "type": "tests",
+          "path": "tests"
+        }
+      ],
+      "updatedAt": "2026-10-08T09:08:23.000Z",
       "telemetryExecutionIds": [
         "EXE-20261008T090819911Z-41a50a39"
-      ]
+      ],
+      "latestCheckpoint": {
+        "id": "35eb66d793dbbb3dce42e0be",
+        "recordedAt": "2026-10-08T09:08:22.000Z",
+        "executionId": "EXE-20261008T090819911Z-41a50a39",
+        "repository": "arca",
+        "branch": "slice/04-concurrency-commit",
+        "commit": "506abbeb5f27b27bf944f28eec2be8638cc0fbc6",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "slice/04-concurrency-commit",
+        "remoteCommit": "506abbeb5f27b27bf944f28eec2be8638cc0fbc6",
+        "summary": "Slice 4: conditional changes, typed conflicts, three-way merge, commit format",
+        "nextAction": "PR, CI green, merge; then slice 5 (WI-0007)",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-10-08T09:08:23.000Z"
     }
   ]
 }
