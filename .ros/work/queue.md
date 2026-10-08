@@ -18,7 +18,7 @@
 | WI-0013 | Arca first release: interim distribution as Sigstore-attested GitHub release assets, echelon-registry entry, Conditor local-feed install; nuget.org Trusted Publishing kept dormant until NUGET_USER exists | complete | arca, release, registry | high |
 | WI-0014 | (Deferred, possible future) per-application at-rest encryption for co-located data | captured | arca, deferred, future, encryption | low |
 | WI-0015 | Align Arca to echelon-current 1.3.0 (conditor upgrade --current) and regenerate the test project as a real xUnit dotnet test project (conditor#54) | complete | arca, conditor, release-set, testing | high |
-| WI-0016 | Limen IndexedDB adapter for Arca's offline queue-store port (ARCA-OFF-002) in a new EchelonFoundry.Arca.Limen package, replacing the interim localStorage adapter (Limen LCP-046, LCP-059, LCP-060, LCP-062, LCP-065) | captured | arca, offline, limen, indexeddb, follow-up | medium |
+| WI-0016 | Limen IndexedDB adapter for Arca's offline queue-store port (ARCA-OFF-002) in a new EchelonFoundry.Arca.Limen package, replacing the interim localStorage adapter (Limen LCP-046, LCP-059, LCP-060, LCP-062, LCP-065) | ready | arca, offline, limen, indexeddb, follow-up | medium |
 | WI-0017 | Release Arca 0.2.0 (slices 7-10) as attested GitHub release assets and register it in echelon-registry | complete |  | medium |
 | WI-0018 | Namespace-scoped change tokens: condition a commit on the application's own namespace, not the whole repository | captured |  | medium |
 | WI-0019 | Queue-store port conformance suite: one executable contract that the localStorage, in-memory and (later) IndexedDB QueueStore implementations all pass (ARCA-OFF-002; Limen LCP-046, LCP-060, LCP-075) | complete | arca, offline, limen, indexeddb | medium |
