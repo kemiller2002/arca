@@ -399,7 +399,27 @@
       "updatedAt": "2026-10-08T09:23:22.000Z",
       "telemetryExecutionIds": [
         "EXE-20261008T092323072Z-4beb1b24"
-      ]
+      ],
+      "latestCheckpoint": {
+        "id": "750688ab9d5d8e653c451185",
+        "recordedAt": "2026-10-08T09:23:44.000Z",
+        "executionId": "EXE-20261008T092323072Z-4beb1b24",
+        "repository": "arca",
+        "branch": "release/0.1.0",
+        "commit": "0bc14b78083c4a9135744d19e025686de2c61318",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "release/0.1.0",
+        "remoteCommit": "0bc14b78083c4a9135744d19e025686de2c61318",
+        "summary": "Release workflow publishes attested GitHub release assets; version 0.1.0",
+        "nextAction": "Merge, verify the v0.1.0 release, register it in echelon-registry, add Conditor's release-asset feed",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      }
     }
   ]
 }
