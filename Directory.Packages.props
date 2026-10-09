@@ -8,11 +8,11 @@
     <!-- Aegis 1.0.0 is the echelon-current 1.3.0 selection. -->
     <PackageVersion Include="EchelonFoundry.Aegis.Core" Version="1.0.0" />
     <PackageVersion Include="EchelonFoundry.Aegis.Integration.GitHub" Version="1.0.0" />
-    <!-- Limen 0.8.0's F# packages (limen-fsharp, echelon-current 1.10.0),
+    <!-- Limen 0.9.0's F# packages (limen-fsharp, echelon-current 1.12.0),
          restored only from vendor/nuget, which Conditor writes and verifies
          (NuGet.config). Lockstep with Limen's npm version (OQ-LIMEN-IDB-005). -->
-    <PackageVersion Include="EchelonFoundry.Limen.Contract" Version="0.8.0" />
-    <PackageVersion Include="EchelonFoundry.Limen.Store" Version="0.8.0" />
+    <PackageVersion Include="EchelonFoundry.Limen.Contract" Version="0.9.0" />
+    <PackageVersion Include="EchelonFoundry.Limen.Store" Version="0.9.0" />
   </ItemGroup>
   <ItemGroup Label="Test">
     <!-- The versions the conditor#54 scaffold, Chrona and Signal pin. -->

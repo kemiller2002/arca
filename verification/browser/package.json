@@ -8,7 +8,7 @@
     "test": "playwright test"
   },
   "devDependencies": {
-    "@echelon-foundry/limen": "0.8.0",
+    "@echelon-foundry/limen": "0.9.0",
     "@playwright/test": "1.63.0"
   }
 }

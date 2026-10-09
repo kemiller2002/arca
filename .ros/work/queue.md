@@ -29,3 +29,4 @@
 | WI-0024 | Fix multi-tab loss in the interim localStorage offline queue: two tabs saving one whole snapshot lose entries (last save wins); single owner per namespace behind the unchanged QueueStore port (Limen LCP-059, LCP-060, DF-LIMEN-2026-0005) | complete | arca, offline, bug, data-loss | high |
 | WI-0025 | Release Arca 0.2.1 (multi-tab localStorage queue fix) as attested GitHub release assets and register it in echelon-registry | complete | arca, release, registry | high |
 | WI-0026 | Release Arca 0.3.0 (EchelonFoundry.Arca.Core, .GitHub and the new .Limen: IndexedDB queue, migration, read cache) as attested GitHub release assets and register it in echelon-registry | complete | arca, release, registry | high |
+| WI-0027 | Move Arca's build from limen-fsharp 0.8.0 to 0.9.0 through Conditor (echelon-current 1.12.0); re-verify the queue, read cache and Limen vectors | complete | arca, conditor, limen | medium |

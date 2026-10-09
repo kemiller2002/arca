@@ -665,6 +665,31 @@
       },
       "source": "manual",
       "sourceReference": null
+    },
+    {
+      "id": "WI-0027",
+      "title": "Move Arca's build from limen-fsharp 0.8.0 to 0.9.0 through Conditor (echelon-current 1.12.0); re-verify the queue, read cache and Limen vectors",
+      "description": "echelon-current 1.12.0 selects Limen 0.9.0 and limen-fsharp 0.9.0. conditor upgrade --current with the 1.12.0 linux-x64 resolved set (sha256 d6a26a57...) moves only limen-fsharp for Arca's declared components; vendor/nuget, Directory.Packages.props, the authority and lock follow. The store library is expected byte-identical; re-run the full suite and the browser verification.",
+      "tags": [
+        "arca",
+        "conditor",
+        "limen"
+      ],
+      "priority": "medium",
+      "status": "complete",
+      "attachments": [],
+      "createdAt": "2026-10-09T00:27:22.000Z",
+      "updatedAt": "2026-10-09T00:52:49.000Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
     }
   ]
 }
