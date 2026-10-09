@@ -1179,7 +1179,27 @@
       "updatedAt": "2026-10-09T00:56:25.000Z",
       "telemetryExecutionIds": [
         "EXE-20261009T005625812Z-9cc68a91"
-      ]
+      ],
+      "latestCheckpoint": {
+        "id": "608b50abb7cf8e028287d747",
+        "recordedAt": "2026-10-09T01:28:48.000Z",
+        "executionId": "EXE-20261009T005625812Z-9cc68a91",
+        "repository": "arca",
+        "branch": "wi-0028/erasure",
+        "commit": "c68ae356fcdf97731d63cf812a50d3dead1682f7",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca.git"
+        },
+        "remoteBranch": "wi-0028/erasure",
+        "remoteCommit": "c68ae356fcdf97731d63cf812a50d3dead1682f7",
+        "summary": "Erasure implemented with conformance; 338 tests",
+        "nextAction": "ARCA-INT-005, DF-ARCA-2026-0012, guide and changelog; PR",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      }
     }
   ]
 }
