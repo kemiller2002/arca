@@ -767,6 +767,33 @@
       },
       "source": "manual",
       "sourceReference": null
+    },
+    {
+      "id": "WI-0031",
+      "title": "Fix: OfflineQueue.revise drops the entry's AccountId, so a revised entry no longer matches at sign-out (ARCA-OFF-007); release 0.4.1",
+      "description": "Bug from Chrona's 0.4.0 adoption. revise rebuilds the queued operation with describe, which sets AccountId = None. Keep every entry attribute that is not the operation itself (sequence, enqueue time, account) through revise; audit every other rebuild path; refuse an erasure in revise as enqueue does. Conformance: enqueueFor -> revise keeps the account through a save and reload on every QueueStore; unsentOfAccount/DiscardAccount still match after revise and after a reload. Patch release 0.4.1, verified from an empty directory, recorded in echelon-registry with the channel moved per convention.",
+      "tags": [
+        "arca",
+        "offline",
+        "bug",
+        "sign-out",
+        "release"
+      ],
+      "priority": "high",
+      "status": "ready",
+      "attachments": [],
+      "createdAt": "2026-10-09T03:41:49.000Z",
+      "updatedAt": "2026-10-09T03:41:50.000Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
     }
   ]
 }
