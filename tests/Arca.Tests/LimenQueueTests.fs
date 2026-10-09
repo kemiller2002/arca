@@ -505,6 +505,83 @@ let ``discarding at sign-out removes only the account's discardable entries, cou
     Assert.Equal(Some kept, storedQueue origin)
     Assert.Equal(1, (queue.Diagnostics()).Discarded)
 
+// Two people who share a display name ("Alex"), told apart by their GitHub
+// numeric user ids (ARCA-OFF-007).
+let private alexA = AccountId.ProviderSubject("github", "1001")
+let private alexB = AccountId.ProviderSubject("github", "2002")
+let private enqueueFor account display key queue = OfflineQueue.enqueueFor account at (operationAs display key) queue |> ok |> fst
+let private signingOut account = { Account = account; Legacy = None }
+
+let private sharedName (token: ChangeToken) =
+    empty
+    |> enqueueFor alexA "Alex" "a1"
+    |> enqueueFor alexB "Alex" "b1"
+    |> enqueueFor alexA "Alex" "a2"
+    |> enqueueFor alexA "Alex" "a3"
+    |> OfflineQueue.markInFlight 1L token
+    |> ok
+
+[<Fact>]
+let ``discarding by stable account id never touches another account with the same display name (ARCA-OFF-007)`` () =
+    let origin = Origin()
+    let queue = own origin "a" |> owned
+    let token = InMemoryStore().Provider.ChangeToken chrona |> run |> ok
+    let held = sharedName token
+    queue.Store.Save held |> run |> ok
+
+    // The display name cannot tell them apart; the stable id can.
+    Assert.Equal(4, QueueSignOut.unsentOf "Alex" held)
+    Assert.Equal(3, QueueSignOut.unsentOfAccount (signingOut alexA) held)
+    Assert.Equal(1, QueueSignOut.unsentOfAccount (signingOut alexB) held)
+
+    let kept, count = queue.DiscardAccount (signingOut alexA) held |> run |> ok
+    // a1 is in flight: it may have landed, so it stays to be reconciled.
+    Assert.Equal(2, count)
+    Assert.Equal<string list>([ "offline-a1"; "offline-b1" ], keysOf kept)
+    Assert.Equal(Some kept, storedQueue origin)
+    Assert.Equal(2, (queue.Diagnostics()).Discarded)
+
+[<Fact>]
+let ``outcome-unknown entries are never discarded, whoever signs out (ARCA-OFF-007)`` () =
+    let token = InMemoryStore().Provider.ChangeToken chrona |> run |> ok
+
+    let held =
+        sharedName token
+        |> OfflineQueue.recordResult 1L (Error(StorageFailure.OutcomeUnknown { IdempotencyKey = IdempotencyKey.create "offline-a1" |> ok; Base = token; Candidate = None; Revisions = Map.empty }))
+        |> ok
+
+    let kept, count = QueueSignOut.discardAccount (signingOut alexA) held
+    Assert.Equal(2, count)
+    Assert.Equal<EntryState list>([ EntryState.OutcomeUnknown(let (ChangeToken t) = token in t); EntryState.Pending ], kept.Entries |> List.map _.State)
+
+[<Fact>]
+let ``entries queued without an account id match only the legacy identity the caller names (ARCA-OFF-007)`` () =
+    let legacy = empty |> enqueueAs "Alex" "old1" |> enqueueFor alexA "Alex" "new1"
+
+    // Without a legacy identity, an entry with no id is never matched.
+    let kept, count = QueueSignOut.discardAccount (signingOut alexA) legacy
+    Assert.Equal(1, count)
+    Assert.Equal<string list>([ "offline-old1" ], keysOf kept)
+
+    // Naming it is the caller's explicit decision.
+    let _, both = QueueSignOut.discardAccount { Account = alexA; Legacy = Some "Alex" } legacy
+    Assert.Equal(2, both)
+
+    // Another account's id never matches an entry recorded for alexA.
+    let _, none = QueueSignOut.discardAccount (signingOut alexB) (empty |> enqueueFor alexA "Alex" "x")
+    Assert.Equal(0, none)
+
+[<Fact>]
+let ``a memory-only queue discards by account id too`` () =
+    let origin = Origin()
+    let queue = LimenQueue.own (origin.Host "a") { QueueOptions.standard with Order = [ DurabilityChoice.MemoryOnly ] } chrona |> run |> owned
+    Assert.Equal(DurabilityMode.MemoryOnly, queue.Mode)
+    let held = empty |> enqueueFor alexA "Alex" "a1" |> enqueueFor alexB "Alex" "b1"
+    queue.Store.Save held |> run |> ok
+    let kept, count = queue.DiscardAccount (signingOut alexB) held |> run |> ok
+    Assert.Equal(1, count)
+    Assert.Equal<string list>([ "offline-a1" ], keysOf kept)
+
 [<Fact>]
 let ``releasing ownership lets the next tab own the queue`` () =
     let origin = Origin()

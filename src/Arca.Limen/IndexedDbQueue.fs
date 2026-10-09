@@ -469,21 +469,23 @@ module IndexedDbQueue =
 
         let store: QueueStore = { Load = load; Save = save }
 
+        let discardWith (select: OfflineQueue -> OfflineQueue * int) (queue: OfflineQueue) =
+            async {
+                let kept, count = select queue
+
+                match! save kept with
+                | Ok() ->
+                    diagnose (QueueDiagnostics.discarded count)
+                    return Ok(kept, count)
+                | Error failure -> return Error failure
+            }
+
         { Mode = DurabilityMode.IndexedDb
           Store = store
           Notices = initial.Diagnostics.Notices
           Diagnostics = fun () -> cell.Value.Diagnostics
-          Discard =
-            fun account queue ->
-                async {
-                    let kept, count = QueueSignOut.discard account queue
-
-                    match! save kept with
-                    | Ok() ->
-                        diagnose (QueueDiagnostics.discarded count)
-                        return Ok(kept, count)
-                    | Error failure -> return Error failure
-                }
+          Discard = fun account queue -> discardWith (QueueSignOut.discard account) queue
+          DiscardAccount = fun who queue -> discardWith (QueueSignOut.discardAccount who) queue
           Release =
             fun () ->
                 async {

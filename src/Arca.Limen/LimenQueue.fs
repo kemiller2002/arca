@@ -115,21 +115,23 @@ module LimenQueue =
                     return Error error
             }
 
+        let discardWith (select: OfflineQueue -> OfflineQueue * int) (queue: OfflineQueue) =
+            async {
+                let kept, count = select queue
+
+                match! save kept with
+                | Ok() ->
+                    diagnose (QueueDiagnostics.discarded count)
+                    return Ok(kept, count)
+                | Error error -> return Error error
+            }
+
         { Mode = mode
           Store = { Load = load; Save = save }
           Notices = []
           Diagnostics = fun () -> diagnostics.Value
-          Discard =
-            fun account queue ->
-                async {
-                    let kept, count = QueueSignOut.discard account queue
-
-                    match! save kept with
-                    | Ok() ->
-                        diagnose (QueueDiagnostics.discarded count)
-                        return Ok(kept, count)
-                    | Error error -> return Error error
-                }
+          Discard = fun account queue -> discardWith (QueueSignOut.discard account) queue
+          DiscardAccount = fun who queue -> discardWith (QueueSignOut.discardAccount who) queue
           Release =
             fun () ->
                 async {
