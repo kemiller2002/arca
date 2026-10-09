@@ -702,10 +702,10 @@
         "signal"
       ],
       "priority": "high",
-      "status": "ready",
+      "status": "complete",
       "attachments": [],
       "createdAt": "2026-10-09T00:56:24.000Z",
-      "updatedAt": "2026-10-09T00:56:25.000Z",
+      "updatedAt": "2026-10-09T01:33:02.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",
