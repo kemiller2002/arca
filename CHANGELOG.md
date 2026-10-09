@@ -49,6 +49,19 @@ release may change the API; pin an exact version.
   - **Git history still holds the erased content.** Removing it permanently
     needs a history rewrite by the repository owner, which Arca does not do.
 
+- **Sign-out matches accounts by a stable id** (WI-0029, ARCA-OFF-007).
+  - `AccountId` is either the provider subject (GitHub's numeric user id,
+    `AccountId.ofIdentity`) or an application-supplied actor id
+    (`AccountId.ofActor`).
+  - `OfflineQueue.enqueueFor` records it on the entry, persisted as
+    `accountId` only when set.
+  - New `QueueSignOut.unsentOfAccount`, `QueueSignOut.discardAccount` and
+    `OwnedQueue.DiscardAccount` take a `SignOutAccount`.
+  - Two accounts that share a display name no longer discard each other's
+    entries. An entry without an id matches only an explicitly named legacy
+    identity. In-flight and outcome-unknown entries are still never
+    discarded.
+
 ### Changed (breaking)
 
 - `Fresh.read` takes a `NamespaceState`, not a `ChangeToken`, and
@@ -60,7 +73,8 @@ release may change the API; pin an exact version.
   `IntegrityRefusal` cases `ErasedRecord` and `NotErasable` are new.
   Exhaustive matches over them must handle the new cases.
 - New members of public types: `StorageProvider.NamespaceState`,
-  `CacheEntry.Scope`, `QueuedOperation.ExpectedNamespaceToken` and
+  `CacheEntry.Scope`, `QueuedOperation.ExpectedNamespaceToken`,
+  `QueuedOperation.AccountId`, `OwnedQueue.DiscardAccount` and
   `StorageFailure.StaleNamespaceToken`. Code that builds these records, or
   matches `StorageFailure` exhaustively, must add them.
 

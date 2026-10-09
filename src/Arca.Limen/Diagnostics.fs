@@ -138,6 +138,18 @@ module QueueDiagnostics =
     let discarded (count: int) (diagnostics: QueueDiagnostics) =
         { diagnostics with Discarded = diagnostics.Discarded + count }
 
+/// Who is signing out, for matching their queued entries (LCP-070,
+/// ARCA-OFF-007).
+type SignOutAccount =
+    { /// The stable account id entries were queued with
+      /// (`OfflineQueue.enqueueFor`).
+      Account: AccountId
+      /// The identity that entries queued without an account id were recorded
+      /// with (their provider identity, else their actor). None: such entries
+      /// never match. Set it only while older entries may remain, and only to
+      /// a value that is unique to this account.
+      Legacy: string option }
+
 /// A queue this tab holds, in whatever durability mode the composer
 /// obtained (LCP-059, LCP-065). Only this tab may load, save and run
 /// `OfflineSync` on it.
@@ -156,6 +168,10 @@ type OwnedQueue =
       /// discarded; they stay to be reconciled. Answers the saved queue and
       /// how many were discarded; counted in diagnostics.
       Discard: string -> OfflineQueue -> Async<Result<OfflineQueue * int, QueueStoreFailure>>
+      /// `Discard`, matching entries by the account's stable id (ARCA-OFF-007):
+      /// two people who share a display name never discard each other's
+      /// entries. The same entries are never discarded.
+      DiscardAccount: SignOutAccount -> OfflineQueue -> Async<Result<OfflineQueue * int, QueueStoreFailure>>
       /// Releases ownership (sign-out, switching namespace). Closing the tab
       /// releases it too.
       Release: unit -> Async<unit> }
@@ -166,11 +182,21 @@ type OwnedQueue =
 module QueueSignOut =
 
     /// True when the entry was made by `account` (its provider identity, or
-    /// its actor where no provider identity was recorded).
+    /// its actor where no provider identity was recorded). These are display
+    /// values that two accounts may share; prefer `belongsToAccount`.
     let belongsTo (account: string) (entry: QueueEntry) =
         match entry.Operation.ProviderIdentity with
         | Some identity -> identity = account
         | None -> entry.Operation.ActorId = account
+
+    /// True when the entry was made by the account signing out: by its stable
+    /// id when the entry records one (ARCA-OFF-007); an entry without one
+    /// only when the caller names the legacy identity it was recorded with.
+    let belongsToAccount (who: SignOutAccount) (entry: QueueEntry) =
+        match entry.Operation.AccountId, who.Legacy with
+        | Some recorded, _ -> recorded = AccountId.toWire who.Account
+        | None, Some legacy -> belongsTo legacy entry
+        | None, None -> false
 
     let private unsent (entry: QueueEntry) =
         match entry.State with
@@ -183,18 +209,30 @@ module QueueSignOut =
     let unsentOf (account: string) (queue: OfflineQueue) =
         queue.Entries |> List.filter (fun entry -> belongsTo account entry && unsent entry) |> List.length
 
+    /// `unsentOf`, matched by the account's stable id.
+    let unsentOfAccount (who: SignOutAccount) (queue: OfflineQueue) =
+        queue.Entries |> List.filter (fun entry -> belongsToAccount who entry && unsent entry) |> List.length
+
+    /// Entries that have not reached the provider and cannot have: these may
+    /// be discarded. In-flight and outcome-unknown entries may have landed,
+    /// so they are reconciled, never dropped.
+    let private discardableState (entry: QueueEntry) =
+        match entry.State with
+        | EntryState.Pending
+        | EntryState.Conflicted _
+        | EntryState.Refused _ -> true
+        | _ -> false
+
+    let private discardWhere (owned: QueueEntry -> bool) (queue: OfflineQueue) =
+        let discardable entry = owned entry && discardableState entry
+        let count = queue.Entries |> List.filter discardable |> List.length
+        { queue with Entries = queue.Entries |> List.filter (discardable >> not) }, count
+
     /// The queue without the account's discardable entries (pending,
     /// conflicted, refused), and how many were removed. In-flight and
     /// outcome-unknown entries stay: they may have landed, so they are
     /// reconciled, never dropped. Other accounts' entries are untouched.
-    let discard (account: string) (queue: OfflineQueue) =
-        let discardable (entry: QueueEntry) =
-            belongsTo account entry
-            && (match entry.State with
-                | EntryState.Pending
-                | EntryState.Conflicted _
-                | EntryState.Refused _ -> true
-                | _ -> false)
+    let discard (account: string) (queue: OfflineQueue) = discardWhere (belongsTo account) queue
 
-        let count = queue.Entries |> List.filter discardable |> List.length
-        { queue with Entries = queue.Entries |> List.filter (discardable >> not) }, count
+    /// `discard`, matched by the account's stable id (ARCA-OFF-007).
+    let discardAccount (who: SignOutAccount) (queue: OfflineQueue) = discardWhere (belongsToAccount who) queue

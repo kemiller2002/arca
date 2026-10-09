@@ -12,6 +12,41 @@ type OfflinePolicy =
     /// degraded mode (Signal's administrator, SIG ADM-070).
     | ReadOnlyWhenOffline
 
+/// A stable identity for the account that made a queued change, used to
+/// match its entries at sign-out (LCP-070, ARCA-OFF-007). Never a display
+/// name: two people may share one.
+[<RequireQualifiedAccess>]
+type AccountId =
+    /// The provider's stable subject, such as GitHub's numeric user id
+    /// (`CapabilitySnapshot.Identity`, ARCA-AUTH-003).
+    | ProviderSubject of provider: string * subject: string
+    /// An actor id the application supplies and keeps stable.
+    | Actor of ActorId
+
+/// Construction and the stored form of account ids.
+[<RequireQualifiedAccess>]
+module AccountId =
+
+    /// The account the provider resolved for the credential in use.
+    let ofIdentity (identity: ProviderIdentity) = AccountId.ProviderSubject(identity.Provider, identity.Subject)
+
+    /// An application-supplied stable actor id.
+    let ofActor (actor: ActorId) = AccountId.Actor actor
+
+    /// The stored form: `subject:<provider>:<subject>` or `actor:<id>`.
+    let toWire =
+        function
+        | AccountId.ProviderSubject(provider, subject) -> $"subject:{provider}:{subject}"
+        | AccountId.Actor actor -> $"actor:{ActorId.value actor}"
+
+    /// An account id from its stored form.
+    let ofWire (text: string) =
+        match text.Split(':', 3) with
+        | [| "subject"; provider; subject |] when provider <> "" && subject <> "" -> Some(AccountId.ProviderSubject(provider, subject))
+        | [| "actor"; actor |] -> ActorId.create actor |> Result.toOption |> Option.map AccountId.Actor
+        | [| "actor"; first; rest |] -> ActorId.create $"{first}:{rest}" |> Result.toOption |> Option.map AccountId.Actor
+        | _ -> None
+
 /// One change as stored in the queue.
 [<RequireQualifiedAccess>]
 type QueuedChange =
@@ -39,7 +74,11 @@ type QueuedOperation =
       ExpectedChangeToken: string option
       /// The namespace condition (ARCA-CON-005). Persisted only when set, so
       /// a queue without one keeps its exact earlier text.
-      ExpectedNamespaceToken: string option }
+      ExpectedNamespaceToken: string option
+      /// The account that made it (`AccountId.toWire`), recorded by
+      /// `OfflineQueue.enqueueFor`; None for entries queued without one.
+      /// Persisted only when set.
+      AccountId: string option }
 
 /// Where one queued operation stands (ARCA-OFF-001).
 [<RequireQualifiedAccess>]
@@ -143,7 +182,8 @@ module OfflineQueue =
                 | Change.Update(path, content, expected) -> QueuedChange.Update(render path, content, revision expected)
                 | Change.Delete(path, expected) -> QueuedChange.Delete(render path, revision expected))
           ExpectedChangeToken = operation.ExpectedChangeToken |> Option.map (fun (ChangeToken token) -> token)
-          ExpectedNamespaceToken = operation.ExpectedNamespaceToken |> Option.map (fun (NamespaceToken token) -> token) }
+          ExpectedNamespaceToken = operation.ExpectedNamespaceToken |> Option.map (fun (NamespaceToken token) -> token)
+          AccountId = None }
 
     /// True when the queued operation belongs to `ns`: same application,
     /// dataset, repository, branch and base path.
@@ -219,6 +259,22 @@ module OfflineQueue =
                 entry.Sequence
             )
 
+    /// Queues an operation made by `account`, so sign-out can match the
+    /// account's entries by a stable id rather than a display name (LCP-070,
+    /// ARCA-OFF-007).
+    let enqueueFor (account: AccountId) (at: DateTimeOffset) (operation: Operation) (queue: OfflineQueue) =
+        enqueue at operation queue
+        |> Result.map (fun (next: OfflineQueue, sequence) ->
+            { next with
+                Entries =
+                    next.Entries
+                    |> List.map (fun entry ->
+                        if entry.Sequence = sequence then
+                            { entry with Operation = { entry.Operation with AccountId = Some(AccountId.toWire account) } }
+                        else
+                            entry) },
+            sequence)
+
     let private needsAttention (state: EntryState) =
         match state with
         | EntryState.Pending
@@ -228,6 +284,7 @@ module OfflineQueue =
         | EntryState.OutcomeUnknown _
         | EntryState.Conflicted _
         | EntryState.Refused _ -> true
+
 
     /// The entry synchronization works on next: the oldest one that is not
     /// synchronized or abandoned. Order is strict, because a later operation
@@ -415,10 +472,14 @@ module OfflineQueue =
         | EntryState.Abandoned reason -> Json.objectOf [ "kind", Json.String "abandoned"; "reason", Json.String reason ]
 
     let private operationJson (operation: QueuedOperation) =
-        let namespaceCondition =
-            match operation.ExpectedNamespaceToken with
-            | Some token -> [ "expectedNamespaceToken", Json.String token ]
+        let optionalField name value =
+            match value with
+            | Some text -> [ name, Json.String text ]
             | None -> []
+
+        let namespaceCondition =
+            optionalField "expectedNamespaceToken" operation.ExpectedNamespaceToken
+            @ optionalField "accountId" operation.AccountId
 
         let fields =
             [ "application", Json.String operation.Application
@@ -547,8 +608,9 @@ module OfflineQueue =
                   text "idempotencyKey",
                   items "changes" value |> Result.bind (List.map parseChange >> all),
                   opt "expectedChangeToken",
-                  opt "expectedNamespaceToken" with
-            | Ok kind, Ok actor, Ok identity, Ok execution, Ok correlation, Ok key, Ok changes, Ok expected, Ok expectedNamespace ->
+                  opt "expectedNamespaceToken",
+                  opt "accountId" with
+            | Ok kind, Ok actor, Ok identity, Ok execution, Ok correlation, Ok key, Ok changes, Ok expected, Ok expectedNamespace, Ok account ->
                 Ok
                     { Application = application
                       Dataset = dataset
@@ -565,7 +627,8 @@ module OfflineQueue =
                       IdempotencyKey = key
                       Changes = changes
                       ExpectedChangeToken = expected
-                      ExpectedNamespaceToken = expectedNamespace }
+                      ExpectedNamespaceToken = expectedNamespace
+                      AccountId = account }
             | _ -> Error(QueueError.Corrupt "an operation's metadata or changes")
         | _ -> Error(QueueError.Corrupt "an operation's namespace or summary")
 

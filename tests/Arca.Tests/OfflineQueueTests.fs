@@ -119,6 +119,20 @@ let ``a queued namespace condition survives persistence and is enforced when sen
     Assert.Equal<EntryState list>([ EntryState.Conflicted [] ], states (fst drained))
 
 [<Fact>]
+let ``the account id survives persistence, and a queue without one keeps its earlier text (ARCA-OFF-007)`` () =
+    let account = AccountId.ProviderSubject("github", "583231")
+    let actor = AccountId.ofActor (ActorId.create "chrona:member:42" |> ok)
+
+    for id in [ account; actor ] do
+        Assert.Equal(Some id, AccountId.ofWire (AccountId.toWire id))
+
+    Assert.Equal(None, AccountId.ofWire "Alex")
+    let queue = OfflineQueue.enqueueFor account at (create "a") (OfflineQueue.create OfflinePolicy.QueueWrites) |> ok |> fst
+    Assert.Equal(Some "subject:github:583231", queue.Entries.Head.Operation.AccountId)
+    Assert.Equal(queue, OfflineQueue.encode queue |> ok |> OfflineQueue.decode |> ok)
+    Assert.DoesNotContain("accountId", OfflineQueue.encode (enqueueAll [ create "b" ]) |> ok)
+
+[<Fact>]
 let ``an entry is replayed only in its own namespace`` () =
     let queue = enqueueAll [ create "a" ]
 

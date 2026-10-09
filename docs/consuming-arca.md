@@ -357,16 +357,39 @@ never at open (OQ-LIMEN-IDB-004).
 after this device held unsent changes. Tell the person those changes are
 gone.
 
-**Sign-out** (`SharedDevicePolicy`, `SignOut.plan`):
+**Sign-out** (`SharedDevicePolicy`, `SignOut.plan`). From 0.4.0, match
+accounts by a **stable account id**, never a display name (ARCA-OFF-007).
+Two people can share a display name, and matching by it can discard
+another person's changes.
 
-1. Count the account's unsent entries with `QueueSignOut.unsentOf account
-   queue`.
+```fsharp
+// When queuing: record who made the change.
+let account = AccountId.ofIdentity snapshot.Identity          // GitHub numeric user id (CapabilitySnapshot)
+//         or AccountId.ofActor stableActorId                  // an id the application keeps stable
+let! queued = OfflineQueue.enqueueFor account now operation queue
+
+// At sign-out:
+let who = { Account = account; Legacy = None }                  // SignOutAccount
+let unsent = QueueSignOut.unsentOfAccount who queue
+// ... SignOut.plan policy unsent choice ...
+let! discarded = owned.DiscardAccount who queue                  // Result<queue * count>
+```
+
+1. Count the account's unsent entries with `QueueSignOut.unsentOfAccount`.
 2. Offer `SignOut.offered policy`.
 3. Apply the plan:
-   - to discard, call `queue.Discard account currentQueue`;
+   - to discard, call `queue.DiscardAccount who currentQueue`;
    - if `plan.ClearCache`, clear the account's read cache.
 
-In-flight entries are never discarded.
+In-flight and outcome-unknown entries are never discarded: they may have
+landed, so they are reconciled.
+
+Entries queued before 0.4.0, or with `OfflineQueue.enqueue`, carry no
+account id, and they never match. To clear them, set `Legacy = Some
+identity` to the provider identity or actor they were recorded with. Do this
+only while such entries may remain, and only if that value is unique to the
+account. `queue.Discard account` and `QueueSignOut.unsentOf account` still
+match by that display value. Keep them only for that case.
 
 #### Moving Chrona from the localStorage queue (no entry is lost)
 
