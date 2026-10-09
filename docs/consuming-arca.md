@@ -16,9 +16,10 @@ merged at `8dffc14`). Until a Conditor release carries it, build it from
 dotnet build src/Conditor.Cli -c Release -o <dir>
 ```
 
-echelon-registry `main` at `d76ea0c` selects Arca 0.3.0 as an optional
-project binding in echelon-current **1.12.0**, with limen-fsharp 0.9.0 (the
-F# packages `EchelonFoundry.Arca.Limen` needs). In the consuming repository:
+echelon-registry `main` at `616d10e` selects Arca 0.4.0 as an optional
+project binding in echelon-current **1.16.0**, with limen-fsharp 0.9.0 (the
+F# packages `EchelonFoundry.Arca.Limen` needs). 0.4.0 changes the API, so
+read sections 3a, 3b and 5a/5b before moving from 0.3.0. In the consuming repository:
 
 1. Declare Arca in `conditor.json`, at exactly the version the set selects:
 
@@ -61,15 +62,20 @@ F# packages `EchelonFoundry.Arca.Limen` needs). In the consuming repository:
    need `FSharp.Core` 10.1.400 or later, which Aegis 1.0.0 also needs.
 
 Other platforms use their own channel file. The SHA-256 values at registry
-`d76ea0c` (echelon-current 1.12.0) are:
+`616d10e` (echelon-current 1.16.0) are:
 
 | Platform | SHA-256 |
 |---|---|
-| linux-x64 | `d6a26a57b1566ee9641d3d408b790d797845075ff683b52b8a574487e718841e` |
-| linux-arm64 | `555c48b26d62b889b0bd5570b584f6dafd7c3965d112fd8729ef7a4b29c46602` |
-| osx-x64 | `2f26b6d402be76bc821a05b7a2faa6321c6fa1312bec1a8b13cc691f6e926b86` |
-| osx-arm64 | `23e9e49c8027cc8bc5f06e64c173772c47c175259f9573fe2c54e8e42b26b1cb` |
-| win-x64 | `b5dc65911caf16ae2b603ca997dfb0d8111ab9de4eb55fd72eba464c862f253c` |
+| linux-x64 | `ddcaad58026f370f99703515a5ac497ed1683b7d593efacead4bec3f244aad44` |
+| linux-arm64 | `0abbb973c9c6fa61a4a0fbe42556871ca62d8bddca731ef1dccd3737fc7d9c37` |
+| osx-x64 | `8352e3ea8e153167705003ab469d4c23acf62dd95c198f73e696ad3e7c5230ab` |
+| osx-arm64 | `2122c95b8c1b99d7d191aaf58ede21253570504742f5751a062c6f58fde17821` |
+| win-x64 | `be6d20a3fc373bac0729ad63a76efdeae24c80c630c17bb62fd9cfa8b7a809c2` |
+
+echelon-current 1.16.0 also moves the Praxis selection to 3.10.0 (from
+Arca's 3.7.2). A `conditor upgrade --current` plan shows that transition
+beside Arca's; take it deliberately, or stay on the older set. The 1.12.0
+linux-x64 set (`d6a26a57…`), for example, selects Arca 0.3.0.
 
 To check provenance yourself:
 
