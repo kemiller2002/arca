@@ -1087,7 +1087,27 @@
       "updatedAt": "2026-10-08T23:32:09.000Z",
       "telemetryExecutionIds": [
         "EXE-20261008T233209539Z-934d158a"
-      ]
+      ],
+      "latestCheckpoint": {
+        "id": "2b3f8b8142e35c85293bde3c",
+        "recordedAt": "2026-10-09T00:18:43.000Z",
+        "executionId": "EXE-20261008T233209539Z-934d158a",
+        "repository": "arca",
+        "branch": "wi-0018/namespace-tokens",
+        "commit": "cb5b8fcde54c7852298c6381256e276a9c505814",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca.git"
+        },
+        "remoteBranch": "wi-0018/namespace-tokens",
+        "remoteCommit": "cb5b8fcde54c7852298c6381256e276a9c505814",
+        "summary": "Namespace-scoped tokens implemented in Arca.Core, Arca.GitHub, read cache and offline queue; conformance over in-memory, FakeGitHub and Limen FakeStore; 329 tests pass",
+        "nextAction": "Requirement ARCA-CON-005, decision record DF-ARCA-2026-0011, docs/consuming-arca.md and CHANGELOG; then open the PR",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      }
     }
   ]
 }
