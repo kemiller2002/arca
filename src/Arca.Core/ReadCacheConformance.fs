@@ -35,19 +35,30 @@ module ReadCacheConformance =
 
     let private at = DateTimeOffset(2026, 10, 8, 12, 0, 0, TimeSpan.Zero)
 
-    /// An entry for `partition`, read with `account` at `token`.
+    let private objects (partition: string) =
+        [ "records/a.json", "{\"text\":\"é 😀 \\\"quoted\\\"\"}"
+          "records/b.json", "{}" ]
+        |> List.map (fun (path, content) ->
+            { Path = RelativePath.parse path |> fixture
+              Content = $"{partition}:{content}"
+              Revision = Revision $"r-{partition}-{path}" })
+
+    /// An entry for `partition`, read with `account` when the namespace's
+    /// token was `token` (namespace-scoped, ARCA-CON-005).
     let sample (ns: Namespace) (account: string) (partition: string) (token: string) =
         let key = ReadCache.key account ns partition |> fixture
 
-        let objects =
-            [ "records/a.json", "{\"text\":\"é 😀 \\\"quoted\\\"\"}"
-              "records/b.json", "{}" ]
-            |> List.map (fun (path, content) ->
-                { Path = RelativePath.parse path |> fixture
-                  Content = $"{partition}:{content}"
-                  Revision = Revision $"r-{partition}-{path}" })
+        let state =
+            { RepositoryToken = ChangeToken $"repository-{token}"
+              NamespaceToken = NamespaceToken token }
 
-        ReadCache.entry key 1 at (Fresh.read (ChangeToken token) objects)
+        ReadCache.entry key 1 at (Fresh.read state (objects partition))
+
+    /// The same, read through the explicit repository-wide fallback at the
+    /// repository's change token `token`.
+    let sampleRepositoryWide (ns: Namespace) (account: string) (partition: string) (token: string) =
+        let key = ReadCache.key account ns partition |> fixture
+        ReadCache.entry key 1 at (Fresh.readRepositoryWide (ChangeToken token) (objects partition))
 
     let private failure =
         function
@@ -284,6 +295,66 @@ module ReadCacheConformance =
             | Ok() -> return ConformanceOutcome.Failed "an entry carrying a credential was saved"
         }
 
+    /// Both token scopes survive a save and a reopen, so revalidation compares
+    /// each entry with the right token (ARCA-CON-005).
+    let private scopesKept (subject: ReadCacheSubject) =
+        async {
+            let scoped = sample subject.Namespace "alice" "2026-10" "t-1"
+            let repositoryWide = sampleRepositoryWide subject.Namespace "alice" "2026-09" "t-1"
+
+            match! saveAll subject.Store [ scoped; repositoryWide ] with
+            | Error error -> return ConformanceOutcome.Failed $"save: {failure error}"
+            | Ok() ->
+                let! reopened = subject.Reopen()
+                let! first = ReadCache.load reopened scoped.Key
+                let! second = ReadCache.load reopened repositoryWide.Key
+
+                match first, second with
+                | Ok(Some a), Ok(Some b) when
+                    Cached.value a = scoped
+                    && Cached.scope a = TokenScope.Namespace
+                    && Cached.value b = repositoryWide
+                    && Cached.scope b = TokenScope.Repository
+                    ->
+                    return ConformanceOutcome.Passed
+                | Ok(Some a), Ok(Some b) -> return ConformanceOutcome.Failed $"reopened as {Cached.scope a} and {Cached.scope b}"
+                | _ ->
+                    let describe (result: Result<Cached<CacheEntry> option, ReadCacheFailure>) =
+                        result |> Result.map (Option.map Cached.value) |> loaded
+
+                    return ConformanceOutcome.Failed $"reopened, loaded {describe first} and {describe second}"
+        }
+
+    /// An entry written before token scopes existed has no scope: it is
+    /// loaded, and its token is taken as the repository's, so it is never
+    /// confirmed by a namespace token it does not carry (ARCA-CON-005).
+    let private unscopedIsRepositoryWide (subject: ReadCacheSubject) =
+        let entry = sampleRepositoryWide subject.Namespace "alice" "2026-10" "t-1"
+
+        let text =
+            match ReadCache.encode entry |> Result.toOption |> Option.map Json.parse with
+            | Some(Ok(Json.Object members)) ->
+                members |> List.filter (fun (name, _) -> name <> "tokenScope") |> Json.objectOf |> Json.canonicalText
+            | _ -> "{}"
+
+        arranged
+            subject
+            (ReadCacheFault.Stored(entry.Key, text))
+            (async {
+                match! ReadCache.load subject.Store entry.Key with
+                | Ok(Some cached) when Cached.value cached = entry && Cached.scope cached = TokenScope.Repository ->
+                    let state =
+                        { RepositoryToken = ChangeToken "t-2"
+                          NamespaceToken = NamespaceToken "t-1" }
+
+                    match ReadCache.revalidate (ProviderObservation.Current state) cached with
+                    | Revalidation.Refresh _ -> return ConformanceOutcome.Passed
+                    | _ -> return ConformanceOutcome.Failed "an unscoped entry was confirmed by a namespace token"
+                | Ok(Some cached) -> return ConformanceOutcome.Failed $"an unscoped entry loaded as {Cached.scope cached}"
+                | Ok None -> return ConformanceOutcome.Failed "an unscoped entry was not loaded"
+                | Error error -> return ConformanceOutcome.Failed $"an unscoped entry gave {failure error}"
+            })
+
     /// Every case: its name, the requirement it proves and its check.
     let cases: (string * string * (ReadCacheSubject -> Async<ConformanceOutcome>)) list =
         [ "absent partition loads nothing", "LCP-082", absent
@@ -298,7 +369,9 @@ module ReadCacheConformance =
           "a tampered entry is refused and dropped", "LCP-083", tampered
           "an entry without a token is refused and dropped", "LCP-083", tokenless
           "unavailable storage is Unavailable", "LCP-082", unavailable
-          "an entry carrying a credential is refused", "LCP-068", credentialFree ]
+          "an entry carrying a credential is refused", "LCP-068", credentialFree
+          "token scopes survive a reopen", "ARCA-CON-005", scopesKept
+          "an entry without a scope is repository-wide", "ARCA-CON-005", unscopedIsRepositoryWide ]
 
     /// Runs every case, each against a fresh subject.
     let run (fresh: unit -> Async<ReadCacheSubject>) : Async<ConformanceResult list> =

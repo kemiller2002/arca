@@ -97,6 +97,7 @@ let private failureText =
     | StorageFailure.OutcomeUnknown _ -> "OutcomeUnknown"
     | StorageFailure.ObjectTooLarge _ -> "ObjectTooLarge"
     | StorageFailure.StaleChangeToken _ -> "StaleChangeToken"
+    | StorageFailure.StaleNamespaceToken _ -> "StaleNamespaceToken"
     | StorageFailure.RateLimited _ -> "RateLimited"
     | StorageFailure.WrongLocation _ -> "WrongLocation"
     | StorageFailure.IntegrityRefused(path, _) -> $"IntegrityRefused {path}"

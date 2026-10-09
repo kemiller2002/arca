@@ -26,12 +26,25 @@ type CachedRecord =
       /// `sha256:` of the content's UTF-8 bytes, checked on every load.
       ContentHash: string }
 
+/// What a cached entry's token names (ARCA-CON-005, WI-0018).
+[<RequireQualifiedAccess>]
+type TokenScope =
+    /// The namespace's own token: only a change inside the namespace makes
+    /// the entry stale. What `Fresh.read` produces; the default.
+    | Namespace
+    /// The repository's change token: any commit, by any application, makes
+    /// the entry stale. The explicit fallback (`Fresh.readRepositoryWide`),
+    /// and what an entry written before token scopes existed is read as.
+    | Repository
+
 /// One cached partition: what it reflects and what it holds (LCP-083).
 type CacheEntry =
     { Key: CacheKey
-      /// The provider's change token the read reflects (for a derived index,
-      /// the source token it was built from, ARCA-MIG-001).
+      /// The token the read reflects, of the kind `Scope` names (for a derived
+      /// index, the source token it was built from, ARCA-MIG-001).
       ChangeToken: string
+      /// Whether `ChangeToken` is the namespace's token or the repository's.
+      Scope: TokenScope
       /// The record schema version of the partition's records.
       SchemaVersion: int
       /// When the partition was read from the provider (an input).
@@ -52,6 +65,7 @@ type Cached<'T> =
         { CachedValue: 'T
           CachedKey: CacheKey
           AsOf: CachedToken
+          CachedScope: TokenScope
           CachedReadAt: DateTimeOffset
           IsStale: bool }
 
@@ -60,13 +74,23 @@ type Cached<'T> =
 type Fresh<'T> =
     private
         { FreshValue: 'T
-          FreshToken: ChangeToken }
+          FreshToken: ChangeToken
+          /// The namespace's token at `FreshToken`; None for a repository-wide read.
+          FreshNamespaceToken: NamespaceToken option }
 
 /// What the provider says about a cached partition when it is reachable.
 [<RequireQualifiedAccess>]
 type ProviderObservation =
-    /// The provider's current change token for the partition's namespace.
-    | Current of ChangeToken
+    /// The provider's current state for the partition's namespace
+    /// (`StorageProvider.NamespaceState`): a namespace-scoped entry is
+    /// compared with the namespace token, so commits by other applications
+    /// do not make it stale (ARCA-CON-005).
+    | Current of NamespaceState
+    /// The explicit repository-wide fallback, for a provider without the
+    /// NamespaceToken capability: only the repository's change token is
+    /// known, so a namespace-scoped entry cannot be confirmed by it and any
+    /// commit anywhere makes an entry stale.
+    | CurrentRepository of ChangeToken
     /// The provider no longer has the partition.
     | PartitionGone
     /// The provider could not be reached.
@@ -167,6 +191,9 @@ module Cached =
     let asOf (cached: Cached<'T>) = cached.AsOf
     let readAt (cached: Cached<'T>) = cached.CachedReadAt
 
+    /// Whether `asOf` is the namespace's token or the repository's.
+    let scope (cached: Cached<'T>) = cached.CachedScope
+
     /// True once revalidation found the provider moved on, or a refresh
     /// failed: it is shown stale, never current.
     let isStale (cached: Cached<'T>) = cached.IsStale
@@ -175,6 +202,7 @@ module Cached =
         { CachedValue = f cached.CachedValue
           CachedKey = cached.CachedKey
           AsOf = cached.AsOf
+          CachedScope = cached.CachedScope
           CachedReadAt = cached.CachedReadAt
           IsStale = cached.IsStale }
 
@@ -183,18 +211,37 @@ module Cached =
 
 [<RequireQualifiedAccess>]
 module Fresh =
-    /// A value the application read from the provider at `token`. This is the
-    /// only way to make one; no cache operation does (LCP-085).
-    let read (token: ChangeToken) (value: 'T) = { FreshValue = value; FreshToken = token }
+    /// A value the application read from the provider at `state`
+    /// (`StorageProvider.NamespaceState`, taken before the read). With
+    /// `readRepositoryWide`, the only ways to make one; no cache operation
+    /// does (LCP-085). Its cache entry is namespace-scoped (ARCA-CON-005).
+    let read (state: NamespaceState) (value: 'T) =
+        { FreshValue = value
+          FreshToken = state.RepositoryToken
+          FreshNamespaceToken = Some state.NamespaceToken }
+
+    /// The explicit repository-wide fallback: a value read at the
+    /// repository's change token only, for a provider without the
+    /// NamespaceToken capability. Its cache entry is made stale by any commit.
+    let readRepositoryWide (token: ChangeToken) (value: 'T) =
+        { FreshValue = value
+          FreshToken = token
+          FreshNamespaceToken = None }
 
     let value (fresh: Fresh<'T>) = fresh.FreshValue
 
-    /// The token to condition a write on.
+    /// The repository-wide token, to condition a write with
+    /// `Operation.requireChangeToken`.
     let token (fresh: Fresh<'T>) = fresh.FreshToken
+
+    /// The namespace's token, to condition a write with
+    /// `Operation.requireNamespaceToken`; None for a repository-wide read.
+    let namespaceToken (fresh: Fresh<'T>) = fresh.FreshNamespaceToken
 
     let map (f: 'T -> 'U) (fresh: Fresh<'T>) : Fresh<'U> =
         { FreshValue = f fresh.FreshValue
-          FreshToken = fresh.FreshToken }
+          FreshToken = fresh.FreshToken
+          FreshNamespaceToken = fresh.FreshNamespaceToken }
 
 [<RequireQualifiedAccess>]
 module SignOut =
@@ -256,12 +303,18 @@ module ReadCache =
 
     /// The entry for a partition the application just read and validated from
     /// the provider (ARCA-INT-001). Only a `Fresh` read makes an entry, so the
-    /// cache never holds unsent changes or anything derived from them.
+    /// cache never holds unsent changes or anything derived from them. It is
+    /// stamped with the namespace's token when the read carries one, and with
+    /// the repository's only for a `Fresh.readRepositoryWide` read.
     let entry (key: CacheKey) (schemaVersion: int) (readAt: DateTimeOffset) (read: Fresh<StoredObject list>) =
-        let (ChangeToken token) = Fresh.token read
+        let token, scope =
+            match Fresh.namespaceToken read, Fresh.token read with
+            | Some(NamespaceToken token), _ -> token, TokenScope.Namespace
+            | None, ChangeToken token -> token, TokenScope.Repository
 
         { Key = key
           ChangeToken = token
+          Scope = scope
           SchemaVersion = schemaVersion
           ReadAt = readAt
           LastUsedAt = readAt
@@ -290,20 +343,37 @@ module ReadCache =
             { CachedValue = entry
               CachedKey = entry.Key
               AsOf = CachedToken entry.ChangeToken
+              CachedScope = entry.Scope
               CachedReadAt = entry.ReadAt
               IsStale = false })
 
-    /// The revalidation rule (LCP-084): an equal token confirms and makes the
-    /// value fresh at the provider's token; a different one asks for a
-    /// refresh and marks it stale; a removed partition is removed; an
-    /// unreachable provider leaves it shown as of its token.
+    /// The revalidation rule (LCP-084, ARCA-CON-005): an equal token confirms
+    /// and makes the value fresh at the provider's current state; a different
+    /// one asks for a refresh and marks it stale; a removed partition is
+    /// removed; an unreachable provider leaves it shown as of its token.
+    ///
+    /// A namespace-scoped entry is compared with the namespace token, so a
+    /// commit by another application leaves it current. Equal namespace
+    /// tokens mean the namespace's content is the same at the current
+    /// repository token, so the confirmed value is fresh at that token too
+    /// and a write may be conditioned on either. A repository-scoped entry
+    /// (the explicit fallback, or one written before scopes) is compared with
+    /// the repository's token; a namespace-scoped one is never confirmed by
+    /// a repository token alone.
     let revalidate (observation: ProviderObservation) (cached: Cached<'T>) : Revalidation<'T> =
-        match observation with
-        | ProviderObservation.Current(ChangeToken current as token) when current = CachedToken.text cached.AsOf ->
-            Revalidation.Confirmed(Fresh.read token cached.CachedValue)
-        | ProviderObservation.Current _ -> Revalidation.Refresh(Cached.stale cached)
-        | ProviderObservation.PartitionGone -> Revalidation.Remove cached.CachedKey
-        | ProviderObservation.Unreachable -> Revalidation.Unverified cached
+        let asOf = CachedToken.text cached.AsOf
+
+        match observation, cached.CachedScope with
+        | ProviderObservation.Current state, TokenScope.Namespace when state.NamespaceToken = NamespaceToken asOf ->
+            Revalidation.Confirmed(Fresh.read state cached.CachedValue)
+        | ProviderObservation.Current state, TokenScope.Repository when state.RepositoryToken = ChangeToken asOf ->
+            Revalidation.Confirmed(Fresh.read state cached.CachedValue)
+        | ProviderObservation.CurrentRepository token, TokenScope.Repository when token = ChangeToken asOf ->
+            Revalidation.Confirmed(Fresh.readRepositoryWide token cached.CachedValue)
+        | ProviderObservation.Current _, _
+        | ProviderObservation.CurrentRepository _, _ -> Revalidation.Refresh(Cached.stale cached)
+        | ProviderObservation.PartitionGone, _ -> Revalidation.Remove cached.CachedKey
+        | ProviderObservation.Unreachable, _ -> Revalidation.Unverified cached
 
     /// The entry marked as shown at `at`, for least-recently-used eviction.
     let touch (at: DateTimeOffset) (entry: CacheEntry) = { entry with LastUsedAt = at }
@@ -350,6 +420,12 @@ module ReadCache =
                   "namespace", Json.String entry.Key.Namespace
                   "partition", Json.String entry.Key.Partition
                   "changeToken", Json.String entry.ChangeToken
+                  "tokenScope",
+                  Json.String(
+                      match entry.Scope with
+                      | TokenScope.Namespace -> "namespace"
+                      | TokenScope.Repository -> "repository"
+                  )
                   "schemaVersion", Json.Number(decimal entry.SchemaVersion)
                   "readAt", Json.String(timestamp entry.ReadAt)
                   "lastUsedAt", Json.String(timestamp entry.LastUsedAt)
@@ -387,6 +463,15 @@ module ReadCache =
             | true, parsed -> Ok(parsed.ToUniversalTime())
             | _ -> Error(ReadCacheFailure.Corrupt $"{name} is not a timestamp"))
 
+    /// The token's scope. An entry written before scopes existed has none: its
+    /// token is the repository's.
+    let private scope value =
+        match Json.field "tokenScope" value with
+        | None -> Ok TokenScope.Repository
+        | Some(Json.String "repository") -> Ok TokenScope.Repository
+        | Some(Json.String "namespace") -> Ok TokenScope.Namespace
+        | Some _ -> Error(ReadCacheFailure.Corrupt "tokenScope is not a known scope")
+
     let private records value =
         match Json.field "records" value with
         | Some(Json.Array items) ->
@@ -418,18 +503,20 @@ module ReadCache =
                     str "namespace" value,
                     str "partition" value,
                     str "changeToken" value,
+                    scope value,
                     integer "schemaVersion" value,
                     instant "readAt" value,
                     instant "lastUsedAt" value,
                     records value
                 with
-                | Ok account, Ok ns, Ok partition, Ok token, Ok version, Ok readAt, Ok lastUsed, Ok items ->
+                | Ok account, Ok ns, Ok partition, Ok token, Ok tokenScope, Ok version, Ok readAt, Ok lastUsed, Ok items ->
                     Ok
                         { Key =
                             { Account = account
                               Namespace = ns
                               Partition = partition }
                           ChangeToken = token
+                          Scope = tokenScope
                           SchemaVersion = int version
                           ReadAt = readAt
                           LastUsedAt = lastUsed

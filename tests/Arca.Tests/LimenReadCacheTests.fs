@@ -162,7 +162,7 @@ let ``a cache write that fails never fails the read that produced it; it is repo
     let cache = openCache origin "a" IndexedDbReadCache.DefaultBudget
     let provider = InMemoryStore()
     provider.Provider.Commit(operationAs "alice" "seed") |> run |> ok |> ignore
-    let token = provider.Provider.ChangeToken chrona |> run |> ok
+    let token = provider.Provider.NamespaceState chrona |> run |> ok
 
     let read =
         match provider.Provider.Read chrona (RelativePath.parse "notes/seed.json" |> ok) |> run |> ok with
@@ -227,14 +227,14 @@ let ``revalidated online: equal token kept, changed token refreshed, removed par
     let cacheKey = ReadCache.key "alice" chrona "notes" |> ok
 
     let readPartition () =
-        let token = provider.Provider.ChangeToken chrona |> run |> ok
+        let token = provider.Provider.NamespaceState chrona |> run |> ok
 
         match provider.Provider.Read chrona path |> run |> ok with
         | ReadOutcome.Found stored -> ReadCache.entry cacheKey 1 (origin.Clock) (Fresh.read token [ stored ])
         | ReadOutcome.Absent -> failwith "absent"
 
     let observe () =
-        match provider.Provider.ChangeToken chrona |> run with
+        match provider.Provider.NamespaceState chrona |> run with
         | Ok token -> ProviderObservation.Current token
         | Error _ -> ProviderObservation.Unreachable
 
@@ -246,6 +246,24 @@ let ``revalidated online: equal token kept, changed token refreshed, removed par
     | Revalidation.Confirmed fresh -> Assert.Equal(provider.Provider.ChangeToken chrona |> run |> ok, Fresh.token fresh)
     | other -> failwith $"expected Confirmed, got {other}"
 
+    // Another application commits to its own namespace in the same
+    // repository: the entry stays current (ARCA-CON-005).
+    let summa =
+        Namespace.ofApplication
+            { Application = AppId.create "summa" |> ok
+              Environment = { Kind = EnvironmentKind.Test; Name = "limen" }
+              Location = chrona.Location }
+        |> ok
+
+    provider.Provider.Commit(Operation.create summa (operationAs "alice" "elsewhere").Metadata [ Change.Create(RelativePath.parse "ledger/x.json" |> ok, "{}") ] |> ok)
+    |> run
+    |> ok
+    |> ignore
+
+    match ReadCache.revalidate (observe ()) shown with
+    | Revalidation.Confirmed fresh -> Assert.Equal(provider.Provider.ChangeToken chrona |> run |> ok, Fresh.token fresh)
+    | other -> failwith $"expected Confirmed after another application's commit, got {other}"
+
     // The provider moves on: refresh, and replace the entry.
     provider.Provider.Commit(operationAs "alice" "later") |> run |> ok |> ignore
 
@@ -254,7 +272,7 @@ let ``revalidated online: equal token kept, changed token refreshed, removed par
         Assert.True(Cached.isStale stale)
         cache.Keep(readPartition ()) |> run
         let refreshed = cache.Show cacheKey |> run |> ok |> Option.get
-        Assert.Equal(provider.Provider.ChangeToken chrona |> run |> ok, ChangeToken(CachedToken.text (Cached.asOf refreshed)))
+        Assert.Equal((provider.Provider.NamespaceState chrona |> run |> ok).NamespaceToken, NamespaceToken(CachedToken.text (Cached.asOf refreshed)))
     | other -> failwith $"expected Refresh, got {other}"
 
     // The partition is gone: remove it.

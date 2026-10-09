@@ -102,6 +102,7 @@ let private githubSubject () =
             { Provider =
                 { Capabilities = Provider.capabilities
                   ChangeToken = fun ns -> provider.Value.ChangeToken ns
+                  NamespaceState = fun ns -> provider.Value.NamespaceState ns
                   Read = fun ns path -> provider.Value.Read ns path
                   List = fun ns prefix -> provider.Value.List ns prefix
                   Commit = fun operation -> provider.Value.Commit operation
@@ -162,6 +163,54 @@ let ``a harness that cannot arrange a fault is reported Unsupported, never Passe
     Assert.Contains("rate limit", unsupported)
     Assert.Contains("OutcomeUnknown that landed", unsupported)
     Assert.DoesNotContain("round-trip", unsupported)
+
+let private failedCases (adapt: StorageProvider -> StorageProvider) =
+    let adapted () =
+        async {
+            let! subject = Conformance.inMemory chrona
+            return { subject with Provider = adapt subject.Provider }
+        }
+
+    Conformance.run adapted
+    |> Async.RunSynchronously
+    |> List.filter (fun result ->
+        match result.Outcome with
+        | ConformanceOutcome.Failed _ -> true
+        | _ -> false)
+    |> List.map _.Case
+
+[<Fact>]
+let ``a provider whose namespace token is the repository's fails the suite (ARCA-CON-005)`` () =
+    let failed =
+        failedCases (fun provider ->
+            { provider with
+                NamespaceState =
+                    fun ns ->
+                        async {
+                            let! token = provider.ChangeToken ns
+
+                            return
+                                token
+                                |> Result.map (fun (ChangeToken text) ->
+                                    { RepositoryToken = ChangeToken text
+                                      NamespaceToken = NamespaceToken text })
+                        } })
+
+    Assert.Contains("namespace token ignores other namespaces", failed)
+
+[<Fact>]
+let ``a provider that ignores the namespace condition fails the suite (ARCA-CON-005)`` () =
+    let failed =
+        failedCases (fun provider ->
+            { provider with
+                Commit =
+                    fun operation ->
+                        // Drops the namespace condition, keeping everything else.
+                        match Operation.create operation.Namespace operation.Metadata operation.Changes with
+                        | Ok unconditioned -> provider.Commit unconditioned
+                        | Error _ -> provider.Commit operation })
+
+    Assert.Contains("stale namespace token", failed)
 
 [<Fact>]
 let ``in-memory revisions are content hashes, so equal content has an equal revision`` () =

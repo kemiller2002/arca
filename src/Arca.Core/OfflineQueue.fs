@@ -36,7 +36,10 @@ type QueuedOperation =
       CorrelationId: string
       IdempotencyKey: string
       Changes: QueuedChange list
-      ExpectedChangeToken: string option }
+      ExpectedChangeToken: string option
+      /// The namespace condition (ARCA-CON-005). Persisted only when set, so
+      /// a queue without one keeps its exact earlier text.
+      ExpectedNamespaceToken: string option }
 
 /// Where one queued operation stands (ARCA-OFF-001).
 [<RequireQualifiedAccess>]
@@ -139,7 +142,8 @@ module OfflineQueue =
                 | Change.Create(path, content) -> QueuedChange.Create(render path, content)
                 | Change.Update(path, content, expected) -> QueuedChange.Update(render path, content, revision expected)
                 | Change.Delete(path, expected) -> QueuedChange.Delete(render path, revision expected))
-          ExpectedChangeToken = operation.ExpectedChangeToken |> Option.map (fun (ChangeToken token) -> token) }
+          ExpectedChangeToken = operation.ExpectedChangeToken |> Option.map (fun (ChangeToken token) -> token)
+          ExpectedNamespaceToken = operation.ExpectedNamespaceToken |> Option.map (fun (NamespaceToken token) -> token) }
 
     /// True when the queued operation belongs to `ns`: same application,
     /// dataset, repository, branch and base path.
@@ -184,9 +188,14 @@ module OfflineQueue =
                     Operation.create ns metadata (changes |> List.choose (function Ok c -> Some c | Error _ -> None))
                     |> Result.mapError (fun _ -> QueueError.InvalidOperation "the queued operation no longer validates")
                     |> Result.map (fun operation ->
-                        match queued.ExpectedChangeToken with
-                        | Some token -> Operation.requireChangeToken (ChangeToken token) operation
-                        | None -> operation)
+                        let withChangeToken =
+                            match queued.ExpectedChangeToken with
+                            | Some token -> Operation.requireChangeToken (ChangeToken token) operation
+                            | None -> operation
+
+                        match queued.ExpectedNamespaceToken with
+                        | Some token -> Operation.requireNamespaceToken (NamespaceToken token) withChangeToken
+                        | None -> withChangeToken)
                 | _ -> Error(QueueError.InvalidOperation "the queued metadata no longer validates")
 
     /// Queues an operation, when the application opted in (ARCA-OFF-005).
@@ -266,7 +275,8 @@ module OfflineQueue =
                         | StorageFailure.RateLimited _
                         | StorageFailure.ProviderFailed(_, true, _) -> EntryState.Pending
                         | StorageFailure.Refused(WriteRefusal.CredentialUnavailable _) -> EntryState.Pending
-                        | StorageFailure.StaleChangeToken _ -> EntryState.Conflicted []
+                        | StorageFailure.StaleChangeToken _
+                        | StorageFailure.StaleNamespaceToken _ -> EntryState.Conflicted []
                         | StorageFailure.Refused _ -> EntryState.Refused "the provider refused the write"
                         | StorageFailure.IntegrityRefused(path, _) -> EntryState.Refused $"what is stored at {path} makes the write unsafe"
                         | StorageFailure.ObjectTooLarge(path, _, _) -> EntryState.Refused $"{path} is too large"
@@ -402,7 +412,12 @@ module OfflineQueue =
         | EntryState.Abandoned reason -> Json.objectOf [ "kind", Json.String "abandoned"; "reason", Json.String reason ]
 
     let private operationJson (operation: QueuedOperation) =
-        Json.objectOf
+        let namespaceCondition =
+            match operation.ExpectedNamespaceToken with
+            | Some token -> [ "expectedNamespaceToken", Json.String token ]
+            | None -> []
+
+        let fields =
             [ "application", Json.String operation.Application
               "dataset", optionalText operation.Dataset
               "owner", Json.String operation.Owner
@@ -418,6 +433,8 @@ module OfflineQueue =
               "idempotencyKey", Json.String operation.IdempotencyKey
               "changes", Json.Array(operation.Changes |> List.map changeJson)
               "expectedChangeToken", optionalText operation.ExpectedChangeToken ]
+
+        Json.objectOf (fields @ namespaceCondition)
 
     /// The queue as canonical text to persist. A queue that would carry
     /// anything that looks like a credential is refused (ARCA-AUTH-002).
@@ -526,8 +543,9 @@ module OfflineQueue =
                   text "correlationId",
                   text "idempotencyKey",
                   items "changes" value |> Result.bind (List.map parseChange >> all),
-                  opt "expectedChangeToken" with
-            | Ok kind, Ok actor, Ok identity, Ok execution, Ok correlation, Ok key, Ok changes, Ok expected ->
+                  opt "expectedChangeToken",
+                  opt "expectedNamespaceToken" with
+            | Ok kind, Ok actor, Ok identity, Ok execution, Ok correlation, Ok key, Ok changes, Ok expected, Ok expectedNamespace ->
                 Ok
                     { Application = application
                       Dataset = dataset
@@ -543,7 +561,8 @@ module OfflineQueue =
                       CorrelationId = correlation
                       IdempotencyKey = key
                       Changes = changes
-                      ExpectedChangeToken = expected }
+                      ExpectedChangeToken = expected
+                      ExpectedNamespaceToken = expectedNamespace }
             | _ -> Error(QueueError.Corrupt "an operation's metadata or changes")
         | _ -> Error(QueueError.Corrupt "an operation's namespace or summary")
 

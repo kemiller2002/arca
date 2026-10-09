@@ -57,7 +57,7 @@ let ``a fault the harness cannot arrange is Unsupported, never passed`` () =
             | ConformanceOutcome.Unsupported _ -> true
             | _ -> false)
 
-    Assert.Equal(3, unsupported.Length)
+    Assert.Equal(4, unsupported.Length)
 
 [<Fact>]
 let ``a cache that keeps entries across accounts fails the suite`` () =
@@ -95,20 +95,69 @@ let private entry token =
 
 let private cachedOf token = ReadCache.cached (entry token) |> ok
 
+let private state repository ns =
+    { RepositoryToken = ChangeToken repository
+      NamespaceToken = NamespaceToken ns }
+
+let private repositoryWide token =
+    ReadCacheConformance.sampleRepositoryWide chrona "alice" "2026-10" token
+
+let private cachedRepositoryWide token = ReadCache.cached (repositoryWide token) |> ok
+
 [<Fact>]
-let ``an equal token confirms, and the fresh value carries the provider's token (LCP-084)`` () =
-    match ReadCache.revalidate (ProviderObservation.Current(ChangeToken "t-1")) (cachedOf "t-1") with
+let ``an equal namespace token confirms, and the fresh value carries the provider's current tokens (LCP-084, ARCA-CON-005)`` () =
+    match ReadCache.revalidate (ProviderObservation.Current(state "r-1" "t-1")) (cachedOf "t-1") with
     | Revalidation.Confirmed fresh ->
-        Assert.Equal(ChangeToken "t-1", Fresh.token fresh)
+        Assert.Equal(ChangeToken "r-1", Fresh.token fresh)
+        Assert.Equal(Some(NamespaceToken "t-1"), Fresh.namespaceToken fresh)
         Assert.Equal(entry "t-1", Fresh.value fresh)
     | other -> failwith $"expected Confirmed, got {other}"
 
 [<Fact>]
-let ``a different token asks for a refresh and is shown stale, never current (LCP-084)`` () =
-    match ReadCache.revalidate (ProviderObservation.Current(ChangeToken "t-2")) (cachedOf "t-1") with
+let ``another application's commit moves only the repository token, and the entry stays current at it (ARCA-CON-005)`` () =
+    // The entry was read at repository-t-1; the repository has moved on, the namespace has not.
+    match ReadCache.revalidate (ProviderObservation.Current(state "r-7" "t-1")) (cachedOf "t-1") with
+    | Revalidation.Confirmed fresh ->
+        Assert.Equal(ChangeToken "r-7", Fresh.token fresh)
+        Assert.Equal(Some(NamespaceToken "t-1"), Fresh.namespaceToken fresh)
+    | other -> failwith $"expected Confirmed, got {other}"
+
+[<Fact>]
+let ``a different namespace token asks for a refresh and is shown stale, never current (LCP-084)`` () =
+    match ReadCache.revalidate (ProviderObservation.Current(state "repository-t-1" "t-2")) (cachedOf "t-1") with
     | Revalidation.Refresh cached ->
         Assert.True(Cached.isStale cached)
         Assert.Equal("t-1", CachedToken.text (Cached.asOf cached))
+        Assert.Equal(TokenScope.Namespace, Cached.scope cached)
+    | other -> failwith $"expected Refresh, got {other}"
+
+[<Fact>]
+let ``the repository-wide fallback confirms only an equal repository token (ARCA-CON-005)`` () =
+    match ReadCache.revalidate (ProviderObservation.CurrentRepository(ChangeToken "t-1")) (cachedRepositoryWide "t-1") with
+    | Revalidation.Confirmed fresh ->
+        Assert.Equal(ChangeToken "t-1", Fresh.token fresh)
+        Assert.Equal(None, Fresh.namespaceToken fresh)
+    | other -> failwith $"expected Confirmed, got {other}"
+
+    match ReadCache.revalidate (ProviderObservation.CurrentRepository(ChangeToken "t-2")) (cachedRepositoryWide "t-1") with
+    | Revalidation.Refresh cached -> Assert.True(Cached.isStale cached)
+    | other -> failwith $"expected Refresh, got {other}"
+
+[<Fact>]
+let ``a repository-scoped entry is compared with the repository token, even in a namespace observation (ARCA-CON-005)`` () =
+    match ReadCache.revalidate (ProviderObservation.Current(state "t-1" "n-1")) (cachedRepositoryWide "t-1") with
+    | Revalidation.Confirmed fresh -> Assert.Equal(Some(NamespaceToken "n-1"), Fresh.namespaceToken fresh)
+    | other -> failwith $"expected Confirmed, got {other}"
+
+    // Its token is a repository token: an equal namespace token says nothing about it.
+    match ReadCache.revalidate (ProviderObservation.Current(state "t-2" "t-1")) (cachedRepositoryWide "t-1") with
+    | Revalidation.Refresh _ -> ()
+    | other -> failwith $"expected Refresh, got {other}"
+
+[<Fact>]
+let ``a namespace-scoped entry is never confirmed by a repository token alone (ARCA-CON-005)`` () =
+    match ReadCache.revalidate (ProviderObservation.CurrentRepository(ChangeToken "t-1")) (cachedOf "t-1") with
+    | Revalidation.Refresh cached -> Assert.True(Cached.isStale cached)
     | other -> failwith $"expected Refresh, got {other}"
 
 [<Fact>]
@@ -128,15 +177,34 @@ let ``an unreachable provider leaves the entry shown as of its token (LCP-084)``
 let ``a failed refresh keeps a visible stale marker (LCP-084)`` () =
     Assert.True(cachedOf "t-1" |> Cached.stale |> Cached.isStale)
 
+let private tokens = [ "t-1"; "t-2"; "t-3" ]
+
 let private observationGen =
     Gen.oneof
-        [ Gen.elements [ "t-1"; "t-2"; "t-3" ] |> Gen.map (ChangeToken >> ProviderObservation.Current)
+        [ Gen.zip (Gen.elements tokens) (Gen.elements tokens) |> Gen.map (fun (r, n) -> ProviderObservation.Current(state r n))
+          Gen.elements tokens |> Gen.map (ChangeToken >> ProviderObservation.CurrentRepository)
           Gen.constant ProviderObservation.PartitionGone
           Gen.constant ProviderObservation.Unreachable ]
 
+/// Whether an observation names exactly the state a cached token of `scope` reflects.
+let private matches (scope: TokenScope) (stored: string) (observation: ProviderObservation) =
+    match observation, scope with
+    | ProviderObservation.Current current, TokenScope.Namespace -> current.NamespaceToken = NamespaceToken stored
+    | ProviderObservation.Current current, TokenScope.Repository -> current.RepositoryToken = ChangeToken stored
+    | ProviderObservation.CurrentRepository token, TokenScope.Repository -> token = ChangeToken stored
+    | _ -> false
+
 [<Property>]
-let ``no cache operation yields a Fresh value without a matching provider token (LCP-085)`` () =
-    Prop.forAll (Arb.fromGen (Gen.zip (Gen.elements [ "t-1"; "t-2" ]) (Gen.listOf observationGen))) (fun (stored, observations) ->
+let ``no cache operation yields a Fresh value without a matching provider token of the entry's scope (LCP-085, ARCA-CON-005)`` () =
+    let gen =
+        Gen.zip3 (Gen.elements [ "t-1"; "t-2" ]) (Gen.elements [ TokenScope.Namespace; TokenScope.Repository ]) (Gen.listOf observationGen)
+
+    Prop.forAll (Arb.fromGen gen) (fun (stored, scope, observations) ->
+        let start =
+            match scope with
+            | TokenScope.Namespace -> cachedOf stored
+            | TokenScope.Repository -> cachedRepositoryWide stored
+
         // Any sequence of revalidations; a refresh failure marks it stale.
         let outcomes =
             observations
@@ -147,29 +215,130 @@ let ``no cache operation yields a Fresh value without a matching provider token 
                     | Revalidation.Confirmed _ -> cached, Some(observation, true)
                     | Revalidation.Remove _
                     | Revalidation.Unverified _ -> cached, Some(observation, false))
-                (cachedOf stored, None)
+                (start, None)
             |> List.choose snd
 
         outcomes
-        |> List.forall (fun (observation, confirmed) ->
-            confirmed = (observation = ProviderObservation.Current(ChangeToken stored))))
+        |> List.forall (fun (observation, confirmed) -> confirmed = matches scope stored observation))
 
 [<Fact>]
-let ``an entry records the token, every content hash, the schema version and the read time (LCP-083)`` () =
-    let read =
-        Fresh.read
-            (ChangeToken "t-9")
-            [ { Path = RelativePath.parse "records/a.json" |> ok
-                Content = "{\"a\":1}"
-                Revision = Revision "r" } ]
+let ``an entry records the token and its scope, every content hash, the schema version and the read time (LCP-083, ARCA-CON-005)`` () =
+    let objects =
+        [ { Path = RelativePath.parse "records/a.json" |> ok
+            Content = "{\"a\":1}"
+            Revision = Revision "r" } ]
 
     let key = ReadCache.key "alice" chrona "index/activities" |> ok
-    let made = ReadCache.entry key 3 at read
+    let made = ReadCache.entry key 3 at (Fresh.read (state "r-9" "t-9") objects)
     Assert.Equal("t-9", made.ChangeToken)
+    Assert.Equal(TokenScope.Namespace, made.Scope)
     Assert.Equal(3, made.SchemaVersion)
     Assert.Equal(at, made.ReadAt)
     Assert.Equal<CachedRecord list>([ { Path = "records/a.json"; Content = "{\"a\":1}"; ContentHash = ReadCache.hash "{\"a\":1}" } ], made.Records)
     Assert.Equal(Ok made, ReadCache.encode made |> Result.bind ReadCache.decode)
+
+    let fallback = ReadCache.entry key 3 at (Fresh.readRepositoryWide (ChangeToken "r-9") objects)
+    Assert.Equal("r-9", fallback.ChangeToken)
+    Assert.Equal(TokenScope.Repository, fallback.Scope)
+    Assert.Equal(Ok fallback, ReadCache.encode fallback |> Result.bind ReadCache.decode)
+
+[<Fact>]
+let ``an unknown token scope is Corrupt`` () =
+    let text =
+        match ReadCache.encode (entry "t-1") |> Result.map Json.parse with
+        | Ok(Ok(Json.Object members)) ->
+            members
+            |> List.map (fun (name, value) -> if name = "tokenScope" then name, Json.String "galaxy" else name, value)
+            |> Json.objectOf
+            |> Json.canonicalText
+        | other -> failwith $"the entry did not encode: {other}"
+
+    match ReadCache.decode text with
+    | Error(ReadCacheFailure.Corrupt _) -> ()
+    | other -> failwith $"expected Corrupt, got {other}"
+
+// ---------------------------------------------------------------------------
+// End to end over the in-memory provider: a shared repository (ARCA-CON-005)
+// ---------------------------------------------------------------------------
+
+let private signal =
+    Namespace.ofApplication
+        { Application = AppId.create "signal" |> ok
+          Environment = { Kind = EnvironmentKind.Test; Name = "cache" }
+          Location = chrona.Location }
+    |> ok
+
+let private metadata key =
+    { Summary = "cache test"
+      Actor = { Kind = ActorKind.Service; Id = ActorId.create "arca/tests" |> ok }
+      ProviderIdentity = None
+      ExecutionId = None
+      CorrelationId = CorrelationId.create "cache-test" |> ok
+      IdempotencyKey = IdempotencyKey.create key |> ok }
+
+let private create ns key (path: string) content =
+    Operation.create ns (metadata key) [ Change.Create(RelativePath.parse path |> ok, content) ] |> ok
+
+[<Fact>]
+let ``another application's commit leaves Chrona's cache current; the repository-wide fallback would refresh it (ARCA-CON-005)`` () =
+    let store = InMemoryStore()
+    let run work = work |> Async.RunSynchronously |> ok
+    let note = "{\"note\":1}"
+    run (store.Provider.Commit(create chrona "chrona-write-1" "notes/a.json" note)) |> ignore
+
+    // Chrona reads its partition and caches it, namespace-scoped.
+    let before = run (store.Provider.NamespaceState chrona)
+    let stored = run (store.Provider.Read chrona (RelativePath.parse "notes/a.json" |> ok))
+
+    let objects =
+        match stored with
+        | ReadOutcome.Found found -> [ found ]
+        | ReadOutcome.Absent -> failwith "the note is absent"
+
+    let key = ReadCache.key "alice" chrona "notes" |> ok
+    let cached = ReadCache.cached (ReadCache.entry key 1 at (Fresh.read before objects)) |> ok
+
+    // Signal commits to its own namespace in the same repository.
+    run (store.Provider.Commit(create signal "signal-write-1" "responses/r.json" "{}")) |> ignore
+    let after = run (store.Provider.NamespaceState chrona)
+    Assert.NotEqual(before.RepositoryToken, after.RepositoryToken)
+    Assert.Equal(before.NamespaceToken, after.NamespaceToken)
+
+    match ReadCache.revalidate (ProviderObservation.Current after) cached with
+    | Revalidation.Confirmed fresh ->
+        // A write conditioned on the confirmed value's namespace token applies.
+        let write =
+            create chrona "chrona-write-2" "notes/b.json" note
+            |> Operation.requireNamespaceToken (Fresh.namespaceToken fresh |> Option.get)
+
+        run (store.Provider.Commit write) |> ignore
+    | other -> failwith $"expected Confirmed, got {other}"
+
+    // The same entry, cached through the fallback, is made stale by Signal's commit.
+    let fallback = ReadCache.cached (ReadCache.entry key 1 at (Fresh.readRepositoryWide before.RepositoryToken objects)) |> ok
+
+    match ReadCache.revalidate (ProviderObservation.CurrentRepository after.RepositoryToken) fallback with
+    | Revalidation.Refresh _ -> ()
+    | other -> failwith $"expected Refresh, got {other}"
+
+[<Fact>]
+let ``a change inside the namespace makes the cache stale and a write held to its token is refused (ARCA-CON-005)`` () =
+    let store = InMemoryStore()
+    let run work = work |> Async.RunSynchronously |> ok
+    let before = run (store.Provider.NamespaceState chrona)
+    run (store.Provider.Commit(create chrona "chrona-write-3" "notes/c.json" "{}")) |> ignore
+    let after = run (store.Provider.NamespaceState chrona)
+    Assert.NotEqual(before.NamespaceToken, after.NamespaceToken)
+
+    let held =
+        create chrona "chrona-write-4" "notes/d.json" "{}"
+        |> Operation.requireNamespaceToken before.NamespaceToken
+
+    match store.Provider.Commit held |> Async.RunSynchronously with
+    | Error(StorageFailure.StaleNamespaceToken(expected, actual)) ->
+        Assert.Equal(before.NamespaceToken, expected)
+        Assert.Equal(after.NamespaceToken, actual)
+    | other -> failwith $"expected StaleNamespaceToken, got {other}"
 
 [<Fact>]
 let ``cache keys carry the account, the full namespace identity and the partition`` () =
