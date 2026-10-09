@@ -1133,7 +1133,27 @@
       "updatedAt": "2026-10-09T00:27:23.000Z",
       "telemetryExecutionIds": [
         "EXE-20261009T002723978Z-e4698cd9"
-      ]
+      ],
+      "latestCheckpoint": {
+        "id": "938238d66ca636e1113dc642",
+        "recordedAt": "2026-10-09T00:38:25.000Z",
+        "executionId": "EXE-20261009T002723978Z-e4698cd9",
+        "repository": "arca",
+        "branch": "wi-0027/limen-0.9.0",
+        "commit": "d967534a6697984cbf85327a44087ac2b55d2afc",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca.git"
+        },
+        "remoteBranch": "wi-0027/limen-0.9.0",
+        "remoteCommit": "d967534a6697984cbf85327a44087ac2b55d2afc",
+        "summary": "limen-fsharp 0.9.0 through Conditor, npm Limen 0.9.0, IL-identical store, 329 tests",
+        "nextAction": "Open the PR, wait for every check, complete WI-0027, merge",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      }
     }
   ]
 }
