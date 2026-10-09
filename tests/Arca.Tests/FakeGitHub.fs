@@ -229,7 +229,19 @@ type Server(owner: string, name: string) =
                                   "encoding", str "base64"
                                   "content", str (Convert.ToBase64String(Encoding.UTF8.GetBytes content)) ])
                     | None ->
-                        let prefix = file + "/"
+                        let prefix = if file = "" then "" else file + "/"
+
+                        // A folder's SHA is content-addressed, as a Git tree's is:
+                        // it changes only when something beneath it changes.
+                        let folderSha (folder: string) =
+                            let inside = folder + "/"
+
+                            tree
+                            |> Map.toList
+                            |> List.filter (fun (p, _) -> p.StartsWith inside)
+                            |> List.map (fun (p, blob) -> $"{p.Substring inside.Length} {blob}")
+                            |> String.concat "\n"
+                            |> fun listing -> sha ("tree\n" + listing)
 
                         let children =
                             tree
@@ -240,7 +252,7 @@ type Server(owner: string, name: string) =
 
                                 match rest.IndexOf '/' with
                                 | -1 -> rest, "file", blob, int64 (Encoding.UTF8.GetByteCount blobs[blob])
-                                | slash -> rest.Substring(0, slash), "dir", sha (prefix + rest.Substring(0, slash)), 0L)
+                                | slash -> rest.Substring(0, slash), "dir", folderSha (prefix + rest.Substring(0, slash)), 0L)
                             |> List.distinctBy (fun (n, _, _, _) -> n)
 
                         let children =

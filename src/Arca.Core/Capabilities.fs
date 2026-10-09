@@ -18,6 +18,8 @@ type Capability =
     | BatchWrite
     /// A token that names the provider's current state, for cheap change detection.
     | ChangeToken
+    /// A token that names one namespace's state only (ARCA-CON-005).
+    | NamespaceToken
     /// A declared maximum object size.
     | MaxObjectSize
     /// At-rest encryption. Not offered in the first release (ARCA-LOC-010); the
@@ -68,6 +70,7 @@ module ProviderCapabilities =
           Capability.ListPrefix
           Capability.BatchWrite
           Capability.ChangeToken
+          Capability.NamespaceToken
           Capability.MaxObjectSize
           Capability.AtRestEncryption ]
 

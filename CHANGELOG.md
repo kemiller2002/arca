@@ -9,6 +9,42 @@ release may change the API; pin an exact version.
 
 ## [Unreleased]
 
+### Added
+
+- **Namespace-scoped change tokens** (WI-0018, ARCA-CON-005,
+  DF-ARCA-2026-0011). In a repository several applications share, another
+  application's commit no longer makes this application's read cache stale
+  or its conditioned writes fail.
+  - `NamespaceToken`, `NamespaceState` and `StorageProvider.NamespaceState`
+    observe the repository's change token and the namespace's own token at
+    one commit. On GitHub the namespace token is the Git tree SHA of the
+    namespace root (`GitHubStorage.namespaceState`). The in-memory provider
+    hashes the namespace's objects.
+  - `Operation.requireNamespaceToken` holds a commit to the namespace's
+    state only. The commit is still atomic, with unchanged `OutcomeUnknown`
+    semantics. A change inside the namespace gives the new
+    `StorageFailure.StaleNamespaceToken`.
+  - The `Capability.NamespaceToken` capability; both providers declare it.
+  - The read cache's entries carry a `TokenScope`, persisted as `tokenScope`.
+    An entry without one (written by 0.3.x) reads as repository-wide.
+  - Conformance: storage cases "namespace token ignores other namespaces"
+    and "stale namespace token"; read-cache cases "token scopes survive a
+    reopen" and "an entry without a scope is repository-wide".
+  - The offline queue persists the namespace condition, as
+    `expectedNamespaceToken`, only when set.
+
+### Changed (breaking)
+
+- `Fresh.read` takes a `NamespaceState`, not a `ChangeToken`, and
+  `ProviderObservation.Current` carries a `NamespaceState`. The
+  repository-wide behaviour remains only as an explicit fallback:
+  `Fresh.readRepositoryWide` and `ProviderObservation.CurrentRepository`.
+  `docs/consuming-arca.md` section 5b shows the 0.3.0 to 0.4.0 changes.
+- New members of public types: `StorageProvider.NamespaceState`,
+  `CacheEntry.Scope`, `QueuedOperation.ExpectedNamespaceToken` and
+  `StorageFailure.StaleNamespaceToken`. Code that builds these records, or
+  matches `StorageFailure` exhaustively, must add them.
+
 ## [0.3.0] — 2026-10-08
 
 A minor release. It adds the IndexedDB offline queue and the offline-start

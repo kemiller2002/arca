@@ -152,6 +152,66 @@ module GitHubStorage =
             | _ -> return! unexpected response
         }
 
+    /// The token used for a namespace root that holds nothing: Git has no
+    /// empty folders, so an absent root and an empty namespace are the same.
+    [<Literal>]
+    let EmptyNamespace = "git-tree:none"
+
+    /// The namespace's token at a commit: the Git tree SHA of its root, taken
+    /// from its parent folder's listing (one request). A tree SHA is
+    /// content-addressed, so a commit outside the namespace leaves it
+    /// unchanged (ARCA-CON-005). A root missing from a partial listing is
+    /// never guessed to be empty.
+    let private namespaceTokenAt (credential: AccessToken) (commit: string) (ns: Namespace) : Op<NamespaceToken> =
+        op {
+            let! session = Op.session
+
+            match List.rev (RelativePath.segments ns.Root) with
+            | [] -> return! Op.fail (StorageFailure.ProviderFailed("ARCA.INVALID_PATH", false, "the namespace root is the repository root"))
+            | name :: reversedParent ->
+                let parent = reversedParent |> List.rev |> List.map Segment.value |> String.concat "/"
+                let! contents = contentsAt credential commit parent RelativePath.empty
+
+                match contents with
+                | Missing -> return NamespaceToken EmptyNamespace
+                | File _ -> return! Op.fail (StorageFailure.ProviderFailed("ARCA.NOT_A_FOLDER", false, $"{parent} is an object"))
+                | Folder entries ->
+                    let root =
+                        entries
+                        |> List.tryFind (fun entry -> RelativePath.segments entry.Path |> List.map Segment.value = [ Segment.value name ])
+
+                    match root with
+                    | Some entry when entry.IsFolder ->
+                        let (Revision tree) = entry.Revision
+                        return NamespaceToken $"git-tree:{tree}"
+                    | Some _ ->
+                        return! Op.fail (StorageFailure.ProviderFailed("ARCA.NOT_A_FOLDER", false, $"{RelativePath.render ns.Root} is an object"))
+                    | None when entries.Length >= session.Config.ListingLimit ->
+                        return!
+                            Op.fail (
+                                StorageFailure.ProviderFailed(
+                                    "ARCA.GITHUB.PARTIAL_LISTING",
+                                    false,
+                                    $"{parent} lists {entries.Length} entries, so the namespace root cannot be shown absent"
+                                )
+                            )
+                    | None -> return NamespaceToken EmptyNamespace
+        }
+
+    /// The branch head and the namespace's token at that same commit.
+    let namespaceState (ns: Namespace) : Op<NamespaceState> =
+        op {
+            do! checkLocation ns
+            let! credential = token
+            let! tip = head credential
+            let (ChangeToken commit) = tip
+            let! namespaceToken = namespaceTokenAt credential commit ns
+
+            return
+                { RepositoryToken = tip
+                  NamespaceToken = namespaceToken }
+        }
+
     /// Reads one object at the branch head (ARCA-API-001). An object over the
     /// provider's size limit is ObjectTooLarge, never truncated (ARCA-API-004).
     let read (ns: Namespace) (path: RelativePath) : Op<ReadOutcome> =
@@ -443,7 +503,8 @@ module GitHubStorage =
 
     /// Commits an operation as one atomic commit on the configured branch
     /// (ARCA-COMMIT-001), conditioned on every change's expected revision at
-    /// the current head (ARCA-CON-001). A concurrent commit that leaves this
+    /// the current head (ARCA-CON-001) and, when given, on the change token
+    /// or the namespace token (ARCA-CON-005). A concurrent commit that leaves this
     /// operation's records untouched is built upon; one that changed them is a
     /// Conflicted result (ARCA-CON-002). An unknown outcome is reconciled at
     /// once; if GitHub still cannot tell, it is returned as OutcomeUnknown
@@ -468,6 +529,23 @@ module GitHubStorage =
                     match operation.ExpectedChangeToken with
                     | Some expected when expected <> tip -> Op.fail (StorageFailure.StaleChangeToken(expected, tip))
                     | _ -> Op.ret ()
+
+                // The namespace condition is checked at this exact head too; the
+                // commit is built on it and published fast-forward only, so a
+                // change to the namespace after this check makes the publish
+                // race and the next attempt check again (ARCA-CON-005).
+                do!
+                    match operation.ExpectedNamespaceToken with
+                    | None -> Op.ret ()
+                    | Some expected ->
+                        op {
+                            let! actual = namespaceTokenAt credential headCommit ns
+
+                            if actual <> expected then
+                                return! Op.fail (StorageFailure.StaleNamespaceToken(expected, actual))
+                            else
+                                return ()
+                        }
 
                 // Expectations are checked at this exact head (ARCA-CON-001).
                 let rec current (pending: (Change * ObjectAddress) list) found : Op<Map<string, Revision option * string option>> =
@@ -643,6 +721,7 @@ module GitHubStorage =
 
         { Capabilities = Provider.capabilities
           ChangeToken = fun ns -> run (changeToken ns)
+          NamespaceState = fun ns -> run (namespaceState ns)
           Read = fun ns path -> run (read ns path)
           List = fun ns prefix -> run (list ns prefix)
           Commit = fun operation -> run (commit operation)

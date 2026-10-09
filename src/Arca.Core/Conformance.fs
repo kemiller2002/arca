@@ -104,6 +104,7 @@ module Conformance =
         | Error(StorageFailure.OutcomeUnknown _) -> "OutcomeUnknown"
         | Error(StorageFailure.ObjectTooLarge _) -> "ObjectTooLarge"
         | Error(StorageFailure.StaleChangeToken _) -> "StaleChangeToken"
+        | Error(StorageFailure.StaleNamespaceToken _) -> "StaleNamespaceToken"
         | Error(StorageFailure.RateLimited _) -> "RateLimited"
         | Error(StorageFailure.WrongLocation _) -> "WrongLocation"
         | Error(StorageFailure.IntegrityRefused _) -> "IntegrityRefused"
@@ -357,6 +358,85 @@ module Conformance =
                 | other -> return failed $"a write held to a stale change token: {describe other}"
         }
 
+    /// Another application's namespace beside the subject's, at the same
+    /// location, as in a repository several applications share (ARCA-LOC-002).
+    let private neighbour (subject: ConformanceSubject) =
+        let ns = subject.Namespace
+        let segments = RelativePath.segments ns.Root
+        let own = segments |> List.tryLast |> Option.map Segment.value
+        let name = if own = Some "conformance-neighbour" then "conformance-neighbour-b" else "conformance-neighbour"
+        let fixture result = result |> Result.defaultWith (fun _ -> invalidOp "fixture neighbour")
+
+        { ns with
+            Application = AppId.create name |> fixture
+            Dataset = None
+            Root = RelativePath.ofSegments (List.truncate (segments.Length - 1) segments @ [ Segment.create name |> fixture ]) |> fixture }
+
+    let private namespaceState (subject: ConformanceSubject) = subject.Provider.NamespaceState subject.Namespace
+
+    let private describeState (result: Result<NamespaceState, StorageFailure>) =
+        match result with
+        | Ok state ->
+            let (ChangeToken repository) = state.RepositoryToken
+            let (NamespaceToken ns) = state.NamespaceToken
+            $"repository {repository}, namespace {ns}"
+        | Error failure -> describe (Error failure: Result<unit, StorageFailure>)
+
+    /// Another application's commit moves the repository's token but not this
+    /// namespace's, and a write conditioned on the namespace token still
+    /// applies; this namespace's own commit then moves its token (ARCA-CON-005).
+    let private namespaceTokenIgnoresNeighbours (subject: ConformanceSubject) =
+        async {
+            let other = neighbour subject
+            let! before = namespaceState subject
+
+            let elsewhere =
+                Operation.create other (metadata "conf-neighbour-1") [ Change.Create(path "records/n.json", recordText "N" "theirs") ]
+                |> Result.defaultWith (fun _ -> invalidOp "fixture operation")
+
+            let! theirs = subject.Provider.Commit elsewhere
+            let! after = namespaceState subject
+
+            match before, theirs, after with
+            | Ok before, Ok _, Ok after when after.RepositoryToken <> before.RepositoryToken && after.NamespaceToken = before.NamespaceToken ->
+                let guarded =
+                    operation subject "conf-namespace-token" [ Change.Create(path "records/mine.json", recordText "M" "mine") ]
+                    |> Operation.requireNamespaceToken before.NamespaceToken
+
+                match! subject.Provider.Commit guarded with
+                | Ok _ ->
+                    let! mine = namespaceState subject
+
+                    match mine with
+                    | Ok mine when mine.NamespaceToken <> before.NamespaceToken -> return ConformanceOutcome.Passed
+                    | other -> return failed $"this namespace's own commit left its token at {describeState other}"
+                | other -> return failed $"a write held to a namespace token, after another namespace's commit: {describe other}"
+            | _, Error _, _ -> return failed $"another namespace's commit: {describe theirs}"
+            | _ -> return failed $"another namespace's commit took the state from {describeState before} to {describeState after}"
+        }
+
+    /// A change inside the namespace makes its token stale: a write held to it
+    /// is refused with StaleNamespaceToken and nothing is written (ARCA-CON-005).
+    let private staleNamespaceToken (subject: ConformanceSubject) =
+        async {
+            match! namespaceState subject with
+            | Error failure -> return failed $"namespace state: {describe (Error failure: Result<unit, StorageFailure>)}"
+            | Ok state ->
+                do! subject.WriteExternally (path "records/inside.json") (Some(recordText "I" "moved"))
+
+                let guarded =
+                    operation subject "conf-stale-namespace" [ Change.Create(path "records/s.json", recordText "S" "x") ]
+                    |> Operation.requireNamespaceToken state.NamespaceToken
+
+                let! refused = subject.Provider.Commit guarded
+                let! absent = read subject "records/s.json"
+
+                match refused with
+                | Error(StorageFailure.StaleNamespaceToken(expected, actual)) when expected = state.NamespaceToken && actual <> expected ->
+                    return expect (absent = Ok ReadOutcome.Absent) "a write refused as stale changed the store"
+                | other -> return failed $"a write held to a namespace token after a change inside the namespace: {describe other}"
+        }
+
     let private atomicity (subject: ConformanceSubject) =
         async {
             let! _ = commit subject "conf-atomic-1" [ Change.Create(path "records/t1.json", recordText "T1" "x") ]
@@ -444,6 +524,8 @@ module Conformance =
           "authentication failure", "ARCA-AUTH-004", authenticationFailure
           "read-only mode", "ARCA-COMMIT-006", readOnlyMode
           "stale change token", "ARCA-API-004", staleChangeToken
+          "namespace token ignores other namespaces", "ARCA-CON-005", namespaceTokenIgnoresNeighbours
+          "stale namespace token", "ARCA-CON-005", staleNamespaceToken
           "immutable record protected", "ARCA-INT-003", immutableProtected
           "corrupt record not overwritten", "ARCA-INT-004", corruptNotOverwritten
           "external edit detected", "ARCA-INT-002", externalEditDetected ]

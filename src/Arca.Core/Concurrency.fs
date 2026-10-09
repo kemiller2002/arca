@@ -10,6 +10,21 @@ type Revision = Revision of string
 /// commit (ARCA-CON-001, the ChangeToken capability).
 type ChangeToken = ChangeToken of string
 
+/// A token naming the state of one namespace's content only, such as the Git
+/// tree SHA of the namespace root (ARCA-CON-005, the NamespaceToken
+/// capability). A commit outside the namespace, by another application in a
+/// shared repository, leaves it unchanged; any change inside it, including in
+/// an application namespace's datasets, changes it. It is not a
+/// `ChangeToken`, so it cannot be passed where the repository's state is meant.
+type NamespaceToken = NamespaceToken of string
+
+/// One observation of the provider: the repository's change token and the
+/// namespace's token at that same state. The namespace's content at
+/// `RepositoryToken` is exactly what `NamespaceToken` names.
+type NamespaceState =
+    { RepositoryToken: ChangeToken
+      NamespaceToken: NamespaceToken }
+
 /// A text identifier supplied by the application: `A-Z a-z 0-9 . _ : -`,
 /// 8 to 128 characters for idempotency keys and 1 to 128 otherwise.
 type IdempotencyKey = private IdempotencyKey of string
@@ -106,7 +121,8 @@ type Operation =
         { ns: Namespace
           changes: Change list
           metadata: OperationMetadata
-          expectedToken: ChangeToken option }
+          expectedToken: ChangeToken option
+          expectedNamespaceToken: NamespaceToken option }
 
     /// The namespace every change is in.
     member this.Namespace = this.ns
@@ -118,6 +134,10 @@ type Operation =
     /// still exactly this change token; otherwise StaleChangeToken, even when
     /// the touched records are unchanged (ARCA-CON-001).
     member this.ExpectedChangeToken = this.expectedToken
+    /// When set, the operation applies only if its own namespace's content is
+    /// still exactly this namespace token; otherwise StaleNamespaceToken.
+    /// Commits elsewhere in the repository do not make it stale (ARCA-CON-005).
+    member this.ExpectedNamespaceToken = this.expectedNamespaceToken
 
 /// Why an operation was refused before anything was sent.
 [<RequireQualifiedAccess>]
@@ -194,12 +214,22 @@ module Operation =
             { ns = ns
               changes = changes
               metadata = metadata
-              expectedToken = None })
+              expectedToken = None
+              expectedNamespaceToken = None })
 
     /// Conditions the operation on the provider's whole state as well: it
     /// applies only while the change token is still `token`.
     let requireChangeToken (token: ChangeToken) (operation: Operation) =
         { operation with expectedToken = Some token }
+
+    /// Conditions the operation on its own namespace's state: it applies only
+    /// while the namespace token is still `token`, whatever other
+    /// applications commit elsewhere in the repository (ARCA-CON-005). The
+    /// commit is still one atomic commit on the branch head, with the same
+    /// OutcomeUnknown semantics; this is the condition a shared repository
+    /// should use, and `requireChangeToken` the repository-wide fallback.
+    let requireNamespaceToken (token: NamespaceToken) (operation: Operation) =
+        { operation with expectedNamespaceToken = Some token }
 
 /// A write found the provider's state different from what it expected
 /// (ARCA-CON-002). It names the object and its actual revision; Arca never

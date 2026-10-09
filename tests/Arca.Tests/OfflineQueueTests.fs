@@ -93,6 +93,32 @@ let ``the queue is plain, inspectable data with keys and expected revisions (ARC
     Assert.Equal<Change list>(update.Changes, (OfflineQueue.operationOf chrona second |> ok).Changes)
 
 [<Fact>]
+let ``a queued namespace condition survives persistence and is enforced when sent (ARCA-CON-005)`` () =
+    let store = InMemoryStore()
+    let state = store.Provider.NamespaceState chrona |> Async.RunSynchronously |> ok
+    let held = create "n" |> Operation.requireNamespaceToken state.NamespaceToken
+    let unheld = create "plain"
+    let queue = enqueueAll [ held ]
+    let (NamespaceToken expected) = state.NamespaceToken
+    Assert.Equal(Some expected, queue.Entries.Head.Operation.ExpectedNamespaceToken)
+
+    // Persisted and read back, the condition is still there.
+    let reloaded = OfflineQueue.encode queue |> ok |> OfflineQueue.decode |> ok
+    Assert.Equal(queue, reloaded)
+    Assert.Equal(Some state.NamespaceToken, (OfflineQueue.operationOf chrona reloaded.Entries.Head.Operation |> ok).ExpectedNamespaceToken)
+
+    // A queue without one keeps the exact text earlier Arca wrote: no new field.
+    let plainText = OfflineQueue.encode (enqueueAll [ unheld ]) |> ok
+    Assert.DoesNotContain("expectedNamespaceToken", plainText)
+
+    // Something changes inside the namespace before the queue drains: the
+    // entry is Conflicted, never applied over the newer state.
+    store.WriteExternally(location, (Namespace.resolve chrona (path "notes/other.json") |> ok).Path, Some "{}")
+    let queueStore = MemoryQueueStore()
+    let drained = sync store queueStore.Store reloaded
+    Assert.Equal<EntryState list>([ EntryState.Conflicted [] ], states (fst drained))
+
+[<Fact>]
 let ``an entry is replayed only in its own namespace`` () =
     let queue = enqueueAll [ create "a" ]
 

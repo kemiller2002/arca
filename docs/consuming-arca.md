@@ -114,8 +114,51 @@ repository where Chrona's data needs its own permissions (DF-ARCA-2026-0002).
     `GitHubStorage.reconcile` before trying again, and never resend blindly.
   - `Refused`, `RateLimited` (with GitHub's evidence) and `ProviderFailed`
     (with an Aegis fault code) cover the rest.
-- **Reads.** `GitHubStorage.read`, `list` and `changeToken` read by
-  deterministic path.
+- **Whole-state conditions.** Besides each change's expected revision, an
+  operation can be held to a token. In a repository other applications
+  share, use `Operation.requireNamespaceToken` with the token from
+  `provider.NamespaceState ns`: only a change inside your namespace makes it
+  `StaleNamespaceToken`. `Operation.requireChangeToken` is the repository-wide
+  fallback: any commit anywhere makes it `StaleChangeToken`. See section 3a.
+- **Reads.** `GitHubStorage.read`, `list`, `changeToken` and `namespaceState`
+  read by deterministic path.
+
+### 3a. Namespace-scoped change tokens (from 0.4.0)
+
+`provider.NamespaceState ns` returns a `NamespaceState`: the repository's
+`ChangeToken` and the namespace's own `NamespaceToken`, observed at the same
+commit (ARCA-CON-005, DF-ARCA-2026-0011). On GitHub the namespace token is
+the Git tree SHA of the namespace root. A tree SHA is content-addressed, so a
+commit by another application elsewhere in the repository leaves it
+unchanged. Any change inside the namespace changes it, and that includes an
+application namespace's `datasets/`.
+
+```fsharp
+let! state = provider.NamespaceState ns                                  // Result
+// ... read and validate what the decision needs ...
+let operation =
+    Operation.create ns metadata changes                                  // Result
+    |> Result.map (Operation.requireNamespaceToken state.NamespaceToken)
+match! provider.Commit operation with
+| Error(StorageFailure.StaleNamespaceToken(expected, actual)) -> // something in *your* namespace changed: reload, decide again
+| Error(StorageFailure.Conflicted conflicts) -> // a record you touch changed
+| other -> ...
+```
+
+- The commit is still one atomic commit on the branch head, with the same
+  `OutcomeUnknown` and reconciliation semantics. The condition is checked at
+  the exact head the commit is built on, and the ref update is
+  fast-forward only.
+- `NamespaceToken` and `ChangeToken` are different types, so neither can be
+  passed where the other is meant.
+- A queued operation keeps its namespace condition (the queue records
+  `expectedNamespaceToken`, only when set). Do not downgrade below 0.4.0
+  with such entries pending: an older Arca would read them without the
+  condition.
+- A provider without the `NamespaceToken` capability can only offer the
+  repository-wide fallback: `requireChangeToken`, `Fresh.readRepositoryWide`
+  and `ProviderObservation.CurrentRepository`. Both of Arca's providers
+  offer it.
 
 ## 4. Drive the adapter from a Limen engine
 
@@ -324,9 +367,10 @@ write. See Limen LCP-082..LCP-087 and DF-LIMEN-2026-0005 §4.
 let! cache = IndexedDbReadCache.openCache host IndexedDbReadCache.DefaultBudget   // Result
 let! queue = LimenQueue.own host { QueueOptions.standard with FreeSpace = Some cache.FreeSpace } ns
 
-// After a provider read that the application validated (ARCA-INT-001):
+// After a provider read that the application validated (ARCA-INT-001), with
+// `state` from provider.NamespaceState ns, taken before the read:
 let key = ReadCache.key account ns "activities/2026-10"                             // Result
-let entry = ReadCache.entry key schemaVersion now (Fresh.read token storedObjects)
+let entry = ReadCache.entry key schemaVersion now (Fresh.read state storedObjects)  // namespace-scoped
 do! cache.Keep entry                                                                // never fails the read
 
 // Opening offline: show it "as of" its token and read time.
@@ -335,9 +379,10 @@ match! cache.Show key with
 | Ok None -> ()      // read from the provider
 | Error _ -> ()      // a corrupt entry was dropped; read from the provider
 
-// Online: revalidate each shown partition against the provider's token.
-match ReadCache.revalidate (ProviderObservation.Current token) cached with
-| Revalidation.Confirmed fresh -> // current; Fresh.token fresh may condition a write
+// Online: revalidate each shown partition against the namespace's state.
+let! state = provider.NamespaceState ns                                             // Result
+match ReadCache.revalidate (ProviderObservation.Current state) cached with
+| Revalidation.Confirmed fresh -> // current; Fresh.namespaceToken fresh (or Fresh.token) may condition a write
 | Revalidation.Refresh stale -> // shown stale; re-read, then cache.Keep the new entry
 | Revalidation.Remove key -> // cache.Store.Remove key
 | Revalidation.Unverified cached -> () // provider unreachable: still "as of"
@@ -346,6 +391,24 @@ match ReadCache.revalidate (ProviderObservation.Current token) cached with
 - A `Cached` value's token is a `CachedToken`, not a `ChangeToken`, so it
   does not compile as a write condition. Write decisions use `Fresh` reads,
   or are queued and reconciled.
+- **Token scope (from 0.4.0, ARCA-CON-005).** An entry made from
+  `Fresh.read state` is namespace-scoped: revalidation compares it with the
+  namespace token, so another application's commit leaves it `Confirmed`.
+  Equal namespace tokens mean the namespace's content is the same at the
+  current repository token, so the confirmed `Fresh` value carries both
+  current tokens. The repository-wide behaviour is kept only as an explicit
+  fallback: `Fresh.readRepositoryWide token` and
+  `ProviderObservation.CurrentRepository token`. A namespace-scoped entry is
+  never confirmed by a repository token alone. An entry written by 0.3.x
+  has no scope and is read as repository-wide; its first refresh replaces
+  it with a namespace-scoped one.
+- **Moving Chrona from 0.3.0.** The 0.3.0 calls no longer compile, by
+  design. Replace `provider.ChangeToken ns` with `provider.NamespaceState
+  ns`, `Fresh.read token` with `Fresh.read state`, and
+  `ProviderObservation.Current token` with `ProviderObservation.Current
+  state`. Hold writes with `Operation.requireNamespaceToken
+  state.NamespaceToken` instead of `requireChangeToken`, and handle
+  `StorageFailure.StaleNamespaceToken` where you handle `StaleChangeToken`.
 - **Sign-out.** Apply `SignOut.plan policy unsent choice`. When
   `ClearCache` is set, call `cache.Store.Clear(CacheScope.Account account)`.
   It is one `deleteRange`. Under `Ask`, when the person keeps their unsent
@@ -378,10 +441,9 @@ match ReadCache.revalidate (ProviderObservation.Current token) cached with
 
 ## 7. What comes next
 
-- **Follow-ups.** WI-0018: namespace-scoped change tokens, so another
-  application's commit does not invalidate this application's cache
-  (LCP-084). Forwarding writes between tabs is a later item if real use
-  needs it (OQ-LIMEN-IDB-001).
+- **Follow-ups.** Forwarding writes between tabs is a later item if real use
+  needs it (OQ-LIMEN-IDB-001). Namespace-scoped change tokens (WI-0018) are
+  in 0.4.0 (section 3a).
 - **Moving to nuget.org.** When the packages are on nuget.org, remove the
   `EchelonFoundry.Arca.*` mapping from `NuGet.config`. The package ids and
   versions do not change.

@@ -103,6 +103,9 @@ type StorageFailure =
     | ObjectTooLarge of path: string * bytes: int64 * limit: int64
     /// The change token the caller held no longer names the provider's state (ARCA-API-004).
     | StaleChangeToken of expected: ChangeToken * actual: ChangeToken
+    /// The namespace token the caller held no longer names the namespace's
+    /// state: something inside the namespace changed (ARCA-CON-005).
+    | StaleNamespaceToken of expected: NamespaceToken * actual: NamespaceToken
     /// The provider's rate limit is exhausted (ARCA-API-003). `retryAfter`
     /// and `resetAt` (Unix seconds) are the provider's evidence.
     | RateLimited of retryAfter: TimeSpan option * resetAt: int64 option
@@ -122,6 +125,11 @@ type StorageProvider =
     { Capabilities: ProviderCapabilities
       /// The provider's current change token for the namespace's location.
       ChangeToken: Namespace -> Async<Result<ChangeToken, StorageFailure>>
+      /// The repository's change token and the namespace's own token, observed
+      /// at one state (ARCA-CON-005). Revalidate a namespace's read cache and
+      /// condition its writes on the namespace token, so commits by other
+      /// applications in a shared repository do not make them stale.
+      NamespaceState: Namespace -> Async<Result<NamespaceState, StorageFailure>>
       Read: Namespace -> RelativePath -> Async<Result<ReadOutcome, StorageFailure>>
       List: Namespace -> RelativePath -> Async<Result<Listing, StorageFailure>>
       /// One operation, one atomic commit, conditioned on every change's expectation.

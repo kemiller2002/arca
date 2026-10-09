@@ -61,6 +61,7 @@ module InMemory =
                   Capability.ListPrefix, CapabilityState.Available 1
                   Capability.BatchWrite, CapabilityState.Available 1
                   Capability.ChangeToken, CapabilityState.Available 1
+                  Capability.NamespaceToken, CapabilityState.Available 1
                   Capability.MaxObjectSize, CapabilityState.Available 1
                   Capability.AtRestEncryption, CapabilityState.Unavailable "at-rest encryption is deferred (DF-ARCA-2026-0002)" ]
           MaxObjectBytes = Some Record.DefaultMaxBytes }
@@ -122,6 +123,31 @@ module InMemory =
         match gate state with
         | Error failure, next -> Error failure, next
         | Ok(), next -> Ok(head next), next
+
+    /// The namespace's token: a hash of every object under its root, by path
+    /// and revision. Like a Git tree SHA it is content-addressed, so a commit
+    /// outside the namespace leaves it unchanged (ARCA-CON-005).
+    let namespaceToken (ns: Namespace) (state: InMemoryState) =
+        let root = key ns.Location (RelativePath.render ns.Root) + "/"
+
+        state.Objects
+        |> Map.toList
+        |> List.filter (fun (objectKey, _) -> objectKey.StartsWith(root, StringComparison.Ordinal))
+        |> List.map (fun (objectKey, stored) ->
+            let (Revision revision) = stored.Revision
+            $"{objectKey.Substring root.Length}\u0000{revision}\n")
+        |> String.concat ""
+        |> fun manifest -> NamespaceToken("mem-ns:" + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes manifest)))
+
+    /// The current change token and the namespace's token at it.
+    let namespaceState (ns: Namespace) (state: InMemoryState) =
+        match gate state with
+        | Error failure, next -> Error failure, next
+        | Ok(), next ->
+            Ok
+                { RepositoryToken = head next
+                  NamespaceToken = namespaceToken ns next },
+            next
 
     /// Reads one object.
     let read (ns: Namespace) (path: RelativePath) (state: InMemoryState) =
@@ -225,7 +251,8 @@ module InMemory =
         token
 
     /// Commits one operation atomically, conditioned on every change's
-    /// expectation and, when given, the expected change token.
+    /// expectation and, when given, the expected change token and the
+    /// expected namespace token.
     let commit (operation: Operation) (state: InMemoryState) =
         match gate state with
         | Error failure, next -> Error failure, next
@@ -260,10 +287,14 @@ module InMemory =
                 if next.Standing |> List.contains InMemoryFault.ReadOnly then
                     Error(StorageFailure.Refused WriteRefusal.ReadOnlyAccess), next
                 else
-                    match oversized, operation.ExpectedChangeToken with
-                    | Some failure, _ -> Error failure, next
-                    | None, Some expected when expected <> head next -> Error(StorageFailure.StaleChangeToken(expected, head next)), next
-                    | None, _ ->
+                    let actualNamespace = namespaceToken ns next
+
+                    match oversized, operation.ExpectedChangeToken, operation.ExpectedNamespaceToken with
+                    | Some failure, _, _ -> Error failure, next
+                    | None, Some expected, _ when expected <> head next -> Error(StorageFailure.StaleChangeToken(expected, head next)), next
+                    | None, _, Some expected when expected <> actualNamespace ->
+                        Error(StorageFailure.StaleNamespaceToken(expected, actualNamespace)), next
+                    | None, _, _ ->
                         let currentContent path =
                             match resolve ns path with
                             | Ok address -> Map.tryFind (key ns.Location address.Path) next.Objects |> Option.map _.Content
@@ -372,6 +403,7 @@ type InMemoryStore(initial: InMemoryState) =
     member _.Provider: StorageProvider =
         { Capabilities = InMemory.capabilities
           ChangeToken = fun ns -> step (InMemory.changeToken ns)
+          NamespaceState = fun ns -> step (InMemory.namespaceState ns)
           Read = fun ns path -> step (InMemory.read ns path)
           List = fun ns prefix -> step (InMemory.list ns prefix)
           Commit = fun operation -> step (InMemory.commit operation)
