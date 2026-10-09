@@ -478,5 +478,51 @@
     "title": "Namespace-scoped change tokens are a distinct NamespaceToken, the Git tree SHA of the namespace root on GitHub; the read cache revalidates against it by default and the repository-wide token remains only as an explicit fallback",
     "updated": "2026-10-09",
     "version": "1.0.0"
+  },
+  {
+    "created": "2026-10-09",
+    "id": "DF-ARCA-2026-0012",
+    "owners": [
+      "arca"
+    ],
+    "path": "research/decisions/DF-ARCA-2026-0012--explicit-erasure-of-immutable-records-with-tombstones.md",
+    "provenance": {
+      "contributions": {
+        "EXE-20261009T005625812Z-9cc68a91": {
+          "actor": {
+            "id": "anthropic/claude-code",
+            "kind": "agent",
+            "model": "unknown",
+            "provider": "anthropic",
+            "runtime": "claude-code"
+          },
+          "at": "2026-10-09T01:29:34.000Z",
+          "operations": [
+            "created"
+          ],
+          "reason": "Explicit erasure of immutable records (WI-0028, ARCA-INT-005)"
+        }
+      }
+    },
+    "related_documents": [
+      "docs/requirements/ARCA-STORAGE-REQUIREMENTS.md",
+      "docs/consuming-arca.md",
+      "research/decisions/DF-ARCA-2026-0011--namespace-scoped-change-tokens.md"
+    ],
+    "review_cycle": "on-trigger",
+    "status": "accepted",
+    "superseded_by": [],
+    "supersedes": [],
+    "tags": [
+      "integrity",
+      "erasure",
+      "retention",
+      "immutable",
+      "tombstone",
+      "audit"
+    ],
+    "title": "Immutable records are erased by an explicit, capability-gated operation that replaces the blob in the current tree with a hash-only tombstone at the same path; Git history is out of Arca's reach and is documented as such",
+    "updated": "2026-10-09",
+    "version": "1.0.0"
   }
 ]

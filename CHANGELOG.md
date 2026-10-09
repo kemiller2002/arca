@@ -33,6 +33,22 @@ release may change the API; pin an exact version.
   - The offline queue persists the namespace condition, as
     `expectedNamespaceToken`, only when set.
 
+- **Explicit erasure of immutable records** (WI-0028, ARCA-INT-005,
+  DF-ARCA-2026-0012), for retention.
+  - `Erasure.request`, `Erasure.operation` and `Erasure.commit`, behind the
+    new `Capability.Erase`; both providers declare it.
+  - In one commit, the record's blob in the current tree is replaced by a
+    `Tombstone`: the erased content hash, revision, time and reason. The
+    content itself is never recorded.
+  - Reads return `ReadOutcome.Erased`. Creating, changing, deleting or
+    erasing an erased record again is refused (`IntegrityRefusal.ErasedRecord`).
+  - `Snapshot.Erased` lists tombstones separately. Exports and migrations
+    carry them; indexes skip them. `ReadCache.purgeErased` drops cached
+    partitions that hold an erased record. An erasure is never queued
+    offline.
+  - **Git history still holds the erased content.** Removing it permanently
+    needs a history rewrite by the repository owner, which Arca does not do.
+
 ### Changed (breaking)
 
 - `Fresh.read` takes a `NamespaceState`, not a `ChangeToken`, and
@@ -40,6 +56,9 @@ release may change the API; pin an exact version.
   repository-wide behaviour remains only as an explicit fallback:
   `Fresh.readRepositoryWide` and `ProviderObservation.CurrentRepository`.
   `docs/consuming-arca.md` section 5b shows the 0.3.0 to 0.4.0 changes.
+- `ReadOutcome.Erased`, `Snapshot.Erased`, `Capability.Erase` and the
+  `IntegrityRefusal` cases `ErasedRecord` and `NotErasable` are new.
+  Exhaustive matches over them must handle the new cases.
 - New members of public types: `StorageProvider.NamespaceState`,
   `CacheEntry.Scope`, `QueuedOperation.ExpectedNamespaceToken` and
   `StorageFailure.StaleNamespaceToken`. Code that builds these records, or
