@@ -1,6 +1,6 @@
 # Consuming Arca
 
-How an application (Chrona first) takes Arca 0.3.0 and wires it into a Limen
+How an application (Chrona first) takes Arca 0.4.0 and wires it into a Limen
 engine. Distribution follows the short-term plan
 ([`distribution-short-term-plan.md`](distribution-short-term-plan.md)): the
 packages are attested GitHub release assets, which Conditor installs into the
@@ -23,7 +23,7 @@ F# packages `EchelonFoundry.Arca.Limen` needs). In the consuming repository:
 1. Declare Arca in `conditor.json`, at exactly the version the set selects:
 
    ```json
-   { "id": "arca", "version": "0.3.0", "required": true },
+   { "id": "arca", "version": "0.4.0", "required": true },
    { "id": "limen-fsharp", "version": "0.9.0", "required": true }
    ```
 
@@ -36,7 +36,7 @@ F# packages `EchelonFoundry.Arca.Limen` needs). In the consuming repository:
    conditor upgrade --current --target . --resolved-set ... --resolved-set-sha256 ... --authorize <plan digest>
    ```
 
-   The plan lists `arca: opt in at 0.3.0` under *NuGet release-asset feeds*.
+   The plan lists `arca: opt in at 0.4.0` (or `arca: 0.3.0 -> 0.4.0`) under *NuGet release-asset feeds*.
    Applying it:
    - downloads both packages and proves them against the Registry digests;
    - writes `vendor/nuget/` with `arca.lock`;
@@ -49,11 +49,11 @@ F# packages `EchelonFoundry.Arca.Limen` needs). In the consuming repository:
 3. Pin the packages (central package management shown):
 
    ```xml
-   <PackageVersion Include="EchelonFoundry.Arca.Core" Version="0.3.0" />
-   <PackageVersion Include="EchelonFoundry.Arca.GitHub" Version="0.3.0" />
+   <PackageVersion Include="EchelonFoundry.Arca.Core" Version="0.4.0" />
+   <PackageVersion Include="EchelonFoundry.Arca.GitHub" Version="0.4.0" />
    <!-- The IndexedDB queue and read cache (section 5a); also declare
-        limen-fsharp 0.8.0 in conditor.json. -->
-   <PackageVersion Include="EchelonFoundry.Arca.Limen" Version="0.3.0" />
+        limen-fsharp 0.9.0 in conditor.json. -->
+   <PackageVersion Include="EchelonFoundry.Arca.Limen" Version="0.4.0" />
    ```
 
    Reference `EchelonFoundry.Arca.Core` from the pure domain, and
@@ -74,7 +74,7 @@ Other platforms use their own channel file. The SHA-256 values at registry
 To check provenance yourself:
 
 ```bash
-gh attestation verify vendor/nuget/EchelonFoundry.Arca.Core.0.3.0.nupkg --repo kemiller2002/arca
+gh attestation verify vendor/nuget/EchelonFoundry.Arca.Core.0.4.0.nupkg --repo kemiller2002/arca
 ```
 
 ## 2. Configure storage
@@ -287,7 +287,7 @@ stays authoritative (ARCA-OFF-006).
 It hands you the same, unchanged `QueueStore` port. See DF-ARCA-2026-0010 and
 DF-LIMEN-2026-0005.
 
-**Install.** Declare `arca` 0.3.0 and `limen-fsharp` (0.9.0 in echelon-current 1.12.0; 0.8.0 or later) in
+**Install.** Declare `arca` 0.4.0 and `limen-fsharp` (0.9.0, which Arca 0.4.0 is built against; 0.8.0 or later) in
 `conditor.json`, then run `conditor upgrade --current`. Reference
 `EchelonFoundry.Arca.Limen` from the engine, and pin `EchelonFoundry.Limen.Store`
 and `EchelonFoundry.Limen.Contract` at the limen-fsharp version. In the host, register the store
