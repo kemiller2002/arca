@@ -572,6 +572,29 @@ let ``entries queued without an account id match only the legacy identity the ca
     Assert.Equal(0, none)
 
 [<Fact>]
+let ``a revised entry still matches its account at sign-out, before and after a reload (ARCA-OFF-007)`` () =
+    let origin = Origin()
+    let queue = own origin "a" |> owned
+    let queued, sequence = OfflineQueue.enqueueFor alexA at (operationAs "Alex" "a1") empty |> ok
+    let held = queued |> enqueueFor alexB "Alex" "b1"
+    let conflicted = { held with Entries = held.Entries |> List.map (fun entry -> if entry.Sequence = sequence then { entry with State = EntryState.Conflicted [] } else entry) }
+    let revised = OfflineQueue.revise sequence (operationAs "Alex" "a1-revised") conflicted |> ok
+
+    Assert.Equal(1, QueueSignOut.unsentOfAccount (signingOut alexA) revised)
+    queue.Store.Save revised |> run |> ok
+
+    // A reload (the next tab) reads the account back from IndexedDB.
+    queue.Release() |> run
+    let next = own origin "b" |> owned
+    let reloaded = next.Store.Load() |> run |> ok |> Option.get
+    Assert.Equal(revised, reloaded)
+    Assert.Equal(1, QueueSignOut.unsentOfAccount (signingOut alexA) reloaded)
+
+    let kept, count = next.DiscardAccount (signingOut alexA) reloaded |> run |> ok
+    Assert.Equal(1, count)
+    Assert.Equal<string list>([ "offline-b1" ], keysOf kept)
+
+[<Fact>]
 let ``a memory-only queue discards by account id too`` () =
     let origin = Origin()
     let queue = LimenQueue.own (origin.Host "a") { QueueOptions.standard with Order = [ DurabilityChoice.MemoryOnly ] } chrona |> run |> owned

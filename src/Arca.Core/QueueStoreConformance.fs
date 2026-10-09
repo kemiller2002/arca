@@ -195,6 +195,36 @@ module QueueStoreConformance =
             return verdict
         }
 
+    /// A revised entry keeps the account that made it, its sequence and its
+    /// enqueue time, through a save and a reload (ARCA-OFF-007): otherwise it
+    /// no longer matches its account at sign-out.
+    let private revisedKeepsAccount (subject: QueueStoreSubject) =
+        async {
+            let account = AccountId.ProviderSubject("github", "1001")
+
+            let queued, sequence =
+                OfflineQueue.enqueueFor account at (operation subject.Namespace "r1" "{\"key\":\"r1\"}") (OfflineQueue.create OfflinePolicy.QueueWrites)
+                |> fixture
+
+            let conflicted =
+                { queued with Entries = queued.Entries |> List.map (fun entry -> { entry with State = EntryState.Conflicted [ "notes/r1.json" ] }) }
+
+            match OfflineQueue.revise sequence (operation subject.Namespace "r2" "{\"key\":\"r2\"}") conflicted with
+            | Error error -> return ConformanceOutcome.Failed $"revise: {error}"
+            | Ok revised ->
+                let before = conflicted.Entries.Head
+                let after = revised.Entries.Head
+
+                if after.Operation.AccountId <> Some(AccountId.toWire account) then
+                    return ConformanceOutcome.Failed "revise dropped the entry's account"
+                elif after.Sequence <> before.Sequence || after.EnqueuedAt <> before.EnqueuedAt then
+                    return ConformanceOutcome.Failed "revise changed the entry's sequence or enqueue time"
+                else
+                    match! roundTripThrough subject subject.Store revised with
+                    | ConformanceOutcome.Passed, _ -> return ConformanceOutcome.Passed
+                    | other, _ -> return other
+        }
+
     let private absent (subject: QueueStoreSubject) =
         async {
             match! subject.Store.Load() with
@@ -329,7 +359,8 @@ module QueueStoreConformance =
           "another namespace's queue is Corrupt", "LCP-060", foreign
           "an unreadable queue is Corrupt", "ARCA-OFF-002", corrupt
           "unavailable storage is Unavailable", "ARCA-OFF-002", unavailable
-          "a queue carrying a credential is refused", "ARCA-AUTH-002", credentialFree ]
+          "a queue carrying a credential is refused", "ARCA-AUTH-002", credentialFree
+          "a revised entry keeps its account through a reload", "ARCA-OFF-007", revisedKeepsAccount ]
 
     /// Runs every case, each against a fresh subject.
     let run (fresh: unit -> Async<QueueStoreSubject>) : Async<ConformanceResult list> =
