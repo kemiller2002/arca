@@ -2,9 +2,9 @@
 id: ARCA-REQ-STORAGE
 title: Arca shared storage requirements
 status: draft
-version: 0.3.0
+version: 0.4.0
 created: 2026-10-08
-updated: 2026-10-08
+updated: 2026-10-09
 owners:
   - arca
 related_documents:
@@ -44,6 +44,16 @@ provenance:
         model: unknown
         runtime: claude-code
       reason: "Cross-reference Limen LCP-043..087 and DF-LIMEN-2026-0005 from ARCA-OFF-002 and OQ-ARCA-003; record the two-tab snapshot hazard"
+    EXE-20261008T233209539Z-934d158a:
+      operations: [modified]
+      at: 2026-10-09T00:20:03.000Z
+      actor:
+        kind: agent
+        id: anthropic/claude-code
+        provider: anthropic
+        model: unknown
+        runtime: claude-code
+      reason: "Add ARCA-CON-005, namespace-scoped change tokens (WI-0018)"
 ---
 
 # Arca shared storage requirements
@@ -266,6 +276,18 @@ SUM0-021.*
 **ARCA-CON-004** Conflict detection and merge MUST be property-tested for
 determinism, commutativity of independent additions, and the absence of lost
 updates. *Sources: SIG ADM-037, SUM3-042, CHX-430 (scenarios 10, 32, 34).*
+
+**ARCA-CON-005** Where several applications share one repository
+(ARCA-LOC-002/003), Arca MUST offer a change token scoped to one namespace.
+A commit outside the namespace MUST leave it unchanged, and any change inside
+it MUST change it. A write conditioned on it MUST keep the atomicity and
+OutcomeUnknown semantics of ARCA-COMMIT-001 and ARCA-OUT-001, and MUST be
+refused with a typed stale-token failure when the namespace changed. The
+read cache MUST revalidate against it by default, so another application's
+commit does not mark a partition stale (Limen LCP-084). The repository-wide
+token MUST remain available only as an explicit fallback. *Sources: Chrona
+DF-CHRONA-2026-0005 (coordinator decision 2026-10-08), LCP-084,
+CHX-210.*
 
 ## 6. Commit and audit format (ARCA-COMMIT)
 
