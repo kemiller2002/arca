@@ -753,10 +753,10 @@
         "registry"
       ],
       "priority": "high",
-      "status": "ready",
+      "status": "complete",
       "attachments": [],
       "createdAt": "2026-10-09T02:06:40.000Z",
-      "updatedAt": "2026-10-09T02:06:41.000Z",
+      "updatedAt": "2026-10-09T02:20:41.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",
