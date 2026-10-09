@@ -30,3 +30,4 @@
 | WI-0025 | Release Arca 0.2.1 (multi-tab localStorage queue fix) as attested GitHub release assets and register it in echelon-registry | complete | arca, release, registry | high |
 | WI-0026 | Release Arca 0.3.0 (EchelonFoundry.Arca.Core, .GitHub and the new .Limen: IndexedDB queue, migration, read cache) as attested GitHub release assets and register it in echelon-registry | complete | arca, release, registry | high |
 | WI-0027 | Move Arca's build from limen-fsharp 0.8.0 to 0.9.0 through Conditor (echelon-current 1.12.0); re-verify the queue, read cache and Limen vectors | complete | arca, conditor, limen | medium |
+| WI-0028 | Explicit erasure of immutable records for retention (ARCA-INT-005): Erasure operation behind Capability.Erase, tombstone with hash/time/reason in the same commit, reads report Erased, nothing recreates it; current tree only | ready | arca, integrity, erasure, signal | high |
