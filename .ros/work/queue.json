@@ -728,10 +728,10 @@
         "chrona"
       ],
       "priority": "high",
-      "status": "ready",
+      "status": "complete",
       "attachments": [],
       "createdAt": "2026-10-09T01:36:44.000Z",
-      "updatedAt": "2026-10-09T01:36:44.000Z",
+      "updatedAt": "2026-10-09T02:03:59.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",

@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-09T01:36:46.000Z",
+  "updatedAt": "2026-10-09T02:03:59.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -1219,13 +1219,44 @@
     {
       "id": "WI-0029",
       "type": "task",
-      "state": "active",
-      "semanticState": "active",
-      "evidence": [],
-      "updatedAt": "2026-10-09T01:36:46.000Z",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "src/Arca.Limen/Diagnostics.fs"
+        },
+        {
+          "type": "tests",
+          "path": "tests/Arca.Tests/LimenQueueTests.fs"
+        }
+      ],
+      "updatedAt": "2026-10-09T02:03:59.000Z",
       "telemetryExecutionIds": [
         "EXE-20261009T013646639Z-9f94eb32"
-      ]
+      ],
+      "latestCheckpoint": {
+        "id": "09702e54452895eda0c7681d",
+        "recordedAt": "2026-10-09T02:03:58.000Z",
+        "executionId": "EXE-20261009T013646639Z-9f94eb32",
+        "repository": "arca",
+        "branch": "wi-0029/sign-out-account-id",
+        "commit": "34af96b58678c6802f86addc9cd0ed27007c781b",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca.git"
+        },
+        "remoteBranch": "wi-0029/sign-out-account-id",
+        "remoteCommit": "34af96b58678c6802f86addc9cd0ed27007c781b",
+        "summary": "Stable account ids for sign-out; all PR #33 checks green on 34af96b",
+        "nextAction": "Merge PR #33; release 0.4.0",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-10-09T02:03:59.000Z",
+      "conclusion": "Sign-out matches by stable AccountId; legacy only when named; in-flight never discarded"
     }
   ]
 }
