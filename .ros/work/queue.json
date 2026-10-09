@@ -438,7 +438,7 @@
     {
       "id": "WI-0018",
       "title": "Namespace-scoped change tokens: condition a commit on the application's own namespace, not the whole repository",
-      "description": "Requested by Chrona (DF-CHRONA-2026-0005, coordinator decision 2026-10-08). Operation.requireChangeToken conditions a commit on the provider's whole-repository state, so in a repository shared by several applications (ARCA-LOC-002/003 allow it) every other application's commit makes the next one stale; Chrona then reloads and decides again, which is safe but costs reloads and rate limit. Offer, if it can be made safe, a change token scoped to a namespace (for example the tree SHA of the namespace root on the data branch, compared at commit time against the base commit), so an operation is conditioned on the state of its own namespace only, with the same atomicity and OutcomeUnknown semantics, and a conformance case that proves a concurrent change inside the namespace is still refused while one outside it is not. Chrona keeps the repository-wide token until Arca provides this.",
+      "description": "Requested by Chrona (DF-CHRONA-2026-0005, coordinator decision 2026-10-08). ARCA-CON-005: a change token scoped to one namespace (the Git tree SHA of the namespace root on the data branch), so in a repository shared by several applications (ARCA-LOC-002/003) another application's commit neither marks this application's read cache stale (Limen LCP-084) nor fails its conditioned write; same atomicity and OutcomeUnknown semantics; conformance proves a concurrent change inside the namespace is refused while one outside it is not; the repository-wide token remains only as an explicit fallback (DF-ARCA-2026-0011).",
       "tags": [
         "arca",
         "concurrency",
@@ -449,7 +449,7 @@
       "status": "ready",
       "attachments": [],
       "createdAt": "2026-10-08T13:58:00Z",
-      "updatedAt": "2026-10-08T23:32:08.000Z",
+      "updatedAt": "2026-10-09T00:20:03.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",
