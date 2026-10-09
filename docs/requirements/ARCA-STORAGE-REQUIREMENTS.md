@@ -64,6 +64,16 @@ provenance:
         model: unknown
         runtime: claude-code
       reason: "Add ARCA-INT-005, explicit erasure of immutable records (WI-0028)"
+    EXE-20261009T013646639Z-9f94eb32:
+      operations: [modified]
+      at: 2026-10-09T02:00:43.000Z
+      actor:
+        kind: agent
+        id: anthropic/claude-code
+        provider: anthropic
+        model: unknown
+        runtime: claude-code
+      reason: "Add ARCA-OFF-007, sign-out matches accounts by a stable id (WI-0029)"
 ---
 
 # Arca shared storage requirements
@@ -397,6 +407,14 @@ degraded mode instead. *Sources: SIG ADM-070, CHX-230.*
 
 **ARCA-OFF-006** Local browser storage MUST NOT silently become a competing
 shared authority. GitHub stays authoritative. *Sources: CHX-021, SUM0-002.*
+
+**ARCA-OFF-007** Sign-out MUST match an account's queued entries by a stable
+account id: the provider's subject (GitHub's numeric user id) or an id the
+application supplies. It MUST NOT match by a display name that two accounts
+may share. An entry without an id MUST match only an identity the caller
+names explicitly. In-flight and outcome-unknown entries MUST never be
+discarded. *Sources: Limen LCP-070; Chrona integration (coordinator request
+2026-10-09).*
 
 ## 9. Integrity: storage content is untrusted input (ARCA-INT)
 
