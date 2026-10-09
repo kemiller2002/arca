@@ -16,8 +16,8 @@ merged at `8dffc14`). Until a Conditor release carries it, build it from
 dotnet build src/Conditor.Cli -c Release -o <dir>
 ```
 
-echelon-registry `main` at `616d10e` selects Arca 0.4.0 as an optional
-project binding in echelon-current **1.16.0**, with limen-fsharp 0.9.0 (the
+echelon-registry `main` at `e710e24` selects Arca 0.4.1 as an optional
+project binding in echelon-current **1.18.0**, with limen-fsharp 0.9.0 (the
 F# packages `EchelonFoundry.Arca.Limen` needs). 0.4.0 changes the API, so
 read sections 3a, 3b and 5a/5b before moving from 0.3.0. In the consuming repository:
 
@@ -62,17 +62,17 @@ read sections 3a, 3b and 5a/5b before moving from 0.3.0. In the consuming reposi
    need `FSharp.Core` 10.1.400 or later, which Aegis 1.0.0 also needs.
 
 Other platforms use their own channel file. The SHA-256 values at registry
-`616d10e` (echelon-current 1.16.0) are:
+`e710e24` (echelon-current 1.18.0) are:
 
 | Platform | SHA-256 |
 |---|---|
-| linux-x64 | `ddcaad58026f370f99703515a5ac497ed1683b7d593efacead4bec3f244aad44` |
-| linux-arm64 | `0abbb973c9c6fa61a4a0fbe42556871ca62d8bddca731ef1dccd3737fc7d9c37` |
-| osx-x64 | `8352e3ea8e153167705003ab469d4c23acf62dd95c198f73e696ad3e7c5230ab` |
-| osx-arm64 | `2122c95b8c1b99d7d191aaf58ede21253570504742f5751a062c6f58fde17821` |
-| win-x64 | `be6d20a3fc373bac0729ad63a76efdeae24c80c630c17bb62fd9cfa8b7a809c2` |
+| linux-x64 | `48aeb43c667f9153eea3bdd16a0d600fa8f93dea109a4fa2411c458a393ffbc5` |
+| linux-arm64 | `93fa795b71ec53589cf37db0e89d47e3e057327b6257e87732c41164f89249df` |
+| osx-x64 | `52e81ba5fc5061ba3972119e136a9fe3d9fbe5378b5953d56ef0ad41511f8e6f` |
+| osx-arm64 | `950fce0bfc3e289e90da80118e141655e581616e8050d8a3a8b66944d3bda847` |
+| win-x64 | `5454433e8b2e148dbd083034f2c7154a265e74afc4349e8309423beaa56fb903` |
 
-echelon-current 1.16.0 also moves the Praxis selection to 3.10.0 (from
+echelon-current 1.18.0 also moves the Praxis selection to 3.11.0 (from
 Arca's 3.7.2). A `conditor upgrade --current` plan shows that transition
 beside Arca's; take it deliberately, or stay on the older set. The 1.12.0
 linux-x64 set (`d6a26a57…`), for example, selects Arca 0.3.0.
