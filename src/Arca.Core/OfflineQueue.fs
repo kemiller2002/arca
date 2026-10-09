@@ -385,15 +385,26 @@ module OfflineQueue =
                     | EntryState.InFlight baseToken -> { entry with State = EntryState.OutcomeUnknown baseToken }
                     | _ -> entry) }
 
+    /// The entry with its operation replaced by `operation`. Only what the
+    /// operation itself determines changes (namespace, metadata, changes,
+    /// conditions); what belongs to the entry is kept: its sequence, enqueue
+    /// time and the account that made it (ARCA-OFF-007). `describe` knows
+    /// nothing of the entry, so every rebuild goes through here.
+    let private replaceOperation (operation: Operation) (entry: QueueEntry) =
+        { entry with Operation = { describe operation with AccountId = entry.Operation.AccountId } }
+
     /// Replaces a conflicted or refused entry with the application's revised
-    /// operation, at the same position, as Pending (ARCA-CON-002).
+    /// operation, at the same position, as Pending (ARCA-CON-002). The entry
+    /// keeps its sequence, enqueue time and account. An erasure is refused,
+    /// as `enqueue` refuses it (ARCA-INT-005).
     let revise (sequence: int64) (operation: Operation) (queue: OfflineQueue) =
         update
             sequence
             (fun entry ->
                 match entry.State with
+                | _ when operation.IsErasure -> Error(QueueError.InvalidOperation "an erasure is sent online, never queued")
                 | EntryState.Conflicted _
-                | EntryState.Refused _ -> Ok { entry with Operation = describe operation; State = EntryState.Pending }
+                | EntryState.Refused _ -> Ok { replaceOperation operation entry with State = EntryState.Pending }
                 | _ -> Error(QueueError.NotApplicable sequence))
             queue
 

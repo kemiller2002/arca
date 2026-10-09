@@ -9,6 +9,27 @@ release may change the API; pin an exact version.
 
 ## [Unreleased]
 
+## [0.4.1] — 2026-10-09
+
+A patch release. The API is unchanged from 0.4.0.
+
+### Fixed
+
+- `OfflineQueue.revise` dropped the entry's `AccountId`, so a revised entry
+  no longer matched its account at sign-out (ARCA-OFF-007; WI-0031; found by
+  Chrona's 0.4.0 adoption). A revision now replaces only what the operation
+  determines. The entry keeps its sequence, enqueue time and account
+  through the revision, a save and a reload.
+- `OfflineQueue.revise` accepted an erasure, which `enqueue` refuses. It
+  now refuses it too (ARCA-INT-005).
+- Audit: no other path rebuilds a queued operation. The stores and the
+  localStorage-to-IndexedDB move encode and decode whole queues, and keep
+  `accountId`.
+- Conformance: the queue-store suite gains "a revised entry keeps its account
+  through a reload" (in-memory, localStorage and IndexedDB over Limen's
+  FakeStore). A Limen test checks `unsentOfAccount` and `DiscardAccount`
+  after a revise, and again after another tab reloads the queue.
+
 ## [0.4.0] — 2026-10-09
 
 A minor release that changes the API: namespace-scoped change tokens for

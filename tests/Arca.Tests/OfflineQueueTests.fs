@@ -133,6 +133,55 @@ let ``the account id survives persistence, and a queue without one keeps its ear
     Assert.DoesNotContain("accountId", OfflineQueue.encode (enqueueAll [ create "b" ]) |> ok)
 
 [<Fact>]
+let ``revising an entry keeps its account, sequence and enqueue time (ARCA-OFF-007)`` () =
+    let account = AccountId.ProviderSubject("github", "583231")
+    let queue, sequence = OfflineQueue.enqueueFor account at (create "a") (OfflineQueue.create OfflinePolicy.QueueWrites) |> ok
+    let conflicted = { queue with Entries = queue.Entries |> List.map (fun entry -> { entry with State = EntryState.Conflicted [ "notes/a.json" ] }) }
+    let before = conflicted.Entries.Head
+    let revised = OfflineQueue.revise sequence (create "a-revised") conflicted |> ok
+    let after = revised.Entries.Head
+
+    Assert.Equal(Some(AccountId.toWire account), after.Operation.AccountId)
+    Assert.Equal(before.Sequence, after.Sequence)
+    Assert.Equal(before.EnqueuedAt, after.EnqueuedAt)
+    Assert.Equal(EntryState.Pending, after.State)
+    Assert.Equal("offline-a-revised", after.Operation.IdempotencyKey)
+    // And through persistence.
+    Assert.Equal(revised, OfflineQueue.encode revised |> ok |> OfflineQueue.decode |> ok)
+
+[<Fact>]
+let ``an erasure cannot be put into the queue by revising an entry (ARCA-INT-005)`` () =
+    let store = InMemoryStore()
+    let record =
+        { Id = RecordId.create "E-1" |> ok
+          Type = RecordType.create "chrona.entry" |> ok
+          SchemaVersion = 1
+          Mutability = Mutability.Immutable
+          Body = Json.objectOf [] }
+
+    let recordPath = Layout.recordPath { Type = record.Type; Partition = []; Id = record.Id } |> ok
+    store.Provider.Commit(operationIn chrona "seed-e" [ Change.Create(recordPath, Record.encode Record.DefaultMaxBytes record |> ok) ]) |> Async.RunSynchronously |> ok |> ignore
+
+    let validated =
+        match store.Provider.Read chrona recordPath |> Async.RunSynchronously |> ok with
+        | ReadOutcome.Found stored -> { Record = record; Revision = stored.Revision; ContentHash = Record.contentHash record }
+        | other -> failwith $"expected Found, got {other}"
+
+    let erasure =
+        Erasure.operation
+            chrona
+            (operationIn chrona "erase" [ Change.Create(path "notes/x.json", "{}") ]).Metadata
+            [ Erasure.request recordPath validated at "rule" |> ok ]
+        |> ok
+
+    let queue, sequence = OfflineQueue.enqueue at (create "a") (OfflineQueue.create OfflinePolicy.QueueWrites) |> ok
+    let conflicted = { queue with Entries = queue.Entries |> List.map (fun entry -> { entry with State = EntryState.Conflicted [] }) }
+
+    match OfflineQueue.revise sequence erasure conflicted with
+    | Error(QueueError.InvalidOperation _) -> ()
+    | other -> failwith $"an erasure was queued through revise: {other}"
+
+[<Fact>]
 let ``an entry is replayed only in its own namespace`` () =
     let queue = enqueueAll [ create "a" ]
 
