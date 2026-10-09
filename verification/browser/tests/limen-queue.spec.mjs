@@ -129,7 +129,7 @@ test("the IndexedDB read cache passes the read-cache conformance suite in this b
   // produce (unavailable storage, an entry planted from outside: tampered,
   // tokenless, or written before token scopes) are reported unsupported,
   // never passed.
-  await expect(tab.page.locator("#cache")).toHaveText("passed 11, failed 0, unsupported 4");
+  await expect(tab.page.locator("#cache")).toHaveText("passed 12, failed 0, unsupported 4");
   expect(tab.errors).toEqual([]);
   await context.close();
 });

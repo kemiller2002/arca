@@ -29,6 +29,7 @@ module Provider =
                   Capability.BatchWrite, CapabilityState.Available 1
                   Capability.ChangeToken, CapabilityState.Available 1
                   Capability.NamespaceToken, CapabilityState.Available 1
+                  Capability.Erase, CapabilityState.Available 1
                   Capability.MaxObjectSize, CapabilityState.Available 1
                   Capability.AtRestEncryption,
                   CapabilityState.Unavailable "at-rest encryption is deferred (DF-ARCA-2026-0002)" ]

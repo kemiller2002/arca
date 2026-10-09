@@ -279,7 +279,8 @@ let private relocation = plan Ok Map.empty
 let private manifestOf (provider: StorageProvider) ns =
     match provider.Read ns manifestPath |> run |> ok with
     | ReadOutcome.Found stored -> Manifest.decode stored.Content |> ok |> Some
-    | ReadOutcome.Absent -> None
+    | ReadOutcome.Absent
+    | ReadOutcome.Erased _ -> None
 
 let private contents (provider: StorageProvider) ns =
     Snapshot.take provider ns 3 |> run |> ok |> _.Objects |> List.map (fun item -> RelativePath.render item.Path, item.Content)
@@ -379,7 +380,8 @@ let ``a schema migration transforms records and records the new versions`` () =
     let migrated =
         match store.Provider.Read target (path "records/chrona.activity/A-1.json") |> run |> ok with
         | ReadOutcome.Found stored -> Record.decode Record.DefaultMaxBytes stored.Content |> ok
-        | ReadOutcome.Absent -> failwith "copied"
+        | ReadOutcome.Absent
+        | ReadOutcome.Erased _ -> failwith "copied"
 
     Assert.Equal(2, migrated.SchemaVersion)
     Assert.Equal(Some(Json.Bool true), Json.field "billable" migrated.Body)
@@ -389,7 +391,8 @@ let ``a schema migration transforms records and records the new versions`` () =
     // The source still holds version 1.
     match store.Provider.Read source (path "records/chrona.activity/A-1.json") |> run |> ok with
     | ReadOutcome.Found stored -> Assert.Equal(1, (Record.decode Record.DefaultMaxBytes stored.Content |> ok).SchemaVersion)
-    | ReadOutcome.Absent -> failwith "kept"
+    | ReadOutcome.Absent
+    | ReadOutcome.Erased _ -> failwith "kept"
 
 [<Fact>]
 let ``a transform may not change a record's identity, and nothing is activated`` () =

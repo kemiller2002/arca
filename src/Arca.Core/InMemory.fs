@@ -62,6 +62,7 @@ module InMemory =
                   Capability.BatchWrite, CapabilityState.Available 1
                   Capability.ChangeToken, CapabilityState.Available 1
                   Capability.NamespaceToken, CapabilityState.Available 1
+                  Capability.Erase, CapabilityState.Available 1
                   Capability.MaxObjectSize, CapabilityState.Available 1
                   Capability.AtRestEncryption, CapabilityState.Unavailable "at-rest encryption is deferred (DF-ARCA-2026-0002)" ]
           MaxObjectBytes = Some Record.DefaultMaxBytes }
@@ -161,7 +162,7 @@ module InMemory =
                 | None -> Ok ReadOutcome.Absent, next
                 | Some stored when size stored.Content > maxBytes next ->
                     Error(StorageFailure.ObjectTooLarge(address.Path, size stored.Content, maxBytes next)), next
-                | Some stored -> Ok(ReadOutcome.Found { stored with Path = path }), next
+                | Some stored -> Ok(ReadOutcome.ofStored { stored with Path = path }), next
 
     /// What lies directly under a namespace-relative prefix.
     let list (ns: Namespace) (prefix: RelativePath) (state: InMemoryState) =
@@ -284,8 +285,15 @@ module InMemory =
                     | Ok address -> Map.tryFind (key ns.Location address.Path) next.Objects |> Option.map _.Revision
                     | Error _ -> None
 
+                let erasureRefused =
+                    match operation.IsErasure, ProviderCapabilities.missing [ Capability.Erase ] capabilities with
+                    | true, refusal :: _ -> Some refusal
+                    | _ -> None
+
                 if next.Standing |> List.contains InMemoryFault.ReadOnly then
                     Error(StorageFailure.Refused WriteRefusal.ReadOnlyAccess), next
+                elif erasureRefused.IsSome then
+                    Error(StorageFailure.Refused(WriteRefusal.CapabilityUnavailable erasureRefused.Value)), next
                 else
                     let actualNamespace = namespaceToken ns next
 
@@ -303,7 +311,7 @@ module InMemory =
                         let refused =
                             operation.Changes
                             |> List.tryPick (fun change ->
-                                match Integrity.guard change (currentContent (Change.path change)) with
+                                match Integrity.guardIn operation change (currentContent (Change.path change)) with
                                 | Error refusal -> Some(StorageFailure.IntegrityRefused(RelativePath.render (Change.path change), refusal))
                                 | Ok() -> None)
 

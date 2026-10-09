@@ -82,11 +82,43 @@ module Integrity =
     /// content cannot be validated is not overwritten or deleted on a guess,
     /// and a record declared immutable is never changed or deleted. Writes
     /// to other objects (derived data, manifests) are not records and pass.
+    ///
+    /// An erased record's tombstone is never written over, by any change
+    /// (ARCA-INT-005).
     let guard (change: Change) (current: string option) =
-        match Layout.authorityOf (Change.path change), change, current with
-        | Some Authority.Authoritative, (Change.Update _ | Change.Delete _), Some content ->
+        match current |> Option.bind Tombstone.decode with
+        | Some _ -> Error IntegrityRefusal.ErasedRecord
+        | None ->
+            match Layout.authorityOf (Change.path change), change, current with
+            | Some Authority.Authoritative, (Change.Update _ | Change.Delete _), Some content ->
+                match Record.decode System.Int64.MaxValue content with
+                | Error error -> Error(IntegrityRefusal.CorruptRecord error)
+                | Ok record when record.Mutability = Mutability.Immutable -> Error IntegrityRefusal.ImmutableRecord
+                | Ok _ -> Ok()
+            | _ -> Ok()
+
+    /// Whether an erasure may replace what is stored now with its tombstone
+    /// (ARCA-INT-005): it must be a valid, immutable, authoritative record
+    /// whose content hash is the one the tombstone names.
+    let private erasable (change: Change) (tombstone: Tombstone) (current: string option) =
+        let path = Change.path change
+
+        match Layout.authorityOf path, current with
+        | _, Some content when (Tombstone.decode content).IsSome -> Error IntegrityRefusal.ErasedRecord
+        | Some Authority.Authoritative, Some content ->
             match Record.decode System.Int64.MaxValue content with
             | Error error -> Error(IntegrityRefusal.CorruptRecord error)
-            | Ok record when record.Mutability = Mutability.Immutable -> Error IntegrityRefusal.ImmutableRecord
+            | Ok record when record.Mutability <> Mutability.Immutable ->
+                Error(IntegrityRefusal.NotErasable "the record is mutable; delete it instead")
+            | Ok record when Record.contentHash record <> tombstone.ErasedContentHash ->
+                Error(IntegrityRefusal.NotErasable "the record's content is not the content the erasure names")
             | Ok _ -> Ok()
-        | _ -> Ok()
+        | Some Authority.Authoritative, None -> Error(IntegrityRefusal.NotErasable "the record is absent")
+        | _ -> Error(IntegrityRefusal.NotErasable "only authoritative records are erased")
+
+    /// The write guard for one change of an operation: `erasable` for the
+    /// paths an erasure names, `guard` for everything else.
+    let guardIn (operation: Operation) (change: Change) (current: string option) =
+        match operation.TombstoneAt(Change.path change) with
+        | Some tombstone -> erasable change tombstone current
+        | None -> guard change current
