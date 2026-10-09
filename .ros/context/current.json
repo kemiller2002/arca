@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-09T03:41:50.000Z",
+  "updatedAt": "2026-10-09T04:19:46.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -1307,33 +1307,48 @@
     {
       "id": "WI-0031",
       "type": "task",
-      "state": "active",
-      "semanticState": "active",
-      "evidence": [],
-      "updatedAt": "2026-10-09T03:41:50.000Z",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "src/Arca.Core/OfflineQueue.fs"
+        },
+        {
+          "type": "tests",
+          "path": "src/Arca.Core/QueueStoreConformance.fs"
+        },
+        {
+          "type": "release",
+          "path": "docs/distribution-short-term-plan.md"
+        }
+      ],
+      "updatedAt": "2026-10-09T04:19:46.000Z",
       "telemetryExecutionIds": [
         "EXE-20261009T034151439Z-be9e3a1c"
       ],
       "latestCheckpoint": {
-        "id": "ac17d15704b3134a2be389d9",
-        "recordedAt": "2026-10-09T04:08:43.000Z",
+        "id": "31f49c4af57fd1812f7918af",
+        "recordedAt": "2026-10-09T04:19:45.000Z",
         "executionId": "EXE-20261009T034151439Z-be9e3a1c",
         "repository": "arca",
-        "branch": "wi-0031/revise-keeps-account",
-        "commit": "841830fd906a15a052717f3db2b08539d65cbb2e",
+        "branch": "wi-0031/distribution-status",
+        "commit": "8dc71268a601be9f1ed1a573e335caf4f77149cd",
         "remote": {
           "name": "origin",
           "url": "https://github.com/kemiller2002/arca.git"
         },
-        "remoteBranch": "wi-0031/revise-keeps-account",
-        "remoteCommit": "841830fd906a15a052717f3db2b08539d65cbb2e",
-        "summary": "revise fixed with tests and conformance; 0.4.1 bump committed; 346 tests",
-        "nextAction": "PR; all checks green; merge to publish v0.4.1; verify; registry; distribution status",
+        "remoteBranch": "wi-0031/distribution-status",
+        "remoteCommit": "8dc71268a601be9f1ed1a573e335caf4f77149cd",
+        "summary": "v0.4.1 published, verified, recorded in echelon-registry#63 (e710e24); distribution status documented",
+        "nextAction": "Merge the distribution-status PR",
         "verification": {
           "status": "verified",
           "mechanism": "git-remote-observation"
         }
-      }
+      },
+      "completedAt": "2026-10-09T04:19:46.000Z",
+      "conclusion": "revise keeps AccountId and refuses erasures; Arca 0.4.1 released, verified and recorded (echelon-current 1.18.0)"
     }
   ]
 }
