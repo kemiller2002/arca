@@ -716,6 +716,32 @@
       },
       "source": "manual",
       "sourceReference": null
+    },
+    {
+      "id": "WI-0029",
+      "title": "Sign-out discard matches accounts by a stable account id (GitHub numeric user id or an app-supplied actor id), not a display name; never discard in-flight entries (LCP-070, ARCA-OFF-007)",
+      "description": "Requested by the coordinator from Chrona's integration: QueueSignOut matches accounts by provider identity, which Chrona records as a display name, so two accounts can collide. Record a stable AccountId on each queued entry (OfflineQueue.enqueueFor; the provider subject from CapabilitySnapshot.Identity, or an app-supplied ActorId), match discard and unsent counts by it, match legacy entries without one only when the caller explicitly names the old display identity, and keep the rule that in-flight and outcome-unknown entries are never discarded.",
+      "tags": [
+        "arca",
+        "offline",
+        "sign-out",
+        "chrona"
+      ],
+      "priority": "high",
+      "status": "ready",
+      "attachments": [],
+      "createdAt": "2026-10-09T01:36:44.000Z",
+      "updatedAt": "2026-10-09T01:36:44.000Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
     }
   ]
 }
