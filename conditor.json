@@ -4,7 +4,7 @@
   "registryAuthority": {
     "kind": "resolved-release-set",
     "path": ".conditor/authority/resolved-release-set.json",
-    "sha256": "630aab1f1eeea7f8dac4e83b6396419bdc3dea723635c4a5f08dbf5016b875d0"
+    "sha256": "d6a26a57b1566ee9641d3d408b790d797845075ff683b52b8a574487e718841e"
   },
   "components": [
     {
@@ -24,7 +24,7 @@
     },
     {
       "id": "limen-fsharp",
-      "version": "0.8.0",
+      "version": "0.9.0",
       "required": true
     }
   ],
