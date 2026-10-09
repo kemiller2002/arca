@@ -9,6 +9,17 @@ release may change the API; pin an exact version.
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-10-09
+
+A minor release that changes the API: namespace-scoped change tokens for
+shared repositories, explicit erasure of immutable records for retention, and
+stable account ids at sign-out. It is built and tested against Limen 0.9.0's
+F# packages (`limen-fsharp` 0.9.0, echelon-current 1.12.0). Their store and
+contract code is IL-identical to 0.8.0, so 0.8.0 or later still works.
+`docs/consuming-arca.md` sections 3a, 3b and 5a/5b show the moves from
+0.3.0, and the list under *Changed (breaking)* says which 0.3.0 code needs
+changing.
+
 ### Added
 
 - **Namespace-scoped change tokens** (WI-0018, ARCA-CON-005,
