@@ -24,6 +24,7 @@
     <Compile Include="GitHubStorageTests.fs" />
     <Compile Include="ConformanceTests.fs" />
     <Compile Include="IntegrityTests.fs" />
+    <Compile Include="ErasureTests.fs" />
     <Compile Include="OfflineQueueTests.fs" />
     <Compile Include="QueueStoreConformanceTests.fs" />
     <Compile Include="MultiTabQueueTests.fs" />

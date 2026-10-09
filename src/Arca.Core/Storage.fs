@@ -9,11 +9,38 @@ type StoredObject =
       Content: string
       Revision: Revision }
 
+/// A record that was erased (ARCA-INT-005): its path, the tombstone that
+/// replaced it, and that tombstone's stored form. The erased content is gone
+/// from the current tree; Git history still holds it.
+type ErasedObject =
+    { Path: RelativePath
+      Tombstone: Tombstone
+      /// The tombstone as stored (its text and revision), so snapshots,
+      /// exports and migrations carry it and the record cannot be recreated.
+      Stored: StoredObject }
+
 /// The result of reading one object.
 [<RequireQualifiedAccess>]
 type ReadOutcome =
     | Found of StoredObject
     | Absent
+    /// The record was erased; it is not an integrity failure (ARCA-INT-005).
+    | Erased of ErasedObject
+
+/// How a provider reports what it read.
+[<RequireQualifiedAccess>]
+module ReadOutcome =
+
+    /// A stored object as a read outcome: a tombstone is `Erased`, anything
+    /// else is `Found` (and validated by the application, ARCA-INT-001).
+    let ofStored (stored: StoredObject) =
+        match Tombstone.decode stored.Content with
+        | Some tombstone ->
+            ReadOutcome.Erased
+                { Path = stored.Path
+                  Tombstone = tombstone
+                  Stored = stored }
+        | None -> ReadOutcome.Found stored
 
 /// One entry of a listing.
 type ListEntry =
@@ -74,6 +101,12 @@ type IntegrityRefusal =
     | CorruptRecord of DecodeError
     /// The record is declared immutable.
     | ImmutableRecord
+    /// The record was erased: nothing may recreate, change or delete it, and
+    /// it cannot be erased twice (ARCA-INT-005).
+    | ErasedRecord
+    /// An erasure whose target is not what it names: absent, not a valid
+    /// record, not immutable, or with other content than the erased hash.
+    | NotErasable of reason: string
 
 /// Where a commit came from (ARCA-INT-002).
 [<RequireQualifiedAccess>]

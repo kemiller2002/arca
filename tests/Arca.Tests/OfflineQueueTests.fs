@@ -244,7 +244,8 @@ let ``a conflict blocks the entries after it and becomes the application's decis
     let current =
         match store.Provider.Read chrona (path "notes/a.json") |> Async.RunSynchronously |> ok with
         | ReadOutcome.Found stored -> stored.Revision
-        | ReadOutcome.Absent -> failwith "seeded"
+        | ReadOutcome.Absent
+        | ReadOutcome.Erased _ -> failwith "seeded"
 
     let revised =
         OfflineQueue.revise again.Entries[0].Sequence (operationIn chrona "u2" [ Change.Update(path "notes/a.json", "{\"n\":\"u\"}", current) ]) again

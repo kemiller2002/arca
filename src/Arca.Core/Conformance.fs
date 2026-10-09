@@ -504,6 +504,131 @@ module Conformance =
             | other -> return failed $"history: {describe other}"
         }
 
+    // -----------------------------------------------------------------------
+    // Erasure (ARCA-INT-005)
+    // -----------------------------------------------------------------------
+
+    /// Text in the erased record that must never survive in the tombstone.
+    let private personalData = "personal-data-7f3a91"
+
+    let private erasedAt = DateTimeOffset(2026, 10, 9, 8, 30, 0, TimeSpan.Zero)
+
+    /// Creates an immutable record, reads it back and validates it as the
+    /// application would before erasing it.
+    let private erasable (subject: ConformanceSubject) (text: string) key =
+        async {
+            let! _ = commit subject key [ Change.Create(path text, recordWith Mutability.Immutable "X1" personalData) ]
+
+            match! read subject text with
+            | Ok(ReadOutcome.Found stored) ->
+                match Record.decode Record.DefaultMaxBytes stored.Content with
+                | Ok record ->
+                    return
+                        Some
+                            { Record = record
+                              Revision = stored.Revision
+                              ContentHash = Record.contentHash record }
+                | Error _ -> return None
+            | _ -> return None
+        }
+
+    let private erase (subject: ConformanceSubject) (text: string) key (record: ValidatedRecord) =
+        match Erasure.request (path text) record erasedAt "retention rule R-7" with
+        | Error error -> async { return Error(StorageFailure.ProviderFailed("ARCA.CONFORMANCE", false, $"request refused: {error}")) }
+        | Ok request ->
+            match Erasure.operation subject.Namespace (metadata key) [ request ] with
+            | Error error -> async { return Error(StorageFailure.ProviderFailed("ARCA.CONFORMANCE", false, $"operation refused: {error}")) }
+            | Ok operation -> Erasure.commit subject.Provider operation
+
+    /// The record's blob is replaced by a tombstone holding its hash, revision,
+    /// time and reason, never its content, in one Arca commit; reads report
+    /// Erased, not an integrity failure.
+    let private erasureLeavesTombstone (subject: ConformanceSubject) =
+        async {
+            match! erasable subject "records/x.json" "conf-erase-create" with
+            | None -> return failed "the immutable record to erase could not be read back"
+            | Some record ->
+                match! erase subject "records/x.json" "conf-erase-1" record with
+                | Error _ as other -> return failed $"erasing an immutable record: {describe other}"
+                | Ok _ ->
+                    let! after = read subject "records/x.json"
+                    let! history = subject.Provider.History subject.Namespace (path "records/x.json")
+
+                    match after, history with
+                    | Ok(ReadOutcome.Erased erased), Ok(newest :: _) ->
+                        let tombstone = erased.Tombstone
+
+                        if erased.Stored.Content.Contains personalData then
+                            return failed "the tombstone carries the erased content"
+                        elif tombstone.ErasedContentHash <> record.ContentHash || tombstone.ErasedRevision <> record.Revision then
+                            return failed "the tombstone does not name the erased record's hash and revision"
+                        elif tombstone.ErasedAt <> erasedAt || tombstone.Reason <> "retention rule R-7" then
+                            return failed "the tombstone does not record when and why"
+                        else
+                            match newest.Origin with
+                            | CommitOrigin.Arca trailers when IdempotencyKey.value trailers.IdempotencyKey = "conf-erase-1" -> return ConformanceOutcome.Passed
+                            | _ -> return failed "the erasure is not the newest Arca commit on the record"
+                    | other, _ -> return failed $"reading an erased record: {describe other}"
+        }
+
+    /// Nothing recreates, changes, deletes or erases again an erased record.
+    let private erasedIsFinal (subject: ConformanceSubject) =
+        async {
+            match! erasable subject "records/y.json" "conf-erase-create-2" with
+            | None -> return failed "the immutable record to erase could not be read back"
+            | Some record ->
+                let! _ = erase subject "records/y.json" "conf-erase-2" record
+
+                match! read subject "records/y.json" with
+                | Ok(ReadOutcome.Erased erased) ->
+                    let tombstoneRevision = erased.Stored.Revision
+                    let! recreated = commit subject "conf-erase-recreate" [ Change.Create(path "records/y.json", recordWith Mutability.Immutable "Y1" "again") ]
+                    let! changed = commit subject "conf-erase-change" [ Change.Update(path "records/y.json", recordText "Y1" "changed", tombstoneRevision) ]
+                    let! deleted = commit subject "conf-erase-delete" [ Change.Delete(path "records/y.json", tombstoneRevision) ]
+                    let! again = erase subject "records/y.json" "conf-erase-again" record
+                    let! still = read subject "records/y.json"
+
+                    let erasedRefusal result =
+                        match result with
+                        | Error(StorageFailure.IntegrityRefused(_, IntegrityRefusal.ErasedRecord)) -> true
+                        | _ -> false
+
+                    match recreated, again, still with
+                    | Ok _, _, _ -> return failed "an erased record was recreated"
+                    | _, Ok _, _ -> return failed "an erased record was erased again"
+                    | _, _, Ok(ReadOutcome.Erased after) when erasedRefusal changed && erasedRefusal deleted && after.Stored.Revision = tombstoneRevision ->
+                        return ConformanceOutcome.Passed
+                    | _ -> return failed $"writing over a tombstone: change {describe changed}, delete {describe deleted}, then read {describe still}"
+                | other -> return failed $"reading an erased record: {describe other}"
+        }
+
+    /// An erasure must name what is stored: a mutable record, or content other
+    /// than the hash it names, is refused and left as it was.
+    let private erasureMustMatch (subject: ConformanceSubject) =
+        async {
+            let! _ = commit subject "conf-erase-mutable" [ Change.Create(path "records/m.json", recordText "M1" personalData) ]
+
+            match! read subject "records/m.json" with
+            | Ok(ReadOutcome.Found stored) ->
+                match Record.decode Record.DefaultMaxBytes stored.Content with
+                | Error _ -> return failed "the mutable record does not decode"
+                | Ok record ->
+                    // Claims the record is immutable, which the stored content denies.
+                    let claimed =
+                        { Record = { record with Mutability = Mutability.Immutable }
+                          Revision = stored.Revision
+                          ContentHash = Record.contentHash record }
+
+                    let! refused = erase subject "records/m.json" "conf-erase-mutable-1" claimed
+                    let! after = read subject "records/m.json"
+
+                    match refused, after with
+                    | Error(StorageFailure.IntegrityRefused(_, IntegrityRefusal.NotErasable _)), Ok(ReadOutcome.Found kept) when kept.Content = stored.Content ->
+                        return ConformanceOutcome.Passed
+                    | _ -> return failed $"erasing a mutable record: {describe refused}, then read {describe after}"
+            | other -> return failed $"reading the mutable record: {describe other}"
+        }
+
     /// Every case: name, requirement and check.
     let cases: (string * string * (ConformanceSubject -> Async<ConformanceOutcome>)) list =
         [ "round-trip", "ARCA-REC-001", roundTrip
@@ -528,7 +653,10 @@ module Conformance =
           "stale namespace token", "ARCA-CON-005", staleNamespaceToken
           "immutable record protected", "ARCA-INT-003", immutableProtected
           "corrupt record not overwritten", "ARCA-INT-004", corruptNotOverwritten
-          "external edit detected", "ARCA-INT-002", externalEditDetected ]
+          "external edit detected", "ARCA-INT-002", externalEditDetected
+          "erasure leaves a tombstone, never the content", "ARCA-INT-005", erasureLeavesTombstone
+          "an erased record is final", "ARCA-INT-005", erasedIsFinal
+          "an erasure must match what is stored", "ARCA-INT-005", erasureMustMatch ]
 
     /// Runs every case, each against a fresh subject.
     let run (fresh: unit -> Async<ConformanceSubject>) : Async<ConformanceResult list> =

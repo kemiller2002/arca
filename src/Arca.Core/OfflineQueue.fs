@@ -202,6 +202,9 @@ module OfflineQueue =
     let enqueue (at: DateTimeOffset) (operation: Operation) (queue: OfflineQueue) =
         match queue.Policy with
         | OfflinePolicy.ReadOnlyWhenOffline -> Error QueueError.OfflineWritesDisabled
+        // An erasure is a deliberate, audited act against current state: it is
+        // sent online, never queued (ARCA-INT-005).
+        | OfflinePolicy.QueueWrites when operation.IsErasure -> Error(QueueError.InvalidOperation "an erasure is sent online, never queued")
         | OfflinePolicy.QueueWrites ->
             let entry =
                 { Sequence = queue.NextSequence

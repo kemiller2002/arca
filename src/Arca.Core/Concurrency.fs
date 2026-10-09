@@ -1,6 +1,7 @@
 namespace Arca
 
 open System
+open System.Globalization
 
 /// A provider's opaque revision of one object, such as a Git blob SHA. Arca
 /// compares revisions; it never interprets them (ARCA-ARCH-004).
@@ -24,6 +25,65 @@ type NamespaceToken = NamespaceToken of string
 type NamespaceState =
     { RepositoryToken: ChangeToken
       NamespaceToken: NamespaceToken }
+
+/// What an erasure leaves in place of an immutable record (ARCA-INT-005): the
+/// erased record's content hash and revision, when and why. Never the content.
+type Tombstone =
+    { /// `sha256:` of the erased record's canonical content
+      /// (`ValidatedRecord.ContentHash`).
+      ErasedContentHash: string
+      /// The provider's revision of the erased record.
+      ErasedRevision: Revision
+      ErasedAt: DateTimeOffset
+      /// Why it was erased, for example a retention rule's identifier.
+      Reason: string }
+
+/// The tombstone's stored form: canonical JSON, recognisable on every read.
+[<RequireQualifiedAccess>]
+module Tombstone =
+
+    /// The tombstone format this Arca writes and reads.
+    [<Literal>]
+    let Format = 1
+
+    let private timestamp (at: DateTimeOffset) =
+        at.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture)
+
+    /// The tombstone as canonical text.
+    let encode (tombstone: Tombstone) =
+        let (Revision revision) = tombstone.ErasedRevision
+
+        Json.canonicalText (
+            Json.objectOf
+                [ "arcaErasure", Json.Number(decimal Format)
+                  "erasedContentHash", Json.String tombstone.ErasedContentHash
+                  "erasedRevision", Json.String revision
+                  "erasedAt", Json.String(timestamp tombstone.ErasedAt)
+                  "reason", Json.String tombstone.Reason ]
+        )
+
+    /// A tombstone from stored text; None for anything else (a record, or
+    /// text that only looks like one).
+    let decode (text: string) =
+        match Json.parse text with
+        | Ok value ->
+            let str name =
+                match Json.field name value with
+                | Some(Json.String found) -> Some found
+                | _ -> None
+
+            match Json.field "arcaErasure" value, str "erasedContentHash", str "erasedRevision", str "erasedAt", str "reason" with
+            | Some(Json.Number format), Some hash, Some revision, Some at, Some reason when format = decimal Format ->
+                match DateTimeOffset.TryParseExact(at, "yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal) with
+                | true, parsed ->
+                    Some
+                        { ErasedContentHash = hash
+                          ErasedRevision = Revision revision
+                          ErasedAt = parsed.ToUniversalTime()
+                          Reason = reason }
+                | _ -> None
+            | _ -> None
+        | Error _ -> None
 
 /// A text identifier supplied by the application: `A-Z a-z 0-9 . _ : -`,
 /// 8 to 128 characters for idempotency keys and 1 to 128 otherwise.
@@ -122,7 +182,9 @@ type Operation =
           changes: Change list
           metadata: OperationMetadata
           expectedToken: ChangeToken option
-          expectedNamespaceToken: NamespaceToken option }
+          expectedNamespaceToken: NamespaceToken option
+          /// For an erasure: the tombstone each erased path receives.
+          erasures: Map<string, Tombstone> }
 
     /// The namespace every change is in.
     member this.Namespace = this.ns
@@ -138,6 +200,11 @@ type Operation =
     /// still exactly this namespace token; otherwise StaleNamespaceToken.
     /// Commits elsewhere in the repository do not make it stale (ARCA-CON-005).
     member this.ExpectedNamespaceToken = this.expectedNamespaceToken
+    /// True for an erasure (`Erasure.operation`), never for an ordinary write.
+    /// A provider applies it only if it declares the Erase capability.
+    member this.IsErasure = not this.erasures.IsEmpty
+    /// The tombstone an erasure writes at `path`, if it erases that path.
+    member this.TombstoneAt(path: RelativePath) = this.erasures.TryFind(RelativePath.render path)
 
 /// Why an operation was refused before anything was sent.
 [<RequireQualifiedAccess>]
@@ -215,7 +282,8 @@ module Operation =
               changes = changes
               metadata = metadata
               expectedToken = None
-              expectedNamespaceToken = None })
+              expectedNamespaceToken = None
+              erasures = Map.empty })
 
     /// Conditions the operation on the provider's whole state as well: it
     /// applies only while the change token is still `token`.
@@ -230,6 +298,22 @@ module Operation =
     /// should use, and `requireChangeToken` the repository-wide fallback.
     let requireNamespaceToken (token: NamespaceToken) (operation: Operation) =
         { operation with expectedNamespaceToken = Some token }
+
+    /// An erasure: each path's blob is replaced by its tombstone, conditioned
+    /// on the erased revision. Built only by `Erasure.operation`, which
+    /// validates every request first.
+    let internal erasure (ns: Namespace) (metadata: OperationMetadata) (erased: (RelativePath * Tombstone) list) =
+        create
+            ns
+            metadata
+            (erased
+             |> List.map (fun (path, tombstone) -> Change.Update(path, Tombstone.encode tombstone, tombstone.ErasedRevision)))
+        |> Result.map (fun operation ->
+            { operation with
+                erasures =
+                    erased
+                    |> List.map (fun (path, tombstone) -> RelativePath.render path, tombstone)
+                    |> Map.ofList })
 
 /// A write found the provider's state different from what it expected
 /// (ARCA-CON-002). It names the object and its actual revision; Arca never

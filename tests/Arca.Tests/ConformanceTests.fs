@@ -213,6 +213,38 @@ let ``a provider that ignores the namespace condition fails the suite (ARCA-CON-
     Assert.Contains("stale namespace token", failed)
 
 [<Fact>]
+let ``a provider that reports a tombstone as an ordinary object fails the suite (ARCA-INT-005)`` () =
+    let failed =
+        failedCases (fun provider ->
+            { provider with
+                Read =
+                    fun ns path ->
+                        async {
+                            match! provider.Read ns path with
+                            | Ok(ReadOutcome.Erased erased) -> return Ok(ReadOutcome.Found erased.Stored)
+                            | other -> return other
+                        } })
+
+    Assert.Contains("erasure leaves a tombstone, never the content", failed)
+
+[<Fact>]
+let ``a provider that lets a tombstone be overwritten fails the suite (ARCA-INT-005)`` () =
+    let failed =
+        failedCases (fun provider ->
+            { provider with
+                Commit =
+                    fun operation ->
+                        // Turns an attempt to change a tombstone into a plain re-create elsewhere: the write "succeeds".
+                        async {
+                            match! provider.Commit operation with
+                            | Error(StorageFailure.IntegrityRefused(_, IntegrityRefusal.ErasedRecord)) ->
+                                return Ok { ChangeToken = ChangeToken "faked"; Revisions = Map.empty }
+                            | other -> return other
+                        } })
+
+    Assert.Contains("an erased record is final", failed)
+
+[<Fact>]
 let ``in-memory revisions are content hashes, so equal content has an equal revision`` () =
     Assert.Equal(InMemory.revision "{}", InMemory.revision "{}")
     Assert.NotEqual(InMemory.revision "{}", InMemory.revision "{ }")

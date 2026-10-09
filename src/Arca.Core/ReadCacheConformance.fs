@@ -355,6 +355,34 @@ module ReadCacheConformance =
                 | Error error -> return ConformanceOutcome.Failed $"an unscoped entry gave {failure error}"
             })
 
+    /// A partition that holds an erased record is removed from the device at
+    /// once; partitions without it, and other accounts, are kept (ARCA-INT-005).
+    let private erasedPurged (subject: ReadCacheSubject) =
+        async {
+            let holding = sample subject.Namespace "alice" "2026-10" "t-1"
+
+            let without =
+                { sample subject.Namespace "alice" "2026-09" "t-1" with
+                    Records = [ { Path = "records/c.json"; Content = "{}"; ContentHash = ReadCache.hash "{}" } ] }
+
+            let bobs = sample subject.Namespace "bob" "2026-10" "t-1"
+
+            match! saveAll subject.Store [ holding; without; bobs ] with
+            | Error error -> return ConformanceOutcome.Failed $"save: {failure error}"
+            | Ok() ->
+                match! ReadCache.purgeErased subject.Store "alice" subject.Namespace [ RelativePath.parse "records/a.json" |> fixture ] with
+                | Error error -> return ConformanceOutcome.Failed $"purge: {failure error}"
+                | Ok removed ->
+                    let! reopened = subject.Reopen()
+                    let! gone = reopened.Load holding.Key
+                    let! kept = reopened.Load without.Key
+                    let! other = reopened.Load bobs.Key
+
+                    match removed, gone, kept, other with
+                    | 1, Ok None, Ok(Some _), Ok(Some _) -> return ConformanceOutcome.Passed
+                    | _ -> return ConformanceOutcome.Failed $"removed {removed}; then {loaded gone}, {loaded kept}, {loaded other}"
+        }
+
     /// Every case: its name, the requirement it proves and its check.
     let cases: (string * string * (ReadCacheSubject -> Async<ConformanceOutcome>)) list =
         [ "absent partition loads nothing", "LCP-082", absent
@@ -371,7 +399,8 @@ module ReadCacheConformance =
           "unavailable storage is Unavailable", "LCP-082", unavailable
           "an entry carrying a credential is refused", "LCP-068", credentialFree
           "token scopes survive a reopen", "ARCA-CON-005", scopesKept
-          "an entry without a scope is repository-wide", "ARCA-CON-005", unscopedIsRepositoryWide ]
+          "an entry without a scope is repository-wide", "ARCA-CON-005", unscopedIsRepositoryWide
+          "a partition holding an erased record is purged", "ARCA-INT-005", erasedPurged ]
 
     /// Runs every case, each against a fresh subject.
     let run (fresh: unit -> Async<ReadCacheSubject>) : Async<ConformanceResult list> =

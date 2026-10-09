@@ -32,6 +32,7 @@
     <Compile Include="Credentials.fs" />
     <Compile Include="Storage.fs" />
     <Compile Include="Integrity.fs" />
+    <Compile Include="Erasure.fs" />
     <Compile Include="InMemory.fs" />
     <Compile Include="Conformance.fs" />
     <Compile Include="OfflineQueue.fs" />

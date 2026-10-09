@@ -5,8 +5,12 @@ namespace Arca
 type Snapshot =
     { Namespace: Namespace
       ChangeToken: ChangeToken
-      /// Every object, relative to the namespace, ordered by path (ordinal).
-      Objects: StoredObject list }
+      /// Every live object, relative to the namespace, ordered by path (ordinal).
+      Objects: StoredObject list
+      /// Every erased record's tombstone, ordered by path (ARCA-INT-005). Not
+      /// in `Objects`, so indexes never read them; exports and migrations
+      /// carry them, so the records cannot be recreated.
+      Erased: ErasedObject list }
 
 /// Why a snapshot could not be taken.
 [<RequireQualifiedAccess>]
@@ -31,10 +35,13 @@ module Snapshot =
         | _ -> true
 
     let private walk (provider: StorageProvider) (ns: Namespace) =
-        let rec folder (pending: RelativePath list) (found: StoredObject list) =
+        let byPath (path: 'a -> RelativePath) (items: 'a list) =
+            items |> List.sortWith (fun a b -> System.String.CompareOrdinal(RelativePath.render (path a), RelativePath.render (path b)))
+
+        let rec folder (pending: RelativePath list) (found: StoredObject list, erased: ErasedObject list) =
             async {
                 match pending with
-                | [] -> return Ok(found |> List.sortWith (fun a b -> System.String.CompareOrdinal(RelativePath.render a.Path, RelativePath.render b.Path)))
+                | [] -> return Ok(byPath (fun (item: StoredObject) -> item.Path) found, byPath (fun (item: ErasedObject) -> item.Path) erased)
                 | prefix :: rest ->
                     match! provider.List ns prefix with
                     | Error failure -> return Error(SnapshotError.Provider failure)
@@ -44,24 +51,26 @@ module Snapshot =
                         let folders = entries |> List.filter _.IsFolder |> List.map _.Path
                         let files = entries |> List.filter (fun entry -> not entry.IsFolder) |> List.map _.Path
 
-                        let rec read (paths: RelativePath list) (found: StoredObject list) =
+                        let rec read (paths: RelativePath list) (found: StoredObject list, erased: ErasedObject list) =
                             async {
                                 match paths with
-                                | [] -> return Ok found
+                                | [] -> return Ok(found, erased)
                                 | path :: more ->
                                     match! provider.Read ns path with
                                     | Error failure -> return Error(SnapshotError.Provider failure)
                                     // Removed since it was listed: the token check below retries.
-                                    | Ok ReadOutcome.Absent -> return! read more found
-                                    | Ok(ReadOutcome.Found stored) -> return! read more ({ stored with Path = path } :: found)
+                                    | Ok ReadOutcome.Absent -> return! read more (found, erased)
+                                    | Ok(ReadOutcome.Found stored) -> return! read more ({ stored with Path = path } :: found, erased)
+                                    | Ok(ReadOutcome.Erased gone) ->
+                                        return! read more (found, { gone with Path = path; Stored = { gone.Stored with Path = path } } :: erased)
                             }
 
-                        match! read files found with
+                        match! read files (found, erased) with
                         | Error error -> return Error error
-                        | Ok found -> return! folder (folders @ rest) found
+                        | Ok gathered -> return! folder (folders @ rest) gathered
             }
 
-        folder [ RelativePath.empty ] []
+        folder [ RelativePath.empty ] ([], [])
 
     /// Every object the namespace holds, read between two equal change tokens
     /// so the view is consistent; retried up to `attempts` times while the
@@ -77,7 +86,7 @@ module Snapshot =
                     | Ok before ->
                         match! walk provider ns with
                         | Error error -> return Error error
-                        | Ok objects ->
+                        | Ok(objects, erased) ->
                             match! provider.ChangeToken ns with
                             | Error failure -> return Error(SnapshotError.Provider failure)
                             | Ok after when after = before ->
@@ -85,7 +94,8 @@ module Snapshot =
                                     Ok
                                         { Namespace = ns
                                           ChangeToken = before
-                                          Objects = objects }
+                                          Objects = objects
+                                          Erased = erased }
                             | Ok _ -> return! attempt (remaining - 1)
             }
 

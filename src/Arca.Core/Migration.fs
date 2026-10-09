@@ -143,13 +143,15 @@ module Migration =
                             | Error _ -> Error(MigrationError.TransformFailed(path, "the transformed record is too large"))
                             | Ok content -> collect rest ((item.Path, content) :: acc)
 
+        // Tombstones are copied as they are, so an erased record stays erased.
         collect source.Objects []
+        |> Result.map (fun records -> records @ (source.Erased |> List.map (fun erased -> erased.Path, erased.Stored.Content)))
 
     /// The changes that make the target hold exactly `wanted` (besides its
     /// manifest), each conditioned on the target's current revisions.
     let differences (wanted: (RelativePath * string) list) (target: Snapshot) =
         let existing =
-            target.Objects
+            target.Objects @ (target.Erased |> List.map _.Stored)
             |> List.filter (fun item -> item.Path <> manifestPath)
             |> List.map (fun item -> item.Path, item)
             |> Map.ofList
@@ -228,7 +230,8 @@ module Migration =
             match! provider.Read ns manifestPath with
             | Error failure -> return Error(MigrationError.Provider failure)
             | Ok ReadOutcome.Absent -> return Ok None
-            | Ok(ReadOutcome.Found stored) ->
+            | Ok(ReadOutcome.Found stored)
+            | Ok(ReadOutcome.Erased { Stored = stored }) ->
                 match Manifest.decode stored.Content with
                 | Error error -> return Error(MigrationError.ManifestCorrupt(where, error))
                 | Ok manifest -> return Ok(Some(manifest, stored.Revision))
@@ -287,7 +290,7 @@ module Migration =
                         | Ok None ->
                             match! snapshot target plan.Target with
                             | Error error -> return Error error
-                            | Ok existing when not existing.Objects.IsEmpty -> return Error(MigrationError.TargetInUse "the target holds data but no manifest")
+                            | Ok existing when not (existing.Objects.IsEmpty && existing.Erased.IsEmpty) -> return Error(MigrationError.TargetInUse "the target holds data but no manifest")
                             | Ok _ ->
                                 match! setPhase target plan manifest MigrationPhase.Validating "validate" with
                                 | Error error -> return Error error

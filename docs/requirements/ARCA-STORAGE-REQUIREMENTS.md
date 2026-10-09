@@ -54,6 +54,16 @@ provenance:
         model: unknown
         runtime: claude-code
       reason: "Add ARCA-CON-005, namespace-scoped change tokens (WI-0018)"
+    EXE-20261009T005625812Z-9cc68a91:
+      operations: [modified]
+      at: 2026-10-09T01:29:35.000Z
+      actor:
+        kind: agent
+        id: anthropic/claude-code
+        provider: anthropic
+        model: unknown
+        runtime: claude-code
+      reason: "Add ARCA-INT-005, explicit erasure of immutable records (WI-0028)"
 ---
 
 # Arca shared storage requirements
@@ -408,6 +418,17 @@ SIG ADM-025.*
 **ARCA-INT-004** When Arca cannot establish that state is valid enough for a
 write, the write MUST be refused rather than guessed (integrity before
 availability). *Source: SUM0-047.*
+
+**ARCA-INT-005** For retention, Arca MUST offer an explicit erasure of
+immutable records. It MUST be separate from deletion and gated by an explicit
+capability. It MUST remove the record's content from the current tree. In the
+same atomic commit, it MUST leave a tombstone that records the erased content
+hash, revision, time and reason, and never the content. Later reads MUST
+report the record as erased, never as an integrity failure, and nothing MUST
+be able to recreate, change or delete it. Arca MUST document that the content
+remains in Git history: erasing it permanently needs a history rewrite by the
+repository owner, which Arca does not perform. *Source: Signal retention
+(coordinator request 2026-10-09).*
 
 ## 10. GitHub adapter efficiency and limits (ARCA-API)
 

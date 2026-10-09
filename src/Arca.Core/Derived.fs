@@ -234,7 +234,8 @@ module Derived =
                 match! provider.Read ns indexPath with
                 | Error failure -> return Error(DerivedError.Provider failure)
                 | Ok ReadOutcome.Absent -> return Ok None
-                | Ok(ReadOutcome.Found stored) -> return decode stored.Content |> Result.map (fun index -> Some(index, stored.Revision))
+                | Ok(ReadOutcome.Found stored)
+                | Ok(ReadOutcome.Erased { Stored = stored }) -> return decode stored.Content |> Result.map (fun index -> Some(index, stored.Revision))
         }
 
     /// Rebuilds the index from the authoritative records and stores it, unless

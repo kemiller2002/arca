@@ -77,7 +77,8 @@ let ``reads return content and GitHub's own revision; absent objects are Absent 
     | ReadOutcome.Found stored ->
         Assert.Equal("{\"a\":1}", stored.Content)
         Assert.Equal(Revision(blobSha "{\"a\":1}"), stored.Revision)
-    | ReadOutcome.Absent -> failwith "expected the record"
+    | ReadOutcome.Absent
+    | ReadOutcome.Erased _ -> failwith "expected the record"
 
     let missing, _, _ = runOp server current (GitHubStorage.read chrona (path "records/none.json"))
     Assert.Equal(Ok ReadOutcome.Absent, missing)

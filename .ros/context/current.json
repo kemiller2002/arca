@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-09T00:52:49.000Z",
+  "updatedAt": "2026-10-09T01:33:02.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -1169,6 +1169,52 @@
       },
       "completedAt": "2026-10-09T00:52:49.000Z",
       "conclusion": "Arca builds against limen-fsharp 0.9.0 (echelon-current 1.12.0); store IL identical; 329 tests pass"
+    },
+    {
+      "id": "WI-0028",
+      "type": "task",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "src/Arca.Core/Erasure.fs"
+        },
+        {
+          "type": "tests",
+          "path": "tests/Arca.Tests/ErasureTests.fs"
+        },
+        {
+          "type": "decision",
+          "path": "research/decisions/DF-ARCA-2026-0012--explicit-erasure-of-immutable-records-with-tombstones.md"
+        }
+      ],
+      "updatedAt": "2026-10-09T01:33:02.000Z",
+      "telemetryExecutionIds": [
+        "EXE-20261009T005625812Z-9cc68a91"
+      ],
+      "latestCheckpoint": {
+        "id": "06f586a51a1e964c1b64dc12",
+        "recordedAt": "2026-10-09T01:33:00.000Z",
+        "executionId": "EXE-20261009T005625812Z-9cc68a91",
+        "repository": "arca",
+        "branch": "wi-0028/erasure",
+        "commit": "0169ffc0b74b759f07ac68c9c73828d617ee6aaa",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca.git"
+        },
+        "remoteBranch": "wi-0028/erasure",
+        "remoteCommit": "0169ffc0b74b759f07ac68c9c73828d617ee6aaa",
+        "summary": "Erasure delivered; all PR #32 checks green on 0169ffc",
+        "nextAction": "Merge PR #32; then WI-0029 stable account ids for sign-out discard",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-10-09T01:33:02.000Z",
+      "conclusion": "Explicit, capability-gated erasure with hash-only tombstones; Git history limit documented"
     }
   ]
 }

@@ -690,6 +690,32 @@
       },
       "source": "manual",
       "sourceReference": null
+    },
+    {
+      "id": "WI-0028",
+      "title": "Explicit erasure of immutable records for retention (ARCA-INT-005): Erasure operation behind Capability.Erase, tombstone with hash/time/reason in the same commit, reads report Erased, nothing recreates it; current tree only",
+      "description": "Requested by the coordinator for Signal's retention. An erase operation, separate from delete and gated by an explicit capability, replaces an immutable record's blob in the current tree with a tombstone recording the erased content hash, revision, time and reason, never the content, in the same atomic commit. Later reads report ReadOutcome.Erased, never an integrity failure; create, update, delete and a second erase are refused. Snapshots, export and migration carry tombstones; derived indexes skip them; the read cache can purge partitions holding an erased record. Documented honestly: Git history still holds the content; permanent erasure needs a history rewrite by the repository owner, which Arca does not do. Conformance over the in-memory store and the GitHub adapter (FakeGitHub), and over the in-memory read cache and Limen FakeStore.",
+      "tags": [
+        "arca",
+        "integrity",
+        "erasure",
+        "signal"
+      ],
+      "priority": "high",
+      "status": "complete",
+      "attachments": [],
+      "createdAt": "2026-10-09T00:56:24.000Z",
+      "updatedAt": "2026-10-09T01:33:02.000Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
     }
   ]
 }

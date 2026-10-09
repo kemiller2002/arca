@@ -232,7 +232,7 @@ module GitHubStorage =
             | File(_, _, None) -> return! Op.fail (StorageFailure.ProviderFailed("AEGIS.GITHUB.INVALID_RESPONSE", false, $"{target.Path} has no readable UTF-8 content"))
             | File(sha, _, Some content) ->
                 return
-                    ReadOutcome.Found
+                    ReadOutcome.ofStored
                         { Path = path
                           Content = content
                           Revision = Revision sha }
@@ -573,7 +573,7 @@ module GitHubStorage =
                 let refused =
                     operation.Changes
                     |> List.tryPick (fun change ->
-                        match Integrity.guard change (contentAt (Change.path change)) with
+                        match Integrity.guardIn operation change (contentAt (Change.path change)) with
                         | Error refusal -> Some(StorageFailure.IntegrityRefused(RelativePath.render (Change.path change), refusal))
                         | Ok() -> None)
 
@@ -648,6 +648,12 @@ module GitHubStorage =
                 match oversized session.Config.MaxObjectBytes with
                 | Some failure -> Op.fail failure
                 | None -> Op.ret ()
+
+            // An erasure needs the Erase capability (ARCA-INT-005).
+            do!
+                match operation.IsErasure, ProviderCapabilities.missing [ Capability.Erase ] Provider.capabilities with
+                | true, refusal :: _ -> Op.fail (StorageFailure.Refused(WriteRefusal.CapabilityUnavailable refusal))
+                | _ -> Op.ret ()
 
             let! known = snapshot
             do! permitsWrite known

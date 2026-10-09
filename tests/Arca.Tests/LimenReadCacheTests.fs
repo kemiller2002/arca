@@ -167,7 +167,8 @@ let ``a cache write that fails never fails the read that produced it; it is repo
     let read =
         match provider.Provider.Read chrona (RelativePath.parse "notes/seed.json" |> ok) |> run |> ok with
         | ReadOutcome.Found stored -> stored
-        | ReadOutcome.Absent -> failwith "seeded"
+        | ReadOutcome.Absent
+        | ReadOutcome.Erased _ -> failwith "seeded"
 
     let entry = ReadCache.entry (ReadCache.key "alice" chrona "notes" |> ok) 1 at (Fresh.read token [ read ])
 
@@ -231,7 +232,8 @@ let ``revalidated online: equal token kept, changed token refreshed, removed par
 
         match provider.Provider.Read chrona path |> run |> ok with
         | ReadOutcome.Found stored -> ReadCache.entry cacheKey 1 (origin.Clock) (Fresh.read token [ stored ])
-        | ReadOutcome.Absent -> failwith "absent"
+        | ReadOutcome.Absent
+        | ReadOutcome.Erased _ -> failwith "absent"
 
     let observe () =
         match provider.Provider.NamespaceState chrona |> run with

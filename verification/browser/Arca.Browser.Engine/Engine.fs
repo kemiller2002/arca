@@ -129,6 +129,7 @@ let private summarize (result: Result<CommitReceipt * ReadOutcome, StorageFailur
                | Ok _ -> "yes"
                | Error _ -> "no") ]
         | ReadOutcome.Absent -> [ "status", "failed"; "error", "the committed record is absent" ]
+        | ReadOutcome.Erased _ -> [ "status", "failed"; "error", "the committed record reads as erased" ]
 
 /// Runs the conversation until it needs the kernel: answers token requests
 /// with the test token and does not wait (the scenario arranges no back-off).

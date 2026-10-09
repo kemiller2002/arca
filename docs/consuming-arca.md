@@ -160,6 +160,52 @@ match! provider.Commit operation with
   and `ProviderObservation.CurrentRepository`. Both of Arca's providers
   offer it.
 
+### 3b. Erasing immutable records for retention (from 0.4.0)
+
+An immutable record is never changed or deleted by an ordinary write. When a
+retention rule requires its content to go, erase it explicitly
+(ARCA-INT-005, DF-ARCA-2026-0012):
+
+```fsharp
+// The record as last read and validated (Integrity.validate), so the
+// erasure names exactly the content it removes.
+let request = Erasure.request path validated DateTimeOffset.UtcNow "retention rule SIG-RET-30D"   // Result
+let erasure = Erasure.operation ns metadata [ request ]                                          // Result, several records at once
+match! Erasure.commit provider erasure with                // refused unless the provider declares Capability.Erase
+| Ok receipt -> ...                                        // one atomic commit, with the usual trailers
+| Error(StorageFailure.Conflicted _) -> ...                // the record changed since it was read
+| Error(StorageFailure.IntegrityRefused(_, IntegrityRefusal.NotErasable reason)) -> ...
+| Error(StorageFailure.OutcomeUnknown pending) -> ...      // reconcile, as for any commit
+| Error other -> ...
+
+match! provider.Read ns path with
+| Ok(ReadOutcome.Erased erased) -> // erased.Tombstone: ErasedContentHash, ErasedRevision, ErasedAt, Reason
+| ...
+```
+
+- The tombstone replaces the record at its own path, in the same commit. It
+  records the erased content hash, the revision, the time and the reason,
+  never the content. The commit's trailers record who erased it.
+- Erasure is only for immutable records (`ErasureError.NotImmutable`). A
+  mutable record is deleted with `Change.Delete`. The reason is one line of
+  at most 200 characters, and must not look like a credential.
+- An erased record is final. A create over it is `Conflicted`. An update,
+  a delete or a second erasure is `IntegrityRefused(_, ErasedRecord)`.
+- `Snapshot.take` lists tombstones in `Snapshot.Erased`, not `Objects`, so
+  derived indexes never read them. `Export` and `Migration` carry them, so
+  the record stays erased at a new location.
+- An erasure is never queued offline (`QueueError.InvalidOperation`): send it
+  online.
+- **Devices.** Call `ReadCache.purgeErased cache.Store account ns [ path ]`
+  so a device stops showing the record at once, rather than at its next
+  revalidation.
+- **What erasure does not do.** It removes the content from the **current
+  tree** only. Git history, and every clone and fork, still holds it.
+  Removing it permanently needs a history rewrite by the repository owner
+  (for example with `git filter-repo`, followed by GitHub support to purge
+  cached views). Arca never rewrites history. If a rule needs that guarantee,
+  plan for that owner-run step, or keep such data out of Git.
+
 ## 4. Drive the adapter from a Limen engine
 
 Each `GitHubStorage` operation is an `Op<'a>`. Apply it to the session to get a

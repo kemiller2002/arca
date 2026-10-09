@@ -293,7 +293,8 @@ let ``another application's commit leaves Chrona's cache current; the repository
     let objects =
         match stored with
         | ReadOutcome.Found found -> [ found ]
-        | ReadOutcome.Absent -> failwith "the note is absent"
+        | ReadOutcome.Absent
+        | ReadOutcome.Erased _ -> failwith "the note is absent"
 
     let key = ReadCache.key "alice" chrona "notes" |> ok
     let cached = ReadCache.cached (ReadCache.entry key 1 at (Fresh.read before objects)) |> ok

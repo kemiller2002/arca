@@ -60,7 +60,8 @@ module Export =
           BasePath = RelativePath.render ns.Location.BasePath
           ChangeToken = token
           Objects =
-            snapshot.Objects
+            snapshot.Objects @ (snapshot.Erased |> List.map _.Stored)
+            |> List.sortWith (fun a b -> String.CompareOrdinal(RelativePath.render a.Path, RelativePath.render b.Path))
             |> List.map (fun item ->
                 { Path = RelativePath.render item.Path
                   Content = item.Content }) }

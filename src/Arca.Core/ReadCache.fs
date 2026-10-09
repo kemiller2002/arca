@@ -385,6 +385,33 @@ module ReadCache =
         | CacheScope.Account account -> key.Account = account
         | CacheScope.AccountNamespace(account, ns) -> key.Account = account && key.Namespace = ns
 
+    /// Removes every cached partition of an account's namespace that holds one
+    /// of the erased paths, so a device stops showing an erased record at
+    /// once instead of at its next refresh (ARCA-INT-005). Returns how many
+    /// partitions were removed; the next read rebuilds them without it.
+    let purgeErased (store: ReadCacheStore) (account: string) (ns: Namespace) (erased: RelativePath list) =
+        let paths = erased |> List.map RelativePath.render |> Set.ofList
+
+        let rec sweep (keys: CacheKey list) removed =
+            async {
+                match keys with
+                | [] -> return Ok removed
+                | key :: rest ->
+                    match! store.Load key with
+                    | Error failure -> return Error failure
+                    | Ok(Some entry) when entry.Records |> List.exists (fun record -> paths.Contains record.Path) ->
+                        match! store.Remove key with
+                        | Error failure -> return Error failure
+                        | Ok() -> return! sweep rest (removed + 1)
+                    | Ok _ -> return! sweep rest removed
+            }
+
+        async {
+            match! store.Partitions account (namespaceId ns) with
+            | Error failure -> return Error failure
+            | Ok keys -> return! sweep keys 0
+        }
+
     /// Loads, validates and wraps an entry. A corrupt entry is removed and
     /// reported, so the next read rebuilds it from the provider.
     let load (store: ReadCacheStore) (key: CacheKey) =

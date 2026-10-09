@@ -20,6 +20,10 @@ type Capability =
     | ChangeToken
     /// A token that names one namespace's state only (ARCA-CON-005).
     | NamespaceToken
+    /// Erasure of immutable records from the current tree, with a tombstone
+    /// (ARCA-INT-005). Separate from deleting, which never touches an
+    /// immutable record.
+    | Erase
     /// A declared maximum object size.
     | MaxObjectSize
     /// At-rest encryption. Not offered in the first release (ARCA-LOC-010); the
@@ -71,6 +75,7 @@ module ProviderCapabilities =
           Capability.BatchWrite
           Capability.ChangeToken
           Capability.NamespaceToken
+          Capability.Erase
           Capability.MaxObjectSize
           Capability.AtRestEncryption ]
 
