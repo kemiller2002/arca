@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-08T23:32:09.000Z",
+  "updatedAt": "2026-10-09T00:23:44.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -1081,33 +1081,48 @@
     {
       "id": "WI-0018",
       "type": "task",
-      "state": "active",
-      "semanticState": "active",
-      "evidence": [],
-      "updatedAt": "2026-10-08T23:32:09.000Z",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "src/Arca.Core/ReadCache.fs"
+        },
+        {
+          "type": "tests",
+          "path": "tests/Arca.Tests/ReadCacheTests.fs"
+        },
+        {
+          "type": "decision",
+          "path": "research/decisions/DF-ARCA-2026-0011--namespace-scoped-change-tokens.md"
+        }
+      ],
+      "updatedAt": "2026-10-09T00:23:44.000Z",
       "telemetryExecutionIds": [
         "EXE-20261008T233209539Z-934d158a"
       ],
       "latestCheckpoint": {
-        "id": "2b3f8b8142e35c85293bde3c",
-        "recordedAt": "2026-10-09T00:18:43.000Z",
+        "id": "9ba086329bf41a0c0e901497",
+        "recordedAt": "2026-10-09T00:23:43.000Z",
         "executionId": "EXE-20261008T233209539Z-934d158a",
         "repository": "arca",
         "branch": "wi-0018/namespace-tokens",
-        "commit": "cb5b8fcde54c7852298c6381256e276a9c505814",
+        "commit": "b66fe2cb59f5d87b75270f98a1372c78b2ea6342",
         "remote": {
           "name": "origin",
           "url": "https://github.com/kemiller2002/arca.git"
         },
         "remoteBranch": "wi-0018/namespace-tokens",
-        "remoteCommit": "cb5b8fcde54c7852298c6381256e276a9c505814",
-        "summary": "Namespace-scoped tokens implemented in Arca.Core, Arca.GitHub, read cache and offline queue; conformance over in-memory, FakeGitHub and Limen FakeStore; 329 tests pass",
-        "nextAction": "Requirement ARCA-CON-005, decision record DF-ARCA-2026-0011, docs/consuming-arca.md and CHANGELOG; then open the PR",
+        "remoteCommit": "b66fe2cb59f5d87b75270f98a1372c78b2ea6342",
+        "summary": "Namespace-scoped change tokens, ARCA-CON-005, DF-ARCA-2026-0011, guide and changelog; 329 tests; all PR #30 checks green on b66fe2c",
+        "nextAction": "Merge PR #30; then move the build to limen-fsharp 0.9.0 and release 0.4.0",
         "verification": {
           "status": "verified",
           "mechanism": "git-remote-observation"
         }
-      }
+      },
+      "completedAt": "2026-10-09T00:23:44.000Z",
+      "conclusion": "Namespace-scoped change tokens delivered; repository-wide token kept only as an explicit fallback"
     }
   ]
 }
