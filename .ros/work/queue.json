@@ -807,10 +807,10 @@
         "performance"
       ],
       "priority": "high",
-      "status": "ready",
+      "status": "complete",
       "attachments": [],
       "createdAt": "2026-10-13T10:54:18.000Z",
-      "updatedAt": "2026-10-13T10:54:18.000Z",
+      "updatedAt": "2026-10-13T11:51:44.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",

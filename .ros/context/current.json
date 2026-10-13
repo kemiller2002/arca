@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-13T10:54:19.000Z",
+  "updatedAt": "2026-10-13T11:51:44.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -1353,13 +1353,47 @@
     {
       "id": "WI-0032",
       "type": "task",
-      "state": "active",
-      "semanticState": "active",
-      "evidence": [],
-      "updatedAt": "2026-10-13T10:54:19.000Z",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "src/Arca.Limen/IndexedDbReadCache.fs"
+        },
+        {
+          "type": "tests",
+          "path": "tests/Arca.Tests/LimenReadCacheTests.fs"
+        },
+        {
+          "type": "requirement",
+          "path": "docs/requirements/ARCA-STORAGE-REQUIREMENTS.md"
+        }
+      ],
+      "updatedAt": "2026-10-13T11:51:44.000Z",
       "telemetryExecutionIds": [
         "EXE-20261013T105419454Z-0a9bc996"
-      ]
+      ],
+      "latestCheckpoint": {
+        "id": "2139e7d8e58debcb4bc13043",
+        "recordedAt": "2026-10-13T11:51:43.000Z",
+        "executionId": "EXE-20261013T105419454Z-0a9bc996",
+        "repository": "arca",
+        "branch": "wi-0032/read-cache-save-many",
+        "commit": "f417aff723e0a283765f8023178aa0907d49614b",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "wi-0032/read-cache-save-many",
+        "remoteCommit": "f417aff723e0a283765f8023178aa0907d49614b",
+        "summary": "SaveMany and KeepMany implemented with tests (355 passed); pushed",
+        "nextAction": "Complete WI-0032, open the PR, merge on green",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-10-13T11:51:44.000Z"
     }
   ]
 }
