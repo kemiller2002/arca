@@ -821,6 +821,31 @@
       },
       "source": "github",
       "sourceReference": "kemiller2002/arca#38"
+    },
+    {
+      "id": "WI-0033",
+      "title": "GitHub provider: reads pinned to a commit skip the ref fetch (arca#39): the branch is resolved once per snapshot, unpinned reads still resolve it, snapshot consistency unchanged (ARCA-API-006; Chrona WI-0077, Summa SUM0-034)",
+      "description": null,
+      "tags": [
+        "arca",
+        "github-adapter",
+        "performance"
+      ],
+      "priority": "high",
+      "status": "ready",
+      "attachments": [],
+      "createdAt": "2026-10-13T11:52:33.000Z",
+      "updatedAt": "2026-10-13T11:52:33.000Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "github",
+      "sourceReference": "kemiller2002/arca#39"
     }
   ]
 }
