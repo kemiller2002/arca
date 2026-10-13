@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-13T11:52:34.000Z",
+  "updatedAt": "2026-10-13T12:34:40.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -1398,13 +1398,47 @@
     {
       "id": "WI-0033",
       "type": "task",
-      "state": "active",
-      "semanticState": "active",
-      "evidence": [],
-      "updatedAt": "2026-10-13T11:52:34.000Z",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "src/Arca.GitHub/GitHubStorage.fs"
+        },
+        {
+          "type": "tests",
+          "path": "tests/Arca.Tests/GitHubStorageTests.fs"
+        },
+        {
+          "type": "requirement",
+          "path": "docs/requirements/ARCA-STORAGE-REQUIREMENTS.md"
+        }
+      ],
+      "updatedAt": "2026-10-13T12:34:40.000Z",
       "telemetryExecutionIds": [
         "EXE-20261013T115234651Z-3d60dd67"
-      ]
+      ],
+      "latestCheckpoint": {
+        "id": "9c34f63a793b56104f468adb",
+        "recordedAt": "2026-10-13T12:34:39.000Z",
+        "executionId": "EXE-20261013T115234651Z-3d60dd67",
+        "repository": "arca",
+        "branch": "wi-0033/pinned-reads",
+        "commit": "db9d3a6946001874257dcb79b3da0175ac9a7898",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "wi-0033/pinned-reads",
+        "remoteCommit": "db9d3a6946001874257dcb79b3da0175ac9a7898",
+        "summary": "Pinned reads implemented with tests (361 passed); pushed",
+        "nextAction": "Complete WI-0033, open the PR, merge on green",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-10-13T12:34:40.000Z"
     }
   ]
 }
