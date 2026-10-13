@@ -871,6 +871,30 @@
       },
       "source": "github",
       "sourceReference": "kemiller2002/arca#38 kemiller2002/arca#39"
+    },
+    {
+      "id": "WI-0035",
+      "title": "Measurement baseline index: docs/measurement/baseline-sources.md lists where Arca's historical evidence lives and when each Echelon capability was adopted (Echelon measurement amendment 2026-10-13)",
+      "description": null,
+      "tags": [
+        "measurement",
+        "docs"
+      ],
+      "priority": "medium",
+      "status": "ready",
+      "attachments": [],
+      "createdAt": "2026-10-13T12:55:01.000Z",
+      "updatedAt": "2026-10-13T12:55:02.000Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
     }
   ]
 }
