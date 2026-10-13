@@ -41,6 +41,8 @@ type IndexedDbCache =
       /// failure (quota, size limit, unavailable) is reported in diagnostics
       /// only, and never fails the read that produced the entry.
       Keep: CacheEntry -> Async<unit>
+      SaveMany: CacheEntry list -> Async<Result<unit, ReadCacheFailure>>
+      KeepMany: CacheEntry list -> Async<unit>
       /// Loads a partition through `ReadCache.load` (validated, a corrupt
       /// entry dropped) and marks it used for eviction.
       Show: CacheKey -> Async<Result<Cached<CacheEntry> option, ReadCacheFailure>>
@@ -317,6 +319,13 @@ module IndexedDbReadCache =
                                         let! _ = save entry
                                         return ()
                                     }
+                              SaveMany = ReadCache.saveSequentially store
+                              KeepMany =
+                                  fun entries ->
+                                      async {
+                                          let! _ = ReadCache.saveSequentially store entries
+                                          return ()
+                                      }
                               Show =
                                 fun cacheKey ->
                                     async {

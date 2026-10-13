@@ -446,3 +446,50 @@ let ``a cached token passed as a write's change-token condition does not compile
     Assert.True(errors.Length = 1, $"expected exactly one error, got:\n{output}")
     Assert.Contains("CachedTokenAsWriteCondition.fs(", errors[0])
     Assert.Contains("FS0001", errors[0])
+
+// ---------------------------------------------------------------------------
+// Batched save (WI-0032, arca#38; ARCA-OFF-008).
+// ---------------------------------------------------------------------------
+
+let private sampleOf account partition token =
+    ReadCacheConformance.sample chrona account partition token
+
+[<Fact>]
+let ``the in-memory SaveMany holds what saving each partition in turn holds (ARCA-OFF-008)`` () =
+    let batch =
+        [ sampleOf "alice" "p1" "t-1"
+          sampleOf "alice" "p2" "t-1"
+          sampleOf "alice" "p1" "t-2"
+          sampleOf "bob" "p1" "t-1" ]
+
+    let sequential = MemoryReadCache.cell ()
+    Assert.Equal(Ok(), ReadCache.saveSequentially (MemoryReadCache.over sequential) batch |> Async.RunSynchronously)
+
+    let batched = MemoryReadCache.cell ()
+    Assert.Equal(Ok(), MemoryReadCache.saveMany batched batch |> Async.RunSynchronously)
+
+    Assert.Equal<Map<CacheKey, string>>(sequential.Entries, batched.Entries)
+    Assert.Equal(3, batched.Entries.Count)
+
+[<Fact>]
+let ``the in-memory SaveMany is all or nothing: one entry that cannot be stored stores none (ARCA-OFF-008)`` () =
+    let cell = MemoryReadCache.cell ()
+    let kept = sampleOf "alice" "p0" "t-0"
+    (MemoryReadCache.over cell).Save kept |> Async.RunSynchronously |> ok
+    let before = cell.Entries
+
+    let leaking =
+        { sampleOf "alice" "p2" "t-1" with
+            Records = [ { Path = "records/a.json"; Content = "ghp_valid0123456789abcdefghij0123456789"; ContentHash = ReadCache.hash "ghp_valid0123456789abcdefghij0123456789" } ] }
+
+    match MemoryReadCache.saveMany cell [ sampleOf "alice" "p1" "t-1"; leaking; sampleOf "alice" "p3" "t-1" ] |> Async.RunSynchronously with
+    | Error(ReadCacheFailure.Corrupt _) -> ()
+    | other -> failwith $"expected Corrupt, got {other}"
+
+    Assert.Equal<Map<CacheKey, string>>(before, cell.Entries)
+
+[<Fact>]
+let ``saving in turn stops at the first failure, as sequential saves do`` () =
+    let cell = MemoryReadCache.cell ()
+    cell.Unavailable <- true
+    Assert.Equal(Error ReadCacheFailure.Unavailable, ReadCache.saveSequentially (MemoryReadCache.over cell) [ sampleOf "alice" "p1" "t-1" ] |> Async.RunSynchronously)
