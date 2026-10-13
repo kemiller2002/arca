@@ -9,6 +9,17 @@ release may change the API; pin an exact version.
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-10-13
+
+A minor release. It adds API and changes none: every 0.4.1 call compiles
+and behaves as before (DF-ARCA-2026-0013). The one source-level caveat is
+that `IndexedDbCache` gains two fields, so code that builds that record
+itself would need them. Only `IndexedDbReadCache.openCache` builds it. It is the performance release
+Chrona WI-0077 and Summa SUM0-034 measured for: report refreshes and
+commands no longer spend a request on the ref before every pinned read, or
+a transaction on every cached partition. Built and tested against
+limen-fsharp 0.9.0, as 0.4.x is.
+
 ### Added
 
 - Batched read-cache save (ARCA-OFF-008; WI-0032; arca#38). `IndexedDbCache`

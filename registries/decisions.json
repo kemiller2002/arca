@@ -524,5 +524,51 @@
     "title": "Immutable records are erased by an explicit, capability-gated operation that replaces the blob in the current tree with a hash-only tombstone at the same path; Git history is out of Arca's reach and is documented as such",
     "updated": "2026-10-09",
     "version": "1.0.0"
+  },
+  {
+    "created": "2026-10-13",
+    "id": "DF-ARCA-2026-0013",
+    "owners": [
+      "arca"
+    ],
+    "path": "research/decisions/DF-ARCA-2026-0013--release-0-5-0-is-a-minor-release.md",
+    "provenance": {
+      "contributions": {
+        "EXE-20261013T123521720Z-05597783": {
+          "actor": {
+            "id": "anthropic/claude-code",
+            "kind": "agent",
+            "model": "unknown",
+            "provider": "anthropic",
+            "runtime": "claude-code"
+          },
+          "at": "2026-10-13T12:35:56.000Z",
+          "operations": [
+            "created"
+          ],
+          "reason": "Version choice for the 0.5.0 release (WI-0034, arca#38, arca#39)"
+        }
+      }
+    },
+    "related_documents": [
+      "CHANGELOG.md",
+      "Directory.Build.props",
+      "docs/consuming-arca.md",
+      "docs/requirements/ARCA-STORAGE-REQUIREMENTS.md",
+      "research/decisions/DF-ARCA-2026-0006--interim-distribution-through-attested-github-release-assets.md"
+    ],
+    "review_cycle": "on-trigger",
+    "status": "accepted",
+    "superseded_by": [],
+    "supersedes": [],
+    "tags": [
+      "release",
+      "versioning",
+      "semver",
+      "distribution"
+    ],
+    "title": "The release carrying the batched read-cache save and pinned GitHub reads is 0.5.0, a minor release, because it adds public API without changing any; its echelon-current range stays >=0.4.1 <1.0.0",
+    "updated": "2026-10-13",
+    "version": "1.0.0"
   }
 ]
