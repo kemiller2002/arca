@@ -166,6 +166,35 @@ match! provider.Commit operation with
   and `ProviderObservation.CurrentRepository`. Both of Arca's providers
   offer it.
 
+### 3c. Pinned reads: one ref resolution per snapshot (from 0.5.0)
+
+Each unpinned `provider.Read` or `provider.List` first resolves the branch
+(`GET /git/ref/heads/...`), so it sees the current head. For a refresh that
+reads many records at one state, pin the reads instead (ARCA-API-006). Each
+read then costs one request.
+
+```fsharp
+let github = GitHubStorage.connect host config        // github.Provider is the usual StorageProvider
+let! pin = github.Pin ns                               // Result: the branch is resolved once
+// or, with a state you already observed:  let pin = github.PinAt state.RepositoryToken
+let! state = pin.NamespaceState ns                     // at the pinned commit, no ref fetch
+let! listing = pin.List ns (RelativePath.parse "activities/2026-10" |> Result.toOption |> Option.get)
+let! record = pin.Read ns path                         // one request each, no ref fetch
+let! snapshot = Snapshot.at pin ns                     // a whole-namespace snapshot at the pin
+```
+
+- Every read through one pin sees one commit, so together they form a
+  consistent snapshot even while the branch moves. Use the pin's
+  `NamespaceState` (or the state you pinned at) for `Fresh.read` and for
+  write conditions. A commit made after the pin fails its condition as it
+  always has.
+- Unpinned reads are unchanged: each still resolves the current head.
+  `Snapshot.take` still checks the token before and after its walk.
+- `PinAt` refuses a token that is not a commit SHA
+  (`ARCA.GITHUB.NOT_A_COMMIT`) before anything is sent.
+- `GitHubStorage.provider host config` still works and is
+  `(GitHubStorage.connect host config).Provider`.
+
 ### 3b. Erasing immutable records for retention (from 0.4.0)
 
 An immutable record is never changed or deleted by an ordinary write. When a

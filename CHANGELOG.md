@@ -18,6 +18,18 @@ release may change the API; pin an exact version.
   turn, and `Save` is now the batch of one. The in-memory cache gains
   `MemoryReadCache.saveMany`, and `ReadCache.saveSequentially` is the
   in-turn reference. `ReadCacheStore` is unchanged.
+- Pinned reads in the GitHub provider (ARCA-API-006; WI-0033; arca#39).
+  `GitHubStorage.connect` returns the provider together with `Pin` and
+  `PinAt`, which share its session. `Pin` resolves the branch once, and
+  `PinAt` takes a commit you already have, such as
+  `NamespaceState.RepositoryToken`. Reads, listings and the namespace state
+  through the returned `PinnedReads` go straight to that commit, one
+  request each, with no `GET /git/ref/heads/...`. A pin that is not a
+  commit SHA is refused before anything is sent. `Snapshot.at` takes a
+  snapshot at a pin. The provider's own unpinned reads still resolve the
+  branch every time, and `Snapshot.take` is unchanged. `PinnedReads` is a
+  new Core type. `StorageProvider` and `GitHubStorage.provider` are
+  unchanged.
 
 ## [0.4.1] — 2026-10-09
 

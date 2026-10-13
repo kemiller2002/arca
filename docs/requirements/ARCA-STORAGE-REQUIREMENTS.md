@@ -477,6 +477,13 @@ listings and stale change tokens as typed results. *Source: SIG ADM-026.*
 count, dataset size) so applications can warn before scale degrades GitHub
 operations. *Source: SIG ADM-058.*
 
+**ARCA-API-006** A read pinned to a commit (a consistent snapshot) MUST go to
+that commit directly and MUST NOT resolve the branch again: the branch is
+resolved at most once per snapshot, so N pinned reads cost N requests plus at
+most one ref resolution. A read that is not pinned MUST still resolve the
+current branch head. Snapshot-consistency guarantees MUST NOT change.
+*Sources: arca#39; Chrona WI-0077 and Summa SUM0-034 latency profiling.*
+
 ## 11. Credentials (ARCA-AUTH)
 
 **ARCA-AUTH-001** Arca MUST take credentials only through a token-provider
