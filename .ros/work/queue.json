@@ -846,6 +846,31 @@
       },
       "source": "github",
       "sourceReference": "kemiller2002/arca#39"
+    },
+    {
+      "id": "WI-0034",
+      "title": "Release Arca 0.5.0 (batched read-cache save ARCA-OFF-008, pinned GitHub reads ARCA-API-006; arca#38, arca#39) as attested GitHub release assets, record it in echelon-registry and select it in echelon-current",
+      "description": null,
+      "tags": [
+        "arca",
+        "release",
+        "registry"
+      ],
+      "priority": "high",
+      "status": "ready",
+      "attachments": [],
+      "createdAt": "2026-10-13T12:35:20.000Z",
+      "updatedAt": "2026-10-13T12:35:20.000Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "github",
+      "sourceReference": "kemiller2002/arca#38 kemiller2002/arca#39"
     }
   ]
 }
