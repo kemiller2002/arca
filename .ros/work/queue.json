@@ -881,10 +881,10 @@
         "docs"
       ],
       "priority": "medium",
-      "status": "ready",
+      "status": "complete",
       "attachments": [],
       "createdAt": "2026-10-13T12:55:01.000Z",
-      "updatedAt": "2026-10-13T12:55:02.000Z",
+      "updatedAt": "2026-10-13T12:55:33.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",
