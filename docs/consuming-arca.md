@@ -463,6 +463,11 @@ match ReadCache.revalidate (ProviderObservation.Current state) cached with
 | Revalidation.Unverified cached -> () // provider unreachable: still "as of"
 ```
 
+- **Many partitions at once (from 0.5.0, ARCA-OFF-008).** After one refresh,
+  save its partitions together with `cache.SaveMany entries` (a `Result`) or
+  `do! cache.KeepMany entries` (best-effort, like `Keep`). They are written in
+  one IndexedDB transaction, all or nothing, with the same result as calling
+  `Save` for each in turn. One entry over the budget refuses the whole batch.
 - A `Cached` value's token is a `CachedToken`, not a `ChangeToken`, so it
   does not compile as a write condition. Write decisions use `Fresh` reads,
   or are queued and reconciled.
