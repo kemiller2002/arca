@@ -1449,7 +1449,27 @@
       "updatedAt": "2026-10-13T12:35:21.000Z",
       "telemetryExecutionIds": [
         "EXE-20261013T123521720Z-05597783"
-      ]
+      ],
+      "latestCheckpoint": {
+        "id": "2be7e80146fbd3bb43937dc8",
+        "recordedAt": "2026-10-13T12:38:19.000Z",
+        "executionId": "EXE-20261013T123521720Z-05597783",
+        "repository": "arca",
+        "branch": "wi-0034/release-0.5.0",
+        "commit": "d187401575539150ba9bfef0208fc266bf58327d",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "wi-0034/release-0.5.0",
+        "remoteCommit": "d187401575539150ba9bfef0208fc266bf58327d",
+        "summary": "0.5.0 version bump, CHANGELOG, consumer pins and DF-ARCA-2026-0013 pushed",
+        "nextAction": "Merge the release PR on green; verify v0.5.0; record it in echelon-registry; distribution status PR",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      }
     }
   ]
 }
