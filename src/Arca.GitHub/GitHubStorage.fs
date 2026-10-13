@@ -6,6 +6,18 @@ open System.Text
 open System.Text.Json
 open Arca
 
+/// The GitHub provider with reads pinned to a commit, over one session
+/// (ARCA-API-006, arca#39).
+[<NoEquality; NoComparison>]
+type GitHubConnection =
+    { /// The provider-neutral interface; unpinned reads resolve the branch.
+      Provider: StorageProvider
+      /// Resolves the branch once and pins reads to that commit.
+      Pin: Namespace -> Async<Result<PinnedReads, StorageFailure>>
+      /// Pins reads to a commit already known, such as a
+      /// `NamespaceState.RepositoryToken`; sends nothing.
+      PinAt: ChangeToken -> PinnedReads }
+
 /// The GitHub storage operations (ARCA-API-001..005, ARCA-OUT-001..002,
 /// ARCA-COMMIT-001, ARCA-COMMIT-006).
 ///
@@ -711,6 +723,35 @@ module GitHubStorage =
 
     /// The rate-limit evidence from the last response (ARCA-API-003).
     let budget (session: GitHubSession) = session.Budget
+
+    /// STUB (tests first): pins that ignore the pin.
+    let connect (host: Host) (config: GitHubConfig) : GitHubConnection =
+        let session = ref (Session.create config)
+
+        let run (step: Op<'a>) =
+            async {
+                let! result, next = Conversation.run host (step session.Value)
+                session.Value <- next
+                return result
+            }
+
+        let pinAt (at: ChangeToken) : PinnedReads =
+            { At = at
+              NamespaceState = fun ns -> run (namespaceState ns)
+              Read = fun ns path -> run (read ns path)
+              List = fun ns prefix -> run (list ns prefix) }
+
+        { Provider =
+            { Capabilities = Provider.capabilities
+              ChangeToken = fun ns -> run (changeToken ns)
+              NamespaceState = fun ns -> run (namespaceState ns)
+              Read = fun ns path -> run (read ns path)
+              List = fun ns prefix -> run (list ns prefix)
+              Commit = fun operation -> run (commit operation)
+              Reconcile = fun ns pending -> run (reconcile ns pending)
+              History = fun ns path -> run (history ns path) }
+          Pin = fun ns -> async { let! at = run (changeToken ns) in return at |> Result.map pinAt }
+          PinAt = pinAt }
 
     /// The GitHub provider behind Arca's provider-neutral interface
     /// (ARCA-ARCH-003). The session lives in the closure; each call runs its

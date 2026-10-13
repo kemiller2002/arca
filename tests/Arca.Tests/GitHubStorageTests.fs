@@ -404,3 +404,129 @@ let ``the provider-neutral interface runs the adapter through an async host (ARC
     match read.Result with
     | Ok(ReadOutcome.Found stored) -> Assert.Equal("{\"x\":1}", stored.Content)
     | other -> failwith $"expected the record, got {other}"
+
+// ---------------------------------------------------------------------------
+// Pinned reads (WI-0033, arca#39; ARCA-API-006): a read pinned to a commit
+// goes straight to that commit; the branch is resolved once per snapshot.
+// ---------------------------------------------------------------------------
+
+let private hostOf (server: Server) =
+    { Send = fun sent -> async { return server.Send sent }
+      Wait = fun _ -> async { return () }
+      Tokens = fun () -> async { return server.ValidToken() } }
+
+let private refFetches (server: Server) =
+    server.Requests |> List.filter (fun sent -> sent.Request.Url.Contains "/git/ref/heads/") |> List.length
+
+let private contentReads (server: Server) =
+    server.Requests |> List.filter (fun sent -> sent.Request.Url.Contains "/contents/") |> List.length
+
+/// A server holding `count` records under the chrona namespace.
+let private seeded (count: int) =
+    let server = Server("acme", "data")
+    let files = [ 1..count ] |> List.map (fun n -> $"apps/chrona/records/r{n:D2}.json", Some $"{{\"n\":{n}}}")
+    server.CommitDirectly("main", files, "seed") |> ignore
+    server
+
+let private recordPath n = path $"records/r{n:D2}.json"
+
+[<Fact>]
+let ``N reads pinned to a known commit send N requests and never fetch the ref (ARCA-API-006)`` () =
+    let n = 12
+    let server = seeded n
+    let connection = GitHubStorage.connect (hostOf server) (GitHubConfig.create location)
+    let pinned = connection.PinAt(ChangeToken(server.Head "main"))
+    let before = server.Requests.Length
+
+    let reads = [ 1..n ] |> List.map (fun k -> pinned.Read chrona (recordPath k) |> Async.RunSynchronously)
+
+    Assert.All(reads, fun read -> Assert.True(Result.isOk read, $"{read}"))
+    Assert.Equal(n, server.Requests.Length - before)
+    Assert.Equal(0, refFetches server)
+    Assert.Equal(n, contentReads server)
+
+[<Fact>]
+let ``pinning resolves the ref once; N pinned reads then add exactly N requests (ARCA-API-006)`` () =
+    let n = 12
+    let server = seeded n
+    let connection = GitHubStorage.connect (hostOf server) (GitHubConfig.create location)
+
+    let pinned = connection.Pin chrona |> Async.RunSynchronously |> ok
+    Assert.Equal(ChangeToken(server.Head "main"), pinned.At)
+    Assert.Equal(1, refFetches server)
+    let before = server.Requests.Length
+
+    let reads = [ 1..n ] |> List.map (fun k -> pinned.Read chrona (recordPath k) |> Async.RunSynchronously)
+    let listing = pinned.List chrona (path "records") |> Async.RunSynchronously |> ok
+
+    Assert.All(reads, fun read -> Assert.True(Result.isOk read, $"{read}"))
+    Assert.Equal(n, listing.Entries.Length)
+    Assert.Equal(n + 1, server.Requests.Length - before)
+    Assert.Equal(1, refFetches server)
+
+[<Fact>]
+let ``unpinned reads still resolve the current ref, each time (ARCA-API-006)`` () =
+    let n = 5
+    let server = seeded n
+    let provider = (GitHubStorage.connect (hostOf server) (GitHubConfig.create location)).Provider
+
+    [ 1..n ] |> List.iter (fun k -> provider.Read chrona (recordPath k) |> Async.RunSynchronously |> ok |> ignore)
+    Assert.Equal(n, refFetches server)
+
+    // The branch moves: the next unpinned read sees the new head.
+    server.CommitDirectly("main", [ "apps/chrona/records/r01.json", Some "{\"n\":100}" ], "edited on github.com") |> ignore
+
+    match provider.Read chrona (recordPath 1) |> Async.RunSynchronously with
+    | Ok(ReadOutcome.Found stored) -> Assert.Equal("{\"n\":100}", stored.Content)
+    | other -> failwith $"expected the edited record, got {other}"
+
+    Assert.Equal(n + 1, refFetches server)
+
+[<Fact>]
+let ``a pinned read keeps showing its commit after the branch moves: the snapshot stays consistent (ARCA-API-006)`` () =
+    let server = seeded 2
+    let connection = GitHubStorage.connect (hostOf server) (GitHubConfig.create location)
+    let pinned = connection.Pin chrona |> Async.RunSynchronously |> ok
+    let state = pinned.NamespaceState chrona |> Async.RunSynchronously |> ok
+
+    server.CommitDirectly("main", [ "apps/chrona/records/r01.json", Some "{\"n\":100}"; "apps/chrona/records/r03.json", Some "{\"n\":3}" ], "moved") |> ignore
+
+    match pinned.Read chrona (recordPath 1) |> Async.RunSynchronously with
+    | Ok(ReadOutcome.Found stored) -> Assert.Equal("{\"n\":1}", stored.Content)
+    | other -> failwith $"expected the pinned record, got {other}"
+
+    Assert.Equal(Ok ReadOutcome.Absent, pinned.Read chrona (recordPath 3) |> Async.RunSynchronously)
+    Assert.Equal(2, (pinned.List chrona (path "records") |> Async.RunSynchronously |> ok).Entries.Length)
+    // The namespace state is the one at the pinned commit, not the new head.
+    Assert.Equal(pinned.At, state.RepositoryToken)
+    Assert.NotEqual(state.NamespaceToken, (connection.Provider.NamespaceState chrona |> Async.RunSynchronously |> ok).NamespaceToken)
+    // One resolution for the pin, one for the unpinned state above.
+    Assert.Equal(2, refFetches server)
+
+[<Fact>]
+let ``a snapshot taken at a pin reads one commit, with one ref resolution, and equals a snapshot taken by tokens (ARCA-API-006)`` () =
+    let n = 6
+    let server = seeded n
+    let connection = GitHubStorage.connect (hostOf server) (GitHubConfig.create location)
+    let byTokens = Snapshot.take connection.Provider chrona 3 |> Async.RunSynchronously |> ok
+    let before = refFetches server
+
+    let pinned = connection.Pin chrona |> Async.RunSynchronously |> ok
+    let atPin = Snapshot.at pinned chrona |> Async.RunSynchronously |> ok
+
+    Assert.Equal(1, refFetches server - before)
+    Assert.Equal(byTokens.ChangeToken, atPin.ChangeToken)
+    Assert.Equal<StoredObject list>(byTokens.Objects, atPin.Objects)
+    Assert.Equal<ErasedObject list>(byTokens.Erased, atPin.Erased)
+
+[<Fact>]
+let ``a pin that is not a commit SHA is refused before anything is sent`` () =
+    let server = seeded 1
+    let connection = GitHubStorage.connect (hostOf server) (GitHubConfig.create location)
+    let before = server.Requests.Length
+
+    match (connection.PinAt(ChangeToken "main")).Read chrona (recordPath 1) |> Async.RunSynchronously with
+    | Error(StorageFailure.ProviderFailed("ARCA.GITHUB.NOT_A_COMMIT", false, _)) -> ()
+    | other -> failwith $"expected NOT_A_COMMIT, got {other}"
+
+    Assert.Equal(before, server.Requests.Length)

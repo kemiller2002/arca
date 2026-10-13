@@ -173,3 +173,17 @@ type StorageProvider =
       /// its origin, so edits made outside Arca are detectable (ARCA-INT-002).
       /// It is evidence, never a source of domain state (ARCA-COMMIT-005).
       History: Namespace -> RelativePath -> Async<Result<HistoryEntry list, StorageFailure>> }
+
+/// Reads pinned to one change token: every read and listing sees the
+/// provider's state at `At`, so together they are one consistent snapshot by
+/// construction, and none of them resolves the branch again (ARCA-API-006).
+/// A provider offers them alongside its `StorageProvider`; for GitHub,
+/// `GitHubStorage.connect`. Unpinned reads keep resolving the current state.
+[<NoEquality; NoComparison>]
+type PinnedReads =
+    { /// The change token every read is pinned to.
+      At: ChangeToken
+      /// The namespace's state at `At` (`RepositoryToken` is `At`).
+      NamespaceState: Namespace -> Async<Result<NamespaceState, StorageFailure>>
+      Read: Namespace -> RelativePath -> Async<Result<ReadOutcome, StorageFailure>>
+      List: Namespace -> RelativePath -> Async<Result<Listing, StorageFailure>> }
