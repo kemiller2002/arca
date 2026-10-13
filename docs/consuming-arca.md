@@ -16,8 +16,8 @@ merged at `8dffc14`). Until a Conditor release carries it, build it from
 dotnet build src/Conditor.Cli -c Release -o <dir>
 ```
 
-echelon-registry `main` at `e710e24` selects Arca 0.4.1 as an optional
-project binding in echelon-current **1.18.0**, with limen-fsharp 0.9.0 (the
+echelon-registry `main` at `e161bed` selects Arca 0.5.0 as an optional
+project binding in echelon-current **1.19.0**, with limen-fsharp 0.9.0 (the
 F# packages `EchelonFoundry.Arca.Limen` needs). 0.4.0 changes the API, so
 read sections 3a, 3b and 5a/5b before moving from 0.3.0. In the consuming repository:
 
@@ -33,7 +33,7 @@ read sections 3a, 3b and 5a/5b before moving from 0.3.0. In the consuming reposi
    ```bash
    conditor upgrade --current --check --target . \
      --resolved-set <echelon-registry>/channels/echelon-current/linux-x64.json \
-     --resolved-set-sha256 d6a26a57b1566ee9641d3d408b790d797845075ff683b52b8a574487e718841e
+     --resolved-set-sha256 788bcd4907d6ed239684694843d395939266183cb285230cd39f442e2c37ef37
    conditor upgrade --current --target . --resolved-set ... --resolved-set-sha256 ... --authorize <plan digest>
    ```
 
@@ -43,7 +43,7 @@ read sections 3a, 3b and 5a/5b before moving from 0.3.0. In the consuming reposi
    - writes `vendor/nuget/` with `arca.lock`;
    - maps `EchelonFoundry.Arca.Core` and `EchelonFoundry.Arca.GitHub` to that
      feed only, in `NuGet.config`;
-   - verifies the repository, then commits the 1.12.0 authority and the lock.
+   - verifies the repository, then commits the 1.19.0 authority and the lock.
 
    `conditor verify` proves the feed from then on.
 
@@ -62,17 +62,17 @@ read sections 3a, 3b and 5a/5b before moving from 0.3.0. In the consuming reposi
    need `FSharp.Core` 10.1.400 or later, which Aegis 1.0.0 also needs.
 
 Other platforms use their own channel file. The SHA-256 values at registry
-`e710e24` (echelon-current 1.18.0) are:
+`e161bed` (echelon-current 1.19.0) are:
 
 | Platform | SHA-256 |
 |---|---|
-| linux-x64 | `48aeb43c667f9153eea3bdd16a0d600fa8f93dea109a4fa2411c458a393ffbc5` |
-| linux-arm64 | `93fa795b71ec53589cf37db0e89d47e3e057327b6257e87732c41164f89249df` |
-| osx-x64 | `52e81ba5fc5061ba3972119e136a9fe3d9fbe5378b5953d56ef0ad41511f8e6f` |
-| osx-arm64 | `950fce0bfc3e289e90da80118e141655e581616e8050d8a3a8b66944d3bda847` |
-| win-x64 | `5454433e8b2e148dbd083034f2c7154a265e74afc4349e8309423beaa56fb903` |
+| linux-x64 | `788bcd4907d6ed239684694843d395939266183cb285230cd39f442e2c37ef37` |
+| linux-arm64 | `4b347bca22ecb361a359a10862e5b11ea03076bf9b9bffba06be7f2ad90f0c32` |
+| osx-x64 | `9984adcf416b9c358991e984069d7de12ed05075aaf509fd9ab352f2d2f61812` |
+| osx-arm64 | `c00697f03e419ee173a5e5c946c2005667321bbfca8772b54fd6b32efa1fb595` |
+| win-x64 | `af068a38a5cd87269da5795dde93f8e454e1c0ee2f3aa0a5ae8c31886835ee8a` |
 
-echelon-current 1.18.0 also moves the Praxis selection to 3.11.0 (from
+echelon-current 1.19.0 (like 1.18.0) also moves the Praxis selection to 3.11.0 (from
 Arca's 3.7.2). A `conditor upgrade --current` plan shows that transition
 beside Arca's; take it deliberately, or stay on the older set. The 1.12.0
 linux-x64 set (`d6a26a57…`), for example, selects Arca 0.3.0.
