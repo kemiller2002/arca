@@ -6,6 +6,18 @@ open System.Text
 open System.Text.Json
 open Arca
 
+/// The GitHub provider with reads pinned to a commit, over one session
+/// (ARCA-API-006, arca#39).
+[<NoEquality; NoComparison>]
+type GitHubConnection =
+    { /// The provider-neutral interface; unpinned reads resolve the branch.
+      Provider: StorageProvider
+      /// Resolves the branch once and pins reads to that commit.
+      Pin: Namespace -> Async<Result<PinnedReads, StorageFailure>>
+      /// Pins reads to a commit already known, such as a
+      /// `NamespaceState.RepositoryToken`; sends nothing.
+      PinAt: ChangeToken -> PinnedReads }
+
 /// The GitHub storage operations (ARCA-API-001..005, ARCA-OUT-001..002,
 /// ARCA-COMMIT-001, ARCA-COMMIT-006).
 ///
@@ -198,12 +210,8 @@ module GitHubStorage =
                     | None -> return NamespaceToken EmptyNamespace
         }
 
-    /// The branch head and the namespace's token at that same commit.
-    let namespaceState (ns: Namespace) : Op<NamespaceState> =
+    let private stateAt (credential: AccessToken) (tip: ChangeToken) (ns: Namespace) : Op<NamespaceState> =
         op {
-            do! checkLocation ns
-            let! credential = token
-            let! tip = head credential
             let (ChangeToken commit) = tip
             let! namespaceToken = namespaceTokenAt credential commit ns
 
@@ -212,15 +220,37 @@ module GitHubStorage =
                   NamespaceToken = namespaceToken }
         }
 
-    /// Reads one object at the branch head (ARCA-API-001). An object over the
-    /// provider's size limit is ObjectTooLarge, never truncated (ARCA-API-004).
-    let read (ns: Namespace) (path: RelativePath) : Op<ReadOutcome> =
+    /// The branch head and the namespace's token at that same commit.
+    let namespaceState (ns: Namespace) : Op<NamespaceState> =
         op {
-            let! session = Op.session
             do! checkLocation ns
-            let! target = address ns path
             let! credential = token
             let! tip = head credential
+            return! stateAt credential tip ns
+        }
+
+    /// The commit a pinned read goes to: a commit SHA, never a branch name,
+    /// so the read cannot drift with the branch (ARCA-API-006).
+    let private pinned (at: ChangeToken) : Op<ChangeToken> =
+        let (ChangeToken commit) = at
+
+        if isCommitSha commit then
+            Op.ret at
+        else
+            Op.fail (StorageFailure.ProviderFailed("ARCA.GITHUB.NOT_A_COMMIT", false, $"'{commit}' is not a commit SHA; a pinned read needs one"))
+
+    /// The namespace's state at a pinned commit, without resolving the branch.
+    let namespaceStateAt (at: ChangeToken) (ns: Namespace) : Op<NamespaceState> =
+        op {
+            do! checkLocation ns
+            let! tip = pinned at
+            let! credential = token
+            return! stateAt credential tip ns
+        }
+
+    let private objectAt (credential: AccessToken) (tip: ChangeToken) (path: RelativePath) (target: ObjectAddress) : Op<ReadOutcome> =
+        op {
+            let! session = Op.session
             let (ChangeToken commit) = tip
             let! contents = contentsAt credential commit target.Path RelativePath.empty
 
@@ -238,21 +268,38 @@ module GitHubStorage =
                           Revision = Revision sha }
         }
 
-    /// Lists what lies directly under a namespace-relative prefix (the
-    /// namespace root for the empty path). A listing at GitHub's limit is
-    /// reported as partial (ARCA-API-004).
-    let list (ns: Namespace) (prefix: RelativePath) : Op<Listing> =
+    /// Reads one object at the branch head (ARCA-API-001). An object over the
+    /// provider's size limit is ObjectTooLarge, never truncated (ARCA-API-004).
+    /// The branch is resolved for every unpinned read.
+    let read (ns: Namespace) (path: RelativePath) : Op<ReadOutcome> =
         op {
             do! checkLocation ns
-
-            let! full =
-                fun session ->
-                    match RelativePath.append ns.Root prefix with
-                    | Ok full -> Done(Ok full, session)
-                    | Error error -> Done(Error(StorageFailure.ProviderFailed("ARCA.INVALID_PATH", false, LocationError.describe error)), session)
-
+            let! target = address ns path
             let! credential = token
             let! tip = head credential
+            return! objectAt credential tip path target
+        }
+
+    /// Reads one object at a pinned commit: one request, and no ref fetch
+    /// (ARCA-API-006). The response is content-addressed, so the session
+    /// serves a repeated read without asking GitHub again (ARCA-API-002).
+    let readAt (at: ChangeToken) (ns: Namespace) (path: RelativePath) : Op<ReadOutcome> =
+        op {
+            do! checkLocation ns
+            let! target = address ns path
+            let! tip = pinned at
+            let! credential = token
+            return! objectAt credential tip path target
+        }
+
+    let private fullPath (ns: Namespace) (prefix: RelativePath) : Op<RelativePath> =
+        fun session ->
+            match RelativePath.append ns.Root prefix with
+            | Ok full -> Done(Ok full, session)
+            | Error error -> Done(Error(StorageFailure.ProviderFailed("ARCA.INVALID_PATH", false, LocationError.describe error)), session)
+
+    let private listingAt (credential: AccessToken) (tip: ChangeToken) (full: RelativePath) (prefix: RelativePath) : Op<Listing> =
+        op {
             let (ChangeToken commit) = tip
             let! contents = contentsAt credential commit (RelativePath.render full) prefix
 
@@ -265,6 +312,28 @@ module GitHubStorage =
                 return
                     { Entries = entries
                       Complete = entries.Length < session.Config.ListingLimit }
+        }
+
+    /// Lists what lies directly under a namespace-relative prefix (the
+    /// namespace root for the empty path), at the branch head. A listing at
+    /// GitHub's limit is reported as partial (ARCA-API-004).
+    let list (ns: Namespace) (prefix: RelativePath) : Op<Listing> =
+        op {
+            do! checkLocation ns
+            let! full = fullPath ns prefix
+            let! credential = token
+            let! tip = head credential
+            return! listingAt credential tip full prefix
+        }
+
+    /// Lists a prefix at a pinned commit, with no ref fetch (ARCA-API-006).
+    let listAt (at: ChangeToken) (ns: Namespace) (prefix: RelativePath) : Op<Listing> =
+        op {
+            do! checkLocation ns
+            let! full = fullPath ns prefix
+            let! tip = pinned at
+            let! credential = token
+            return! listingAt credential tip full prefix
         }
 
     /// Measures object count and size under a prefix by walking its folders,
@@ -712,10 +781,12 @@ module GitHubStorage =
     /// The rate-limit evidence from the last response (ARCA-API-003).
     let budget (session: GitHubSession) = session.Budget
 
-    /// The GitHub provider behind Arca's provider-neutral interface
-    /// (ARCA-ARCH-003). The session lives in the closure; each call runs its
-    /// conversation through the host.
-    let provider (host: Host) (config: GitHubConfig) : StorageProvider =
+    /// The GitHub provider and its pinned reads, over one session (so one
+    /// response cache and one rate budget) (ARCA-API-006, arca#39). `Pin`
+    /// resolves the branch once; every read through the pin then goes to that
+    /// commit with one request each. The provider's own reads are unchanged:
+    /// each resolves the branch, so it sees the current head.
+    let connect (host: Host) (config: GitHubConfig) : GitHubConnection =
         let session = ref (Session.create config)
 
         let run (step: Op<'a>) =
@@ -725,11 +796,30 @@ module GitHubStorage =
                 return result
             }
 
-        { Capabilities = Provider.capabilities
-          ChangeToken = fun ns -> run (changeToken ns)
-          NamespaceState = fun ns -> run (namespaceState ns)
-          Read = fun ns path -> run (read ns path)
-          List = fun ns prefix -> run (list ns prefix)
-          Commit = fun operation -> run (commit operation)
-          Reconcile = fun ns pending -> run (reconcile ns pending)
-          History = fun ns path -> run (history ns path) }
+        let pinAt (at: ChangeToken) : PinnedReads =
+            { At = at
+              NamespaceState = fun ns -> run (namespaceStateAt at ns)
+              Read = fun ns path -> run (readAt at ns path)
+              List = fun ns prefix -> run (listAt at ns prefix) }
+
+        { Provider =
+            { Capabilities = Provider.capabilities
+              ChangeToken = fun ns -> run (changeToken ns)
+              NamespaceState = fun ns -> run (namespaceState ns)
+              Read = fun ns path -> run (read ns path)
+              List = fun ns prefix -> run (list ns prefix)
+              Commit = fun operation -> run (commit operation)
+              Reconcile = fun ns pending -> run (reconcile ns pending)
+              History = fun ns path -> run (history ns path) }
+          Pin =
+            fun ns ->
+                async {
+                    let! resolved = run (changeToken ns)
+                    return resolved |> Result.map pinAt
+                }
+          PinAt = pinAt }
+
+    /// The GitHub provider behind Arca's provider-neutral interface
+    /// (ARCA-ARCH-003). The session lives in the closure; each call runs its
+    /// conversation through the host.
+    let provider (host: Host) (config: GitHubConfig) : StorageProvider = (connect host config).Provider

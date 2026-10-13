@@ -34,7 +34,11 @@ module Snapshot =
         | None, first :: _ when first = Namespace.DatasetsFolder -> false
         | _ -> true
 
-    let private walk (provider: StorageProvider) (ns: Namespace) =
+    let private walk
+        (list: RelativePath -> Async<Result<Listing, StorageFailure>>)
+        (readAt: RelativePath -> Async<Result<ReadOutcome, StorageFailure>>)
+        (ns: Namespace)
+        =
         let byPath (path: 'a -> RelativePath) (items: 'a list) =
             items |> List.sortWith (fun a b -> System.String.CompareOrdinal(RelativePath.render (path a), RelativePath.render (path b)))
 
@@ -43,7 +47,7 @@ module Snapshot =
                 match pending with
                 | [] -> return Ok(byPath (fun (item: StoredObject) -> item.Path) found, byPath (fun (item: ErasedObject) -> item.Path) erased)
                 | prefix :: rest ->
-                    match! provider.List ns prefix with
+                    match! list prefix with
                     | Error failure -> return Error(SnapshotError.Provider failure)
                     | Ok listing when not listing.Complete -> return Error(SnapshotError.Incomplete(RelativePath.render prefix))
                     | Ok listing ->
@@ -56,7 +60,7 @@ module Snapshot =
                                 match paths with
                                 | [] -> return Ok(found, erased)
                                 | path :: more ->
-                                    match! provider.Read ns path with
+                                    match! readAt path with
                                     | Error failure -> return Error(SnapshotError.Provider failure)
                                     // Removed since it was listed: the token check below retries.
                                     | Ok ReadOutcome.Absent -> return! read more (found, erased)
@@ -84,7 +88,7 @@ module Snapshot =
                     match! provider.ChangeToken ns with
                     | Error failure -> return Error(SnapshotError.Provider failure)
                     | Ok before ->
-                        match! walk provider ns with
+                        match! walk (provider.List ns) (provider.Read ns) ns with
                         | Error error -> return Error error
                         | Ok(objects, erased) ->
                             match! provider.ChangeToken ns with
@@ -100,6 +104,23 @@ module Snapshot =
             }
 
         attempt attempts
+
+    /// Every object the namespace holds at a pinned change token (ARCA-API-006).
+    /// Every read is at that one token, so the view is consistent by
+    /// construction: there is no before-and-after token check to retry, and
+    /// the branch is not resolved again.
+    let at (pinned: PinnedReads) (ns: Namespace) =
+        async {
+            match! walk (pinned.List ns) (pinned.Read ns) ns with
+            | Error error -> return Error error
+            | Ok(objects, erased) ->
+                return
+                    Ok
+                        { Namespace = ns
+                          ChangeToken = pinned.At
+                          Objects = objects
+                          Erased = erased }
+        }
 
     /// The object at a path, if the snapshot holds one.
     let find (path: RelativePath) (snapshot: Snapshot) =
