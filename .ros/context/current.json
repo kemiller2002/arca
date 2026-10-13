@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-13T12:51:54.000Z",
+  "updatedAt": "2026-10-13T12:55:33.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -1484,6 +1484,47 @@
         }
       },
       "completedAt": "2026-10-13T12:51:54.000Z"
+    },
+    {
+      "id": "WI-0035",
+      "type": "task",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "docs/measurement/baseline-sources.md"
+        },
+        {
+          "type": "tests",
+          "path": "docs/measurement/baseline-sources.md"
+        }
+      ],
+      "updatedAt": "2026-10-13T12:55:33.000Z",
+      "telemetryExecutionIds": [
+        "EXE-20261013T125503006Z-16b00385"
+      ],
+      "latestCheckpoint": {
+        "id": "5b0b0ce2063e1400c63c1546",
+        "recordedAt": "2026-10-13T12:55:32.000Z",
+        "executionId": "EXE-20261013T125503006Z-16b00385",
+        "repository": "arca",
+        "branch": "wi-0035/measurement-baseline",
+        "commit": "839342aa66100ecb87bc89b7c24e00bd3b1c0a02",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "wi-0035/measurement-baseline",
+        "remoteCommit": "839342aa66100ecb87bc89b7c24e00bd3b1c0a02",
+        "summary": "Baseline index written and pushed",
+        "nextAction": "Complete and merge on green",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-10-13T12:55:33.000Z"
     }
   ]
 }
