@@ -1470,6 +1470,48 @@
         "name": "ros",
         "mechanism": "work-lifecycle"
       }
+    },
+    {
+      "type": "step.started",
+      "stepId": "requirements",
+      "name": "Requirements ingestion: arca#38",
+      "occurredAt": "2026-10-13T10:54:24.000Z",
+      "source": {
+        "type": "ros-clock",
+        "name": "ros",
+        "mechanism": "step-lifecycle"
+      }
+    },
+    {
+      "type": "step.completed",
+      "stepId": "requirements",
+      "occurredAt": "2026-10-13T10:55:19.000Z",
+      "source": {
+        "type": "ros-clock",
+        "name": "ros",
+        "mechanism": "step-lifecycle"
+      }
+    },
+    {
+      "type": "step.started",
+      "stepId": "tests-first",
+      "name": "Testing: failing tests for SaveMany",
+      "occurredAt": "2026-10-13T10:55:20.000Z",
+      "source": {
+        "type": "ros-clock",
+        "name": "ros",
+        "mechanism": "step-lifecycle"
+      }
+    },
+    {
+      "type": "step.completed",
+      "stepId": "tests-first",
+      "occurredAt": "2026-10-13T11:51:32.000Z",
+      "source": {
+        "type": "ros-clock",
+        "name": "ros",
+        "mechanism": "step-lifecycle"
+      }
     }
   ],
   "repository": {
