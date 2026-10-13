@@ -412,6 +412,21 @@ module ReadCache =
             | Ok keys -> return! sweep keys 0
         }
 
+    /// Saves entries one at a time, in order, stopping at the first failure:
+    /// the reference a batched save must match (ARCA-OFF-008).
+    let saveSequentially (store: ReadCacheStore) (entries: CacheEntry list) =
+        let rec next (remaining: CacheEntry list) =
+            async {
+                match remaining with
+                | [] -> return Ok()
+                | entry :: rest ->
+                    match! store.Save entry with
+                    | Error failure -> return Error failure
+                    | Ok() -> return! next rest
+            }
+
+        next entries
+
     /// Loads, validates and wraps an entry. A corrupt entry is removed and
     /// reported, so the next read rebuilds it from the provider.
     let load (store: ReadCacheStore) (key: CacheKey) =
@@ -592,6 +607,21 @@ module MemoryReadCache =
           Clear =
             fun scope ->
                 guarded cell (fun () -> Ok(cell.Entries <- cell.Entries |> Map.filter (fun key _ -> not (ReadCache.inScope scope key)))) }
+
+    /// Saves many partitions at once, all or nothing (ARCA-OFF-008): every
+    /// entry is encoded first, and the cell changes only when all of them
+    /// encode. What it holds afterwards is what saving them in turn holds;
+    /// a later entry for the same key replaces an earlier one.
+    let saveMany (cell: Cell) (entries: CacheEntry list) =
+        guarded cell (fun () ->
+            entries
+            |> List.fold
+                (fun encoded entry ->
+                    encoded
+                    |> Result.bind (fun texts -> ReadCache.encode entry |> Result.map (fun text -> (entry.Key, text) :: texts)))
+                (Ok [])
+            |> Result.map (fun texts ->
+                cell.Entries <- texts |> List.rev |> List.fold (fun (held: Map<CacheKey, string>) (key, text) -> held.Add(key, text)) cell.Entries))
 
     /// A read cache over a fresh cell of its own.
     let create () = over (cell ())

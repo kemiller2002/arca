@@ -41,6 +41,17 @@ type IndexedDbCache =
       /// failure (quota, size limit, unavailable) is reported in diagnostics
       /// only, and never fails the read that produced the entry.
       Keep: CacheEntry -> Async<unit>
+      /// Saves many partitions in one IndexedDB transaction, all or nothing
+      /// (ARCA-OFF-008, arca#38). The order, contents, evictions and
+      /// diagnostics are those of calling `Store.Save` for each entry in
+      /// turn; a later entry for the same key replaces an earlier one. One
+      /// entry that cannot be stored (over the budget, or one `ReadCache.encode`
+      /// refuses) refuses the whole batch before anything is written, and a
+      /// transaction that fails leaves every partition as it was.
+      SaveMany: CacheEntry list -> Async<Result<unit, ReadCacheFailure>>
+      /// `SaveMany`, best-effort: a failure is reported in diagnostics only,
+      /// as with `Keep`.
+      KeepMany: CacheEntry list -> Async<unit>
       /// Loads a partition through `ReadCache.load` (validated, a corrupt
       /// entry dropped) and marks it used for eviction.
       Show: CacheKey -> Async<Result<Cached<CacheEntry> option, ReadCacheFailure>>
@@ -154,6 +165,43 @@ module IndexedDbReadCache =
 
         take (total + needed - budget) others []
 
+    /// A cache key's parts, as a record carries them.
+    let private keyOf (record: CacheRecord) =
+        { Account = record.Account
+          Namespace = record.Namespace
+          Partition = record.Partition }
+
+    /// The order the `byNamespace` index keeps a namespace's records in: last
+    /// used, then the primary key, each text compared ordinally.
+    let private lastUsedOrder (a: CacheRecord) (b: CacheRecord) =
+        [ compare a.LastUsed b.LastUsed
+          String.CompareOrdinal(a.Account, b.Account)
+          String.CompareOrdinal(a.Namespace, b.Namespace)
+          String.CompareOrdinal(a.Partition, b.Partition) ]
+        |> List.tryFind ((<>) 0)
+        |> Option.defaultValue 0
+
+    /// What saving `records` in turn does to what each namespace holds
+    /// (`held`, each in last-used order): for each record, in order, the
+    /// partitions it evicts, and what every namespace holds afterwards. A
+    /// record larger than the whole budget refuses the batch (ARCA-OFF-008).
+    let plan (budget: int64) (held: Map<string, CacheRecord list>) (records: CacheRecord list) =
+        let step (evictedBefore: (CacheRecord list * CacheRecord) list, holding: Map<string, CacheRecord list>) (record: CacheRecord) =
+            let current = holding |> Map.tryFind record.Namespace |> Option.defaultValue []
+            let evicted = evictions budget record.Size (keyOf record) current
+
+            let kept =
+                current
+                |> List.filter (fun r -> not (evicted |> List.contains r) && not (r.Account = record.Account && r.Partition = record.Partition))
+
+            (evicted, record) :: evictedBefore, holding.Add(record.Namespace, kept @ [ record ] |> List.sortWith lastUsedOrder)
+
+        match records |> List.tryFind (fun record -> record.Size > budget) with
+        | Some oversized -> Error oversized
+        | None ->
+            let steps, after = records |> List.fold step ([], held)
+            Ok(List.rev steps, after)
+
     let private failureOf (failure: TransactFailure) =
         match failure with
         | TransactFailure.QuotaExceeded -> ReadCacheFailure.QuotaExceeded
@@ -201,20 +249,30 @@ module IndexedDbReadCache =
                                     return Error(failureOf failure)
                         }
 
-                    let held (ns: string) =
+                    /// What each namespace holds, in last-used order, read in
+                    /// one transaction.
+                    let held (namespaces: string list) =
                         async {
-                            match Range.prefix [ Key.Text ns ] with
-                            | Error failure ->
-                                fail (problem "measure" failure)
-                                return Error ReadCacheFailure.Unavailable
-                            | Ok range ->
-                                match! transact "measure" (Transaction.readOnly Database [ Op.query Entries (Some ByNamespace) (Some range) 1000 false ]) with
-                                | Ok [ result ] ->
-                                    match Read.values codec Database Entries result with
-                                    | Ok records -> return Ok records
-                                    | Error _ -> return Error(ReadCacheFailure.Corrupt "a cache record does not decode")
-                                | Ok _ -> return Error ReadCacheFailure.Unavailable
-                                | Error failure -> return Error failure
+                            let queries =
+                                namespaces
+                                |> List.map (fun ns ->
+                                    Range.prefix [ Key.Text ns ] |> Result.bind (fun range -> Op.query Entries (Some ByNamespace) (Some range) 1000 false))
+
+                            match! transact "measure" (Transaction.readOnly Database queries) with
+                            | Ok results when results.Length = namespaces.Length ->
+                                let decoded = results |> List.map (Read.values codec Database Entries)
+
+                                match decoded |> List.tryPick (function Error _ -> Some() | Ok _ -> None) with
+                                | Some() -> return Error(ReadCacheFailure.Corrupt "a cache record does not decode")
+                                | None ->
+                                    return
+                                        Ok(
+                                            List.zip namespaces decoded
+                                            |> List.choose (fun (ns, records) -> records |> Result.toOption |> Option.map (fun records -> ns, records))
+                                            |> Map.ofList
+                                        )
+                            | Ok _ -> return Error ReadCacheFailure.Unavailable
+                            | Error failure -> return Error failure
                         }
 
                     let load (cacheKey: CacheKey) =
@@ -229,34 +287,52 @@ module IndexedDbReadCache =
                             | Error failure -> return Error failure
                         }
 
-                    let save (entry: CacheEntry) =
+                    /// Saves entries in one transaction, all or nothing, as
+                    /// saving each in turn would (ARCA-OFF-008). `Save` is the
+                    /// batch of one, so the two cannot drift apart.
+                    let saveMany (entries: CacheEntry list) =
+                        let encoded =
+                            entries
+                            |> List.fold
+                                (fun acc entry -> acc |> Result.bind (fun records -> recordOf (host.Now()) entry |> Result.map (fun record -> record :: records)))
+                                (Ok [])
+                            |> Result.map List.rev
+
                         async {
-                            match recordOf (host.Now()) entry with
+                            match encoded with
                             | Error failure -> return Error failure
-                            | Ok record when record.Size > budget ->
-                                fail (AdapterFailure.create "save" Database (Some Entries) FailureClass.Quota "budget" $"{record.Size} bytes over the budget of {budget}")
-                                return Error ReadCacheFailure.QuotaExceeded
-                            | Ok record ->
-                                match! held record.Namespace with
-                                | Error failure -> return Error failure
-                                | Ok current ->
-                                    let evicted = evictions budget record.Size entry.Key current
-                                    let deletes = evicted |> List.map (fun old -> Op.delete Entries (key { Account = old.Account; Namespace = old.Namespace; Partition = old.Partition }))
-
-                                    match! transact "save" (Transaction.readWrite Database (deletes @ [ Op.put Entries codec record ])) with
-                                    | Ok _ ->
-                                        let kept =
-                                            current
-                                            |> List.filter (fun r -> not (evicted |> List.contains r) && not (r.Account = record.Account && r.Partition = record.Partition))
-
-                                        diagnose (fun d ->
-                                            { d with
-                                                Evictions = d.Evictions + evicted.Length
-                                                Size = Some((kept |> List.sumBy _.Size) + record.Size) })
-
-                                        return Ok()
+                            | Ok [] -> return Ok()
+                            | Ok records ->
+                                match records |> List.tryFind (fun record -> record.Size > budget) with
+                                | Some oversized ->
+                                    fail (AdapterFailure.create "save" Database (Some Entries) FailureClass.Quota "budget" $"{oversized.Size} bytes over the budget of {budget}")
+                                    return Error ReadCacheFailure.QuotaExceeded
+                                | None ->
+                                    match! held (records |> List.map _.Namespace |> List.distinct) with
                                     | Error failure -> return Error failure
+                                    | Ok current ->
+                                        match plan budget current records with
+                                        | Error _ -> return Error ReadCacheFailure.QuotaExceeded
+                                        | Ok(steps, after) ->
+                                            let operations =
+                                                steps
+                                                |> List.collect (fun (evicted, record) ->
+                                                    (evicted |> List.map (fun old -> Op.delete Entries (key (keyOf old)))) @ [ Op.put Entries codec record ])
+
+                                            match! transact "save" (Transaction.readWrite Database operations) with
+                                            | Ok _ ->
+                                                let last = List.last records
+
+                                                diagnose (fun d ->
+                                                    { d with
+                                                        Evictions = d.Evictions + (steps |> List.sumBy (fst >> List.length))
+                                                        Size = after |> Map.tryFind last.Namespace |> Option.map (List.sumBy _.Size) })
+
+                                                return Ok()
+                                            | Error failure -> return Error failure
                         }
+
+                    let save (entry: CacheEntry) = saveMany [ entry ]
 
                     let remove (cacheKey: CacheKey) =
                         async {
@@ -317,6 +393,13 @@ module IndexedDbReadCache =
                                         let! _ = save entry
                                         return ()
                                     }
+                              SaveMany = saveMany
+                              KeepMany =
+                                  fun entries ->
+                                      async {
+                                          let! _ = saveMany entries
+                                          return ()
+                                      }
                               Show =
                                 fun cacheKey ->
                                     async {

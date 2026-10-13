@@ -416,6 +416,13 @@ names explicitly. In-flight and outcome-unknown entries MUST never be
 discarded. *Sources: Limen LCP-070; Chrona integration (coordinator request
 2026-10-09).*
 
+**ARCA-OFF-008** The read cache MUST offer a batched save that writes many
+partitions in one storage transaction. It MUST be all or nothing: every
+partition is written, or none is. Its order, contents, evictions and
+diagnostics MUST be those of saving each partition in turn. *Sources: arca#38;
+Chrona WI-0039 and WI-0077 profiling (about 30 partitions at about 40 ms
+each per report refresh).*
+
 ## 9. Integrity: storage content is untrusted input (ARCA-INT)
 
 **ARCA-INT-001** Everything read from the provider MUST be validated before

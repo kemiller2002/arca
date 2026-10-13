@@ -9,6 +9,16 @@ release may change the API; pin an exact version.
 
 ## [Unreleased]
 
+### Added
+
+- Batched read-cache save (ARCA-OFF-008; WI-0032; arca#38). `IndexedDbCache`
+  gains `SaveMany` and `KeepMany`, which write many partitions in one
+  IndexedDB transaction. A batch is all or nothing. Its order, contents,
+  evictions and diagnostics are those of calling `Save` for each entry in
+  turn, and `Save` is now the batch of one. The in-memory cache gains
+  `MemoryReadCache.saveMany`, and `ReadCache.saveSequentially` is the
+  in-turn reference. `ReadCacheStore` is unchanged.
+
 ## [0.4.1] — 2026-10-09
 
 A patch release. The API is unchanged from 0.4.0.

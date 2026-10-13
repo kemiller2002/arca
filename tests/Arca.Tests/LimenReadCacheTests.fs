@@ -326,3 +326,161 @@ let ``eviction picks the least recently used partitions until the new one fits``
     Assert.Equal<string list>([ "old"; "mid" ], IndexedDbReadCache.evictions 100L 40L writing held |> List.map _.Partition)
     // Rewriting a partition does not count its old size.
     Assert.Equal<string list>([], IndexedDbReadCache.evictions 120L 40L { writing with Partition = "mid" } held |> List.map _.Partition)
+
+// ---------------------------------------------------------------------------
+// Batched save (WI-0032, arca#38; ARCA-OFF-008): many partitions in one
+// IndexedDB transaction, all or nothing, the same as saving them in turn.
+// ---------------------------------------------------------------------------
+
+/// Every record IndexedDB holds, in primary-key order, read by a tab of its own.
+let private everything (origin: Origin) =
+    let execute = (origin.Executor "inspector").Execute
+    let opened = Store.openDatabase execute (IndexedDbReadCache.schema |> ok) |> run |> ok
+
+    let transaction =
+        Transaction.readOnly IndexedDbReadCache.Database [ Op.query IndexedDbReadCache.Entries None None 1000 false ] |> ok
+
+    match Store.transact execute (Connection.Open opened) transaction |> run |> ok with
+    | [ result ] -> Read.values IndexedDbReadCache.codec IndexedDbReadCache.Database IndexedDbReadCache.Entries result |> ok
+    | _ -> failwith "expected one query"
+
+/// The read-write transactions a tab sent since `before`.
+let private writesSince (origin: Origin) (tab: string) (before: int) =
+    (origin.Requests tab)[before..]
+    |> List.filter (function
+        | Wire.Request.Transact(_, Limen.Contract.Store.Types.TransactionMode.Readwrite, _) -> true
+        | _ -> false)
+
+/// A batch that exercises the budget: a seeded partition, partitions that
+/// force least-recently-used evictions (including one written earlier in the
+/// same batch), a rewrite of one partition and a second namespace's entry.
+let private batchScenario () =
+    let one = sample "alice" "p1" "t-1"
+    let size = (IndexedDbReadCache.recordOf at one |> ok).Size
+    let budget = size * 2L + size / 2L
+    let seeded = [ sample "alice" "p0" "t-0"; sample "bob" "p0" "t-0" ]
+
+    let other =
+        { sample "alice" "p9" "t-1" with
+            Key = { one.Key with Namespace = "chrona.other@acme/data/main/apps"; Partition = "p9" } }
+
+    let batch =
+        [ one
+          sample "alice" "p2" "t-1"
+          sample "alice" "p3" "t-1"
+          sample "alice" "p2" "t-2"
+          other
+          sample "bob" "p1" "t-1" ]
+
+    budget, seeded, batch
+
+[<Fact>]
+let ``SaveMany leaves IndexedDB exactly as saving each partition in turn does (ARCA-OFF-008)`` () =
+    let budget, seeded, batch = batchScenario ()
+
+    let sequential = Origin()
+    let one = openCache sequential "a" budget
+    seeded |> List.iter (fun entry -> one.Store.Save entry |> run |> ok)
+    sequential.Clock <- at.AddMinutes 1.0
+    batch |> List.iter (fun entry -> one.Store.Save entry |> run |> ok)
+
+    let batched = Origin()
+    let many = openCache batched "a" budget
+    seeded |> List.iter (fun entry -> many.Store.Save entry |> run |> ok)
+    batched.Clock <- at.AddMinutes 1.0
+    Assert.Equal(Ok(), many.SaveMany batch |> run)
+
+    let held = everything sequential
+    Assert.True(held.Length > 0)
+    Assert.Equal<CacheRecord list>(held, everything batched)
+    Assert.True((one.Diagnostics()).Evictions > 0, "the scenario must evict")
+    Assert.Equal((one.Diagnostics()).Evictions, (many.Diagnostics()).Evictions)
+    Assert.Equal((one.Diagnostics()).Size, (many.Diagnostics()).Size)
+
+    // Every partition loads back with the content the last save gave it.
+    batch
+    |> List.iter (fun entry ->
+        Assert.Equal(one.Store.Load entry.Key |> run, many.Store.Load entry.Key |> run))
+
+[<Fact>]
+let ``SaveMany writes every partition in one read-write transaction (ARCA-OFF-008)`` () =
+    let origin = Origin()
+    let cache = openCache origin "a" IndexedDbReadCache.DefaultBudget
+    let entries = [ 1..30 ] |> List.map (fun n -> sample "alice" $"p{n:D2}" "t-1")
+    let before = (origin.Requests "a").Length
+
+    Assert.Equal(Ok(), cache.SaveMany entries |> run)
+
+    Assert.Equal(1, (writesSince origin "a" before).Length)
+    Assert.Equal(30L, count origin None)
+
+[<Fact>]
+let ``SaveMany of nothing writes nothing`` () =
+    let origin = Origin()
+    let cache = openCache origin "a" IndexedDbReadCache.DefaultBudget
+    let before = (origin.Requests "a").Length
+    Assert.Equal(Ok(), cache.SaveMany [] |> run)
+    Assert.Empty(writesSince origin "a" before)
+
+[<Fact>]
+let ``SaveMany is all or nothing: a transaction that fails at commit leaves every partition as it was (ARCA-OFF-008)`` () =
+    let origin = Origin()
+    let seededCache = openCache origin "seed" IndexedDbReadCache.DefaultBudget
+    let kept = sample "alice" "p1" "t-0"
+    seededCache.Store.Save kept |> run |> ok
+    let before = everything origin
+
+    // The browser's quota fails, at commit, the write transaction that
+    // carries the batch's second partition, after its operations ran. Saving
+    // in turn would already have committed the first.
+    let host = origin.Host "a"
+    let armed = ref true
+    let writesSecond (request: Wire.Request) = (sprintf "%A" request).Contains "p2"
+
+    let failing =
+        { host with
+            Store =
+                fun request ->
+                    match request with
+                    | Wire.Request.Transact(_, Limen.Contract.Store.Types.TransactionMode.Readwrite, _) when armed.Value && writesSecond request ->
+                        armed.Value <- false
+                        origin.Inject "a" FakeFault.Quota
+                        host.Store request
+                    | other -> host.Store other }
+
+    let cache = IndexedDbReadCache.openCache failing IndexedDbReadCache.DefaultBudget |> run |> ok
+    let batch = [ sample "alice" "p1" "t-1"; sample "alice" "p2" "t-1"; sample "alice" "p3" "t-1" ]
+
+    Assert.Equal(Error ReadCacheFailure.QuotaExceeded, cache.SaveMany batch |> run)
+    Assert.False(armed.Value, "the write transaction was attempted")
+    Assert.Equal<CacheRecord list>(before, everything origin)
+    Assert.Equal(Ok(Some kept), cache.Store.Load kept.Key |> run)
+    Assert.Equal(Some FailureClass.Quota, (cache.Diagnostics()).LastFailure |> Option.map _.Class)
+
+[<Fact>]
+let ``SaveMany is all or nothing: one partition over the budget refuses the whole batch before anything is sent`` () =
+    let origin = Origin()
+    let small = { sample "alice" "p1" "t-1" with Records = [] }
+    let large = sample "alice" "p2" "t-1"
+    let sizeOf entry = (IndexedDbReadCache.recordOf at entry |> ok).Size
+    let cache = openCache origin "a" (sizeOf small + 16L)
+    let before = (origin.Requests "a").Length
+
+    Assert.Equal(Error ReadCacheFailure.QuotaExceeded, cache.SaveMany [ small; large ] |> run)
+
+    Assert.Empty(writesSince origin "a" before)
+    Assert.Equal(0L, count origin None)
+
+[<Fact>]
+let ``KeepMany is best-effort: a failed batch is reported, never raised, and the next one succeeds`` () =
+    let origin = Origin()
+    let cache = openCache origin "a" IndexedDbReadCache.DefaultBudget
+    let batch = [ sample "alice" "p1" "t-1"; sample "alice" "p2" "t-1" ]
+
+    origin.Inject "a" FakeFault.Missing
+    cache.KeepMany batch |> run
+    Assert.True((cache.Diagnostics()).LastFailure.IsSome)
+
+    let fresh = openCache (Origin()) "a" IndexedDbReadCache.DefaultBudget
+    fresh.KeepMany batch |> run
+    batch |> List.iter (fun entry -> Assert.Equal(Ok(Some entry), fresh.Store.Load entry.Key |> run))

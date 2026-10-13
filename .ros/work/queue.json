@@ -794,6 +794,33 @@
       },
       "source": "manual",
       "sourceReference": null
+    },
+    {
+      "id": "WI-0032",
+      "title": "ReadCacheStore batch save (arca#38): SaveMany writes many read-cache partitions in one IndexedDB transaction, all or nothing, in the same order and with the same content as sequential saves (ARCA-OFF-008; Limen LCP-083, LCP-087; Chrona WI-0077)",
+      "description": null,
+      "tags": [
+        "arca",
+        "offline",
+        "limen",
+        "indexeddb",
+        "performance"
+      ],
+      "priority": "high",
+      "status": "complete",
+      "attachments": [],
+      "createdAt": "2026-10-13T10:54:18.000Z",
+      "updatedAt": "2026-10-13T11:51:44.000Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "github",
+      "sourceReference": "kemiller2002/arca#38"
     }
   ]
 }
