@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-09T04:19:46.000Z",
+  "updatedAt": "2026-10-13T10:54:19.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -1349,6 +1349,17 @@
       },
       "completedAt": "2026-10-09T04:19:46.000Z",
       "conclusion": "revise keeps AccountId and refuses erasures; Arca 0.4.1 released, verified and recorded (echelon-current 1.18.0)"
+    },
+    {
+      "id": "WI-0032",
+      "type": "task",
+      "state": "active",
+      "semanticState": "active",
+      "evidence": [],
+      "updatedAt": "2026-10-13T10:54:19.000Z",
+      "telemetryExecutionIds": [
+        "EXE-20261013T105419454Z-0a9bc996"
+      ]
     }
   ]
 }
