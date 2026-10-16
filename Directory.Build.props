@@ -17,7 +17,7 @@
          of the SDK's implicit reference. -->
     <DisableImplicitFSharpCoreReference>true</DisableImplicitFSharpCoreReference>
     <Authors>Echelon Foundry</Authors>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageLicenseExpression>PolyForm-Noncommercial-1.0.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/kemiller2002/arca</RepositoryUrl>
     <PackageProjectUrl>https://github.com/kemiller2002/arca</PackageProjectUrl>
   </PropertyGroup>

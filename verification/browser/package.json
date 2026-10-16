@@ -10,5 +10,6 @@
   "devDependencies": {
     "@echelon-foundry/limen": "0.9.0",
     "@playwright/test": "1.63.0"
-  }
+  },
+  "license": "PolyForm-Noncommercial-1.0.0"
 }
