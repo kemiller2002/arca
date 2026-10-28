@@ -216,17 +216,7 @@ module QueueSignOut =
     /// Entries that have not reached the provider and cannot have: these may
     /// be discarded. In-flight and outcome-unknown entries may have landed,
     /// so they are reconciled, never dropped.
-    let private discardableState (entry: QueueEntry) =
-        match entry.State with
-        | EntryState.Pending
-        | EntryState.Conflicted _
-        | EntryState.Refused _ -> true
-        | _ -> false
-
-    let private discardWhere (owned: QueueEntry -> bool) (queue: OfflineQueue) =
-        let discardable entry = owned entry && discardableState entry
-        let count = queue.Entries |> List.filter discardable |> List.length
-        { queue with Entries = queue.Entries |> List.filter (discardable >> not) }, count
+    let private discardWhere (owned: QueueEntry -> bool) (queue: OfflineQueue) = OfflineQueue.discardUnsent owned queue
 
     /// The queue without the account's discardable entries (pending,
     /// conflicted, refused), and how many were removed. In-flight and

@@ -80,40 +80,127 @@ type QueuedOperation =
       /// Persisted only when set.
       AccountId: string option }
 
-/// Where one queued operation stands (ARCA-OFF-001).
+/// The cases of an entry state, internal to Arca (ARCA-OFF-009).
 [<RequireQualifiedAccess>]
-type EntryState =
-    /// Waiting to be sent.
+type internal EntryCase =
     | Pending
-    /// Being sent, built on this change token. Recorded before sending, so a
-    /// restart can reconcile instead of resending blindly (ARCA-OFF-004).
     | InFlight of baseToken: string
     | Synchronized of changeToken: string
-    /// The provider's state moved under it; the application reloads,
-    /// revalidates and decides (ARCA-CON-002).
     | Conflicted of paths: string list
-    /// It may have landed; it must be reconciled before anything else
-    /// (ARCA-OUT-001).
     | OutcomeUnknown of baseToken: string
-    /// The provider refused it permanently; the application decides.
     | Refused of reason: string
-    /// The application explicitly gave it up. Kept until pruned, so nothing is
-    /// ever dropped silently.
     | Abandoned of reason: string
 
-/// One queued operation and its state.
-type QueueEntry =
-    { Sequence: int64
-      Operation: QueuedOperation
-      EnqueuedAt: DateTimeOffset
-      State: EntryState }
+/// Where one queued operation stands (ARCA-OFF-001).
+///
+/// Read it with the `EntryState` patterns (`EntryState.Pending`,
+/// `EntryState.InFlight baseToken`, `EntryState.Synchronized token`,
+/// `EntryState.Conflicted paths`, `EntryState.OutcomeUnknown baseToken`,
+/// `EntryState.Refused reason`, `EntryState.Abandoned reason`). Only Arca
+/// creates one (ARCA-OFF-009, DF-ARCA-2026-0014): an entry becomes
+/// Synchronized only through `OfflineQueue.recordResult` or
+/// `OfflineQueue.recordReconciliation` with a provider's receipt for that
+/// entry's operation, so application code cannot claim that a write landed.
+type EntryState =
+    internal
+        { case: EntryCase }
 
-/// The offline change queue: ordered entries, as data (ARCA-OFF-001).
+/// Reading entry states, and (internally) making them.
+[<RequireQualifiedAccess>]
+module EntryState =
+
+    /// The state's case. Every entry is in exactly one:
+    /// - `Pending`: waiting to be sent.
+    /// - `InFlight baseToken`: being sent, built on this change token.
+    ///   Recorded before sending, so a restart can reconcile instead of
+    ///   resending blindly (ARCA-OFF-004).
+    /// - `Synchronized changeToken`: the provider accepted it, as its receipt
+    ///   for this entry's operation said.
+    /// - `Conflicted paths`: the provider's state moved under it; the
+    ///   application reloads, revalidates and decides (ARCA-CON-002).
+    /// - `OutcomeUnknown baseToken`: it may have landed; it must be
+    ///   reconciled before anything else (ARCA-OUT-001).
+    /// - `Refused reason`: the provider refused it permanently; the
+    ///   application decides.
+    /// - `Abandoned reason`: the application explicitly gave it up. Kept
+    ///   until pruned, so nothing is ever dropped silently.
+    let (|Pending|InFlight|Synchronized|Conflicted|OutcomeUnknown|Refused|Abandoned|) (state: EntryState) =
+        match state.case with
+        | EntryCase.Pending -> Pending
+        | EntryCase.InFlight baseToken -> InFlight baseToken
+        | EntryCase.Synchronized changeToken -> Synchronized changeToken
+        | EntryCase.Conflicted paths -> Conflicted paths
+        | EntryCase.OutcomeUnknown baseToken -> OutcomeUnknown baseToken
+        | EntryCase.Refused reason -> Refused reason
+        | EntryCase.Abandoned reason -> Abandoned reason
+
+    /// True when the provider accepted the entry (it is Synchronized).
+    let isSynchronized (state: EntryState) =
+        match state.case with
+        | EntryCase.Synchronized _ -> true
+        | _ -> false
+
+    /// The stored name of the state's case (`pending`, `in-flight`,
+    /// `synchronized`, `conflicted`, `outcome-unknown`, `refused`,
+    /// `abandoned`), for display and diagnostics.
+    let name (state: EntryState) =
+        match state.case with
+        | EntryCase.Pending -> "pending"
+        | EntryCase.InFlight _ -> "in-flight"
+        | EntryCase.Synchronized _ -> "synchronized"
+        | EntryCase.Conflicted _ -> "conflicted"
+        | EntryCase.OutcomeUnknown _ -> "outcome-unknown"
+        | EntryCase.Refused _ -> "refused"
+        | EntryCase.Abandoned _ -> "abandoned"
+
+    let internal pending = { case = EntryCase.Pending }
+    let internal inFlight baseToken = { case = EntryCase.InFlight baseToken }
+    let internal synchronized changeToken = { case = EntryCase.Synchronized changeToken }
+    let internal conflicted paths = { case = EntryCase.Conflicted paths }
+    let internal outcomeUnknown baseToken = { case = EntryCase.OutcomeUnknown baseToken }
+    let internal refused reason = { case = EntryCase.Refused reason }
+    let internal abandoned reason = { case = EntryCase.Abandoned reason }
+
+/// One queued operation and its state. Read it through `Sequence`,
+/// `Operation`, `EnqueuedAt` and `State`; only OfflineQueue's commands
+/// change it (ARCA-OFF-009).
+type QueueEntry =
+    internal
+        { sequence: int64
+          operation: QueuedOperation
+          enqueuedAt: DateTimeOffset
+          state: EntryState }
+
+    /// The entry's position: assigned at enqueue, never reused.
+    member this.Sequence = this.sequence
+
+    /// The queued operation, as plain data.
+    member this.Operation = this.operation
+
+    /// When it was queued.
+    member this.EnqueuedAt = this.enqueuedAt
+
+    /// Where it stands.
+    member this.State = this.state
+
+/// The offline change queue: ordered entries, as data (ARCA-OFF-001). Read
+/// it through `Policy`, `NextSequence` and `Entries`; only OfflineQueue's
+/// commands (and `OfflineQueue.decode` of a queue Arca persisted) make or
+/// change one (ARCA-OFF-009).
 type OfflineQueue =
-    { Policy: OfflinePolicy
-      NextSequence: int64
-      /// Oldest first.
-      Entries: QueueEntry list }
+    internal
+        { policy: OfflinePolicy
+          nextSequence: int64
+          entries: QueueEntry list }
+
+    /// Whether the application opted in to offline writes.
+    member this.Policy = this.policy
+
+    /// The sequence the next enqueued entry gets.
+    member this.NextSequence = this.nextSequence
+
+    /// Oldest first.
+    member this.Entries = this.entries
 
 /// Why the queue refused a request.
 [<RequireQualifiedAccess>]
@@ -127,6 +214,9 @@ type QueueError =
     | Corrupt of reason: string
     /// The operation stored in an entry no longer validates.
     | InvalidOperation of reason: string
+    /// The receipt confirms another operation: its idempotency key is not
+    /// the entry's (ARCA-OFF-009). Nothing is recorded.
+    | ReceiptMismatch of sequence: int64
 
 /// What the application can observe about synchronization (ARCA-OFF-003).
 type SyncStatus =
@@ -151,9 +241,9 @@ module OfflineQueue =
 
     /// An empty queue under a policy.
     let create policy =
-        { Policy = policy
-          NextSequence = 1L
-          Entries = [] }
+        { policy = policy
+          nextSequence = 1L
+          entries = [] }
 
     /// The operation as plain data.
     let describe (operation: Operation) : QueuedOperation =
@@ -247,15 +337,15 @@ module OfflineQueue =
         | OfflinePolicy.QueueWrites when operation.IsErasure -> Error(QueueError.InvalidOperation "an erasure is sent online, never queued")
         | OfflinePolicy.QueueWrites ->
             let entry =
-                { Sequence = queue.NextSequence
-                  Operation = describe operation
-                  EnqueuedAt = at
-                  State = EntryState.Pending }
+                { sequence = queue.NextSequence
+                  operation = describe operation
+                  enqueuedAt = at
+                  state = EntryState.pending }
 
             Ok(
                 { queue with
-                    NextSequence = queue.NextSequence + 1L
-                    Entries = queue.Entries @ [ entry ] },
+                    nextSequence = queue.NextSequence + 1L
+                    entries = queue.Entries @ [ entry ] },
                 entry.Sequence
             )
 
@@ -266,11 +356,11 @@ module OfflineQueue =
         enqueue at operation queue
         |> Result.map (fun (next: OfflineQueue, sequence) ->
             { next with
-                Entries =
+                entries =
                     next.Entries
                     |> List.map (fun entry ->
                         if entry.Sequence = sequence then
-                            { entry with Operation = { entry.Operation with AccountId = Some(AccountId.toWire account) } }
+                            { entry with operation = { entry.Operation with AccountId = Some(AccountId.toWire account) } }
                         else
                             entry) },
             sequence)
@@ -305,45 +395,55 @@ module OfflineQueue =
             change entry
             |> Result.map (fun changed ->
                 { queue with
-                    Entries = queue.Entries |> List.map (fun existing -> if existing.Sequence = sequence then changed else existing) })
+                    entries = queue.Entries |> List.map (fun existing -> if existing.Sequence = sequence then changed else existing) })
 
     /// Records, before sending, that an entry is being sent on top of
     /// `baseToken` (write-ahead, ARCA-OFF-004). Only the entry `next` names,
     /// while Pending, may be sent.
     let markInFlight (sequence: int64) (ChangeToken baseToken) (queue: OfflineQueue) =
         match next queue with
-        | Some entry when entry.Sequence = sequence && entry.State = EntryState.Pending ->
-            update sequence (fun entry -> Ok { entry with State = EntryState.InFlight baseToken }) queue
+        | Some entry when entry.Sequence = sequence && (match entry.State with EntryState.Pending -> true | _ -> false) ->
+            update sequence (fun entry -> Ok { entry with state = EntryState.inFlight baseToken }) queue
         | Some _
         | None -> Error(QueueError.NotApplicable sequence)
 
-    /// Records what sending an in-flight entry produced.
+    /// True when the receipt confirms this entry's operation: a provider
+    /// issued it for the same idempotency key (ARCA-OFF-009).
+    let private confirms (receipt: CommitReceipt) (entry: QueueEntry) =
+        IdempotencyKey.value receipt.IdempotencyKey = entry.Operation.IdempotencyKey
+
+    /// Records what sending an in-flight entry produced. Only the entry that is
+    /// in flight takes a result: a result for an entry that is no longer in
+    /// flight (a stale or out-of-order acknowledgment) is NotApplicable, and a
+    /// receipt that confirms another operation is ReceiptMismatch. Neither
+    /// changes the queue (ARCA-OFF-009).
     let recordResult (sequence: int64) (result: Result<CommitReceipt, StorageFailure>) (queue: OfflineQueue) =
         update
             sequence
             (fun entry ->
                 match entry.State, result with
+                | EntryState.InFlight _, Ok receipt when not (confirms receipt entry) -> Error(QueueError.ReceiptMismatch sequence)
                 | EntryState.InFlight _, Ok receipt ->
                     let (ChangeToken token) = receipt.ChangeToken
-                    Ok { entry with State = EntryState.Synchronized token }
+                    Ok { entry with state = EntryState.synchronized token }
                 | EntryState.InFlight baseToken, Error failure ->
                     let state =
                         match failure with
-                        | StorageFailure.Conflicted conflicts -> EntryState.Conflicted(conflicts |> List.map (_.Path >> RelativePath.render))
-                        | StorageFailure.OutcomeUnknown _ -> EntryState.OutcomeUnknown baseToken
+                        | StorageFailure.Conflicted conflicts -> EntryState.conflicted(conflicts |> List.map (_.Path >> RelativePath.render))
+                        | StorageFailure.OutcomeUnknown _ -> EntryState.outcomeUnknown baseToken
                         // Nothing was applied and trying later may succeed.
                         | StorageFailure.RateLimited _
-                        | StorageFailure.ProviderFailed(_, true, _) -> EntryState.Pending
-                        | StorageFailure.Refused(WriteRefusal.CredentialUnavailable _) -> EntryState.Pending
+                        | StorageFailure.ProviderFailed(_, true, _) -> EntryState.pending
+                        | StorageFailure.Refused(WriteRefusal.CredentialUnavailable _) -> EntryState.pending
                         | StorageFailure.StaleChangeToken _
-                        | StorageFailure.StaleNamespaceToken _ -> EntryState.Conflicted []
-                        | StorageFailure.Refused _ -> EntryState.Refused "the provider refused the write"
-                        | StorageFailure.IntegrityRefused(path, _) -> EntryState.Refused $"what is stored at {path} makes the write unsafe"
-                        | StorageFailure.ObjectTooLarge(path, _, _) -> EntryState.Refused $"{path} is too large"
-                        | StorageFailure.WrongLocation _ -> EntryState.Refused "the namespace is at another location"
-                        | StorageFailure.ProviderFailed(code, false, _) -> EntryState.Refused $"provider failure {code}"
+                        | StorageFailure.StaleNamespaceToken _ -> EntryState.conflicted []
+                        | StorageFailure.Refused _ -> EntryState.refused "the provider refused the write"
+                        | StorageFailure.IntegrityRefused(path, _) -> EntryState.refused $"what is stored at {path} makes the write unsafe"
+                        | StorageFailure.ObjectTooLarge(path, _, _) -> EntryState.refused $"{path} is too large"
+                        | StorageFailure.WrongLocation _ -> EntryState.refused "the namespace is at another location"
+                        | StorageFailure.ProviderFailed(code, false, _) -> EntryState.refused $"provider failure {code}"
 
-                    Ok { entry with State = state }
+                    Ok { entry with state = state }
                 | _ -> Error(QueueError.NotApplicable sequence))
             queue
 
@@ -359,16 +459,18 @@ module OfflineQueue =
         | _ -> None
 
     /// Records what reconciling an entry found: landed is synchronized,
-    /// not landed may be sent again, still unknown stays (ARCA-OFF-004).
+    /// not landed may be sent again, still unknown stays (ARCA-OFF-004). A
+    /// landed receipt must confirm this entry's operation (ARCA-OFF-009).
     let recordReconciliation (sequence: int64) (outcome: ReconcileOutcome) (queue: OfflineQueue) =
         update
             sequence
             (fun entry ->
                 match entry.State, outcome with
+                | EntryState.OutcomeUnknown _, ReconcileOutcome.Landed receipt when not (confirms receipt entry) -> Error(QueueError.ReceiptMismatch sequence)
                 | EntryState.OutcomeUnknown _, ReconcileOutcome.Landed receipt ->
                     let (ChangeToken token) = receipt.ChangeToken
-                    Ok { entry with State = EntryState.Synchronized token }
-                | EntryState.OutcomeUnknown _, ReconcileOutcome.NotLanded -> Ok { entry with State = EntryState.Pending }
+                    Ok { entry with state = EntryState.synchronized token }
+                | EntryState.OutcomeUnknown _, ReconcileOutcome.NotLanded -> Ok { entry with state = EntryState.pending }
                 | EntryState.OutcomeUnknown _, ReconcileOutcome.StillUnknown _ -> Ok entry
                 | _ -> Error(QueueError.NotApplicable sequence))
             queue
@@ -378,11 +480,11 @@ module OfflineQueue =
     /// blindly (ARCA-OFF-004).
     let recover (queue: OfflineQueue) =
         { queue with
-            Entries =
+            entries =
                 queue.Entries
                 |> List.map (fun entry ->
                     match entry.State with
-                    | EntryState.InFlight baseToken -> { entry with State = EntryState.OutcomeUnknown baseToken }
+                    | EntryState.InFlight baseToken -> { entry with state = EntryState.outcomeUnknown baseToken }
                     | _ -> entry) }
 
     /// The entry with its operation replaced by `operation`. Only what the
@@ -391,7 +493,7 @@ module OfflineQueue =
     /// time and the account that made it (ARCA-OFF-007). `describe` knows
     /// nothing of the entry, so every rebuild goes through here.
     let private replaceOperation (operation: Operation) (entry: QueueEntry) =
-        { entry with Operation = { describe operation with AccountId = entry.Operation.AccountId } }
+        { entry with operation = { describe operation with AccountId = entry.Operation.AccountId } }
 
     /// Replaces a conflicted or refused entry with the application's revised
     /// operation, at the same position, as Pending (ARCA-CON-002). The entry
@@ -404,7 +506,7 @@ module OfflineQueue =
                 match entry.State with
                 | _ when operation.IsErasure -> Error(QueueError.InvalidOperation "an erasure is sent online, never queued")
                 | EntryState.Conflicted _
-                | EntryState.Refused _ -> Ok { replaceOperation operation entry with State = EntryState.Pending }
+                | EntryState.Refused _ -> Ok { replaceOperation operation entry with state = EntryState.pending }
                 | _ -> Error(QueueError.NotApplicable sequence))
             queue
 
@@ -417,14 +519,32 @@ module OfflineQueue =
                 match entry.State with
                 | EntryState.Conflicted _
                 | EntryState.Refused _
-                | EntryState.Pending -> Ok { entry with State = EntryState.Abandoned reason }
+                | EntryState.Pending -> Ok { entry with state = EntryState.abandoned reason }
                 | _ -> Error(QueueError.NotApplicable sequence))
             queue
+
+    /// Removes the entries `owned` selects that have not reached the provider
+    /// and cannot have: Pending, Conflicted and Refused ones. In-flight and
+    /// outcome-unknown entries may have landed, so they stay, to be
+    /// reconciled; synchronized and abandoned ones are left to `prune`.
+    /// Returns the queue and how many entries were removed (sign-out,
+    /// LCP-070, ARCA-OFF-007).
+    let discardUnsent (owned: QueueEntry -> bool) (queue: OfflineQueue) =
+        let discardable (entry: QueueEntry) =
+            owned entry
+            && (match entry.State with
+                | EntryState.Pending
+                | EntryState.Conflicted _
+                | EntryState.Refused _ -> true
+                | _ -> false)
+
+        let kept = queue.Entries |> List.filter (discardable >> not)
+        { queue with entries = kept }, queue.Entries.Length - kept.Length
 
     /// Removes synchronized and abandoned entries.
     let prune (queue: OfflineQueue) =
         { queue with
-            Entries =
+            entries =
                 queue.Entries
                 |> List.filter (fun entry ->
                     match entry.State with
@@ -436,7 +556,7 @@ module OfflineQueue =
     let status (queue: OfflineQueue) =
         let count predicate = queue.Entries |> List.filter (fun entry -> predicate entry.State) |> List.length
 
-        let pending = count ((=) EntryState.Pending)
+        let pending = count (function EntryState.Pending -> true | _ -> false)
         let inFlight = count (function EntryState.InFlight _ -> true | _ -> false)
         let unknown = count (function EntryState.OutcomeUnknown _ -> true | _ -> false)
         let conflicted = count (function EntryState.Conflicted _ -> true | _ -> false)
@@ -591,16 +711,16 @@ module OfflineQueue =
     let private parseState value =
         str "kind" value
         |> Result.bind (function
-            | "pending" -> Ok EntryState.Pending
-            | "in-flight" -> str "base" value |> Result.map EntryState.InFlight
-            | "synchronized" -> str "token" value |> Result.map EntryState.Synchronized
+            | "pending" -> Ok EntryState.pending
+            | "in-flight" -> str "base" value |> Result.map EntryState.inFlight
+            | "synchronized" -> str "token" value |> Result.map EntryState.synchronized
             | "conflicted" ->
                 items "paths" value
                 |> Result.bind (List.map (function Json.String path -> Ok path | _ -> Error(QueueError.Corrupt "conflict path")) >> all)
-                |> Result.map EntryState.Conflicted
-            | "outcome-unknown" -> str "base" value |> Result.map EntryState.OutcomeUnknown
-            | "refused" -> str "reason" value |> Result.map EntryState.Refused
-            | "abandoned" -> str "reason" value |> Result.map EntryState.Abandoned
+                |> Result.map EntryState.conflicted
+            | "outcome-unknown" -> str "base" value |> Result.map EntryState.outcomeUnknown
+            | "refused" -> str "reason" value |> Result.map EntryState.refused
+            | "abandoned" -> str "reason" value |> Result.map EntryState.abandoned
             | other -> Error(QueueError.Corrupt $"unknown state {other}"))
 
     let private parseOperation value : Result<QueuedOperation, QueueError> =
@@ -668,10 +788,10 @@ module OfflineQueue =
                                 match DateTimeOffset.TryParseExact(at, "yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal) with
                                 | true, parsed ->
                                     Ok
-                                        { Sequence = sequence
-                                          Operation = operation
-                                          EnqueuedAt = parsed.ToUniversalTime()
-                                          State = state }
+                                        { sequence = sequence
+                                          operation = operation
+                                          enqueuedAt = parsed.ToUniversalTime()
+                                          state = state }
                                 | _ -> Error(QueueError.Corrupt "enqueuedAt")
                             | Error error, _, _, _
                             | _, Error error, _, _
@@ -683,9 +803,9 @@ module OfflineQueue =
                 match policy, integer "nextSequence" value, entries with
                 | Ok policy, Ok nextSequence, Ok entries ->
                     Ok
-                        { Policy = policy
-                          NextSequence = nextSequence
-                          Entries = entries }
+                        { policy = policy
+                          nextSequence = nextSequence
+                          entries = entries }
                 | Error error, _, _
                 | _, Error error, _
                 | _, _, Error error -> Error error
@@ -743,9 +863,9 @@ module OfflineSync =
                 | (EntryState.Conflicted _ | EntryState.Refused _), _ -> return queue, SyncStep.Blocked entry
                 | _, Error _ ->
                     let refused =
-                        { entry with State = EntryState.Refused "the queued operation no longer validates" }
+                        { entry with state = EntryState.refused "the queued operation no longer validates" }
 
-                    let queue = { queue with Entries = queue.Entries |> List.map (fun e -> if e.Sequence = entry.Sequence then refused else e) }
+                    let queue = { queue with entries = queue.Entries |> List.map (fun e -> if e.Sequence = entry.Sequence then refused else e) }
                     let! _ = persist store queue
                     return queue, SyncStep.Blocked refused
                 | (EntryState.OutcomeUnknown _ | EntryState.InFlight _), Ok operation ->

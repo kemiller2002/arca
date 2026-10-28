@@ -34,7 +34,9 @@
     <Compile Include="LimenVectorsTests.fs" />
     <Compile Include="LimenMigrationTests.fs" />
     <Compile Include="LimenReadCacheTests.fs" />
+    <Compile Include="CompileFailureBuild.fs" />
     <Compile Include="ReadCacheTests.fs" />
+    <Compile Include="PersistenceSafetyTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />

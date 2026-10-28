@@ -332,7 +332,7 @@ module InMemory =
                             | InMemoryFault.OutcomeUnknownLost :: rest -> Error(StorageFailure.OutcomeUnknown pending), { next with Pending = rest }
                             | _ ->
                                 let committed, token = apply operation next
-                                Ok { ChangeToken = token; Revisions = revisions }, committed
+                                Ok(CommitReceipt.mint operation.Metadata.IdempotencyKey token revisions), committed
 
     /// Settles an unknown outcome: the operation landed when a commit since
     /// its base carries its idempotency key.
@@ -344,7 +344,7 @@ module InMemory =
 
             match sinceBase |> List.tryFind (fun commit -> Commit.carriesKey pending.IdempotencyKey commit.Message) with
             | Some landed ->
-                Ok(ReconcileOutcome.Landed { ChangeToken = landed.Token; Revisions = pending.Revisions }), next
+                Ok(ReconcileOutcome.Landed(CommitReceipt.mint pending.IdempotencyKey landed.Token pending.Revisions)), next
             | None -> Ok ReconcileOutcome.NotLanded, next
 
     /// Writes or removes an object as something outside Arca would (a

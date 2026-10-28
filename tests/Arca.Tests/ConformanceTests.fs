@@ -238,7 +238,7 @@ let ``a provider that lets a tombstone be overwritten fails the suite (ARCA-INT-
                         async {
                             match! provider.Commit operation with
                             | Error(StorageFailure.IntegrityRefused(_, IntegrityRefusal.ErasedRecord)) ->
-                                return Ok { ChangeToken = ChangeToken "faked"; Revisions = Map.empty }
+                                return Ok(CommitReceipt.mint operation.Metadata.IdempotencyKey (ChangeToken "faked") Map.empty)
                             | other -> return other
                         } })
 

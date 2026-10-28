@@ -570,5 +570,59 @@
     "title": "The release carrying the batched read-cache save and pinned GitHub reads is 0.5.0, a minor release, because it adds public API without changing any; its echelon-current range stays >=0.4.1 <1.0.0",
     "updated": "2026-10-13",
     "version": "1.0.0"
+  },
+  {
+    "created": "2026-10-28",
+    "id": "DF-ARCA-2026-0014",
+    "owners": [
+      "arca"
+    ],
+    "path": "research/decisions/DF-ARCA-2026-0014--only-the-provider-confirms-a-write.md",
+    "provenance": {
+      "contributions": {
+        "EXE-20261028T005603298Z-4cba0be1": {
+          "actor": {
+            "id": "anthropic/claude-code",
+            "kind": "agent",
+            "model": "unknown",
+            "provider": "anthropic",
+            "runtime": "claude-code"
+          },
+          "at": "2026-10-28T01:12:34.000Z",
+          "operations": [
+            "created"
+          ],
+          "reason": "Only the provider confirms a write; breaking 0.6.0 (WI-0036, ARCA-OFF-009; owner approval 2026-10-28, EII Workstream D)"
+        }
+      }
+    },
+    "related_documents": [
+      "CHANGELOG.md",
+      "Directory.Build.props",
+      "docs/consuming-arca.md",
+      "docs/requirements/ARCA-STORAGE-REQUIREMENTS.md",
+      "src/Arca.Core/OfflineQueue.fs",
+      "src/Arca.Core/Storage.fs",
+      "src/Arca.Core/Arca.Core.fsproj",
+      "tests/Arca.CompileFailure/Arca.CompileFailure.fsproj",
+      "tests/Arca.Tests/PersistenceSafetyTests.fs",
+      "research/decisions/DF-ARCA-2026-0005--offline-queue-persists-to-localstorage-behind-a-port.md",
+      "research/decisions/DF-ARCA-2026-0013--release-0-5-0-is-a-minor-release.md"
+    ],
+    "review_cycle": "on-trigger",
+    "status": "accepted",
+    "superseded_by": [],
+    "supersedes": [],
+    "tags": [
+      "offline",
+      "queue",
+      "integrity",
+      "api",
+      "release",
+      "versioning"
+    ],
+    "title": "Only the provider confirms a write; synchronized entry states, commit receipts and queue entries are unforgeable outside Arca, in a breaking 0.6.0 minor release",
+    "updated": "2026-10-28",
+    "version": "1.0.0"
   }
 ]

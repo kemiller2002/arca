@@ -9,6 +9,83 @@ release may change the API; pin an exact version.
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-10-28
+
+A **breaking** minor release (DF-ARCA-2026-0014; owner approval 2026-10-28,
+Echelon Engineering Improvement Initiative, Workstream D; WI-0036). Only a
+provider can now confirm a write (ARCA-OFF-009). In 0.5.0 any application
+could build `EntryState.Synchronized "x"`, a `CommitReceipt`, or
+`{ entry with State = ... }`, and so mark unsaved work as persisted, which a
+rehearsal application did (indy-init-rehearsal-004 T33, DCT-002-B, R2-01).
+From 0.6.0 the compiler refuses all three outside Arca, as compile-failure
+fixtures prove. Reads keep their 0.5 syntax. The persisted queue format is
+unchanged (`arcaQueue` 1), so stored queues load as before.
+
+### Changed (breaking)
+
+- `EntryState` is opaque. Its cases are internal to Arca; the public
+  `EntryState` patterns (`Pending`, `InFlight`, `Synchronized`,
+  `Conflicted`, `OutcomeUnknown`, `Refused`, `Abandoned`) read it with the
+  same syntax as before. Application code cannot construct a state.
+- `QueueEntry` and `OfflineQueue` have internal representations. Their
+  fields read as before (`Sequence`, `Operation`, `EnqueuedAt`, `State`;
+  `Policy`, `NextSequence`, `Entries`), but neither can be built or
+  copy-and-updated outside Arca. Only OfflineQueue's commands, `OfflineSync`
+  and `OfflineQueue.decode` make or change them.
+- `CommitReceipt` has an internal representation and is minted only by
+  providers (the in-memory provider and the GitHub adapter). It gains
+  `IdempotencyKey`, the key of the operation it confirms.
+- `OfflineQueue.recordResult` and `recordReconciliation` accept a receipt
+  only for the entry carrying its idempotency key. Another operation's
+  receipt is refused with the new `QueueError.ReceiptMismatch`, and the queue
+  is unchanged. A result for an entry that is no longer in flight (stale or
+  out of order) is `NotApplicable`, as before.
+- `QueueStoreConformance.queueOf`, which set arbitrary states, is internal.
+  `QueueStoreConformance.samples` and the suite are unchanged.
+
+### Added
+
+- `EntryState.isSynchronized` and `EntryState.name`.
+- `OfflineQueue.discardUnsent owned queue`: removes the selected entries that
+  have not reached the provider (pending, conflicted, refused) and returns
+  how many. `QueueDiagnostics.discard` and `discardAccount` (Limen) now use
+  it; their behaviour is unchanged.
+
+### Migration (0.5.x to 0.6.0)
+
+| 0.5.x | 0.6.0 |
+|---|---|
+| `match entry.State with EntryState.Synchronized t -> ...` | unchanged |
+| `entry.State = EntryState.Pending` | `match entry.State with EntryState.Pending -> true \| _ -> false` |
+| equality with any constructed state, such as `entry.State = EntryState.Synchronized t` | `EntryState.isSynchronized entry.State`, or match the pattern |
+| `EntryState.Synchronized "x"` (constructing any state) | not possible: send through `OfflineSync`, or `markInFlight` then `recordResult` with the provider's answer |
+| `{ entry with State = s }` | not possible: use the command for the transition (`markInFlight`, `recordResult`, `recordReconciliation`, `recover`, `revise`, `abandon`) |
+| `{ queue with Entries = es }` | `OfflineQueue.prune`, `OfflineQueue.discardUnsent owned`, or `abandon` then `prune` |
+| building an `OfflineQueue` record | `OfflineQueue.create policy`, or `OfflineQueue.decode text` |
+| `{ ChangeToken = t; Revisions = r }` (a receipt) | not possible: a provider returns it; a test fake commits through `InMemoryStore().Provider` |
+| `ReconcileOutcome.Landed { ChangeToken = ...; Revisions = ... }` | `ReconcileOutcome.Landed receipt` with a receipt from `provider.Reconcile` |
+| an exhaustive match on `QueueError` | add `QueueError.ReceiptMismatch _` |
+| `receipt.ChangeToken`, `receipt.Revisions` | unchanged; `receipt.IdempotencyKey` is new |
+
+Behaviour is otherwise unchanged: every 0.5.0 test passes, with only its
+hand-built states and receipts moved to Arca's internal constructors.
+
+### Remaining runtime-only risks
+
+The types close the application-code path. They cannot close these:
+
+- A first-party adapter (Arca.GitHub, through InternalsVisibleTo) could mint
+  a receipt dishonestly. Its receipts come only from GitHub's answers: a
+  published ref update, or a reconciliation that found the key in history.
+- A receipt is bound to an idempotency key, not to a provider instance. An
+  application that deliberately commits a queued operation to another
+  provider (such as an in-memory store) gets a genuine receipt for that key.
+- "Accepted" means "applied on the state the operation was built on" only
+  because the provider enforces its expected-head guard (a non-forced ref
+  update on GitHub). A provider that ignored it would still return a receipt.
+- `OfflineQueue.decode` trusts well-formed text: a queue edited in browser
+  storage to say `synchronized` decodes as synchronized.
+
 ## [0.5.0] — 2026-10-13
 
 A minor release. It adds API and changes none: every 0.4.1 call compiles

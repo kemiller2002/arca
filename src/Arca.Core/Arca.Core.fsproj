@@ -19,6 +19,15 @@
          printf (ARCA-ARCH-002). -->
     <OtherFlags>$(OtherFlags) --reflectionfree</OtherFlags>
   </PropertyGroup>
+  <!-- First-party assemblies only (DF-ARCA-2026-0014, ARCA-OFF-009): the
+       GitHub adapter mints commit receipts as the in-memory provider does,
+       and the test assembly builds queue states by hand. No application, and
+       not the compile-failure fixtures, may see Arca.Core's internals, so a
+       synchronized entry or a receipt cannot be forged outside Arca. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Arca.GitHub" />
+    <InternalsVisibleTo Include="Arca.Tests" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="Capabilities.fs" />
     <Compile Include="Location.fs" />

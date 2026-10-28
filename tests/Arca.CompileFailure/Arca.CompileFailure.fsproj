@@ -1,7 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Compile-failure fixtures (WI-0021, Limen LCP-085). This project must
-       NOT compile: ReadCacheTests builds it and expects exactly the type
-       errors named there. It is not in Arca.slnx and is never packed. -->
+  <!-- Compile-failure fixtures (WI-0021, Limen LCP-085; WI-0036,
+       ARCA-OFF-009). This project must NOT compile: CompileFailureBuild
+       builds it once, and ReadCacheTests and PersistenceSafetyTests expect
+       exactly the errors named there, in the forging files only. The
+       control files (FreshTokenAsWriteCondition, LegitimateQueueReads)
+       compile. It references Arca.Core as an application does, without
+       InternalsVisibleTo. It is not in Arca.slnx and is never packed. -->
   <PropertyGroup>
     <IsPackable>false</IsPackable>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
@@ -9,6 +13,10 @@
   <ItemGroup>
     <Compile Include="FreshTokenAsWriteCondition.fs" />
     <Compile Include="CachedTokenAsWriteCondition.fs" />
+    <Compile Include="LegitimateQueueReads.fs" />
+    <Compile Include="ForgeSynchronizedState.fs" />
+    <Compile Include="ForgeCommitReceipt.fs" />
+    <Compile Include="MutateEntryState.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/Arca.Core/Arca.Core.fsproj" />

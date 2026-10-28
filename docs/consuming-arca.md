@@ -1,7 +1,9 @@
 # Consuming Arca
 
 How an application (Chrona first) takes Arca 0.5.0 and wires it into a Limen
-engine. Distribution follows the short-term plan
+engine. 0.6.0 (unreleased; WI-0036) changes the offline queue's API so only a
+provider can confirm a write; see [§5c](#5c-only-the-provider-confirms-a-write-from-060-breaking)
+and the CHANGELOG's migration notes before moving to it. Distribution follows the short-term plan
 ([`distribution-short-term-plan.md`](distribution-short-term-plan.md)): the
 packages are attested GitHub release assets, which Conditor installs into the
 repository's local NuGet feed.
@@ -308,6 +310,54 @@ write offline uses `ReadOnlyWhenOffline` and gets a read-only degraded mode.
 
 The queue holds operations, not records. Reads always go to GitHub, which
 stays authoritative (ARCA-OFF-006).
+
+### 5c. Only the provider confirms a write (from 0.6.0, breaking)
+
+0.6.0 makes "saved" unforgeable outside Arca (ARCA-OFF-009,
+DF-ARCA-2026-0014). An entry becomes `Synchronized` only when a provider
+accepted that entry's own operation. The compiler enforces it, so an
+application cannot mark unsaved work as persisted, by design or by accident:
+
+- `EntryState` is opaque. Read it with its patterns, which keep the 0.5
+  syntax: `match entry.State with EntryState.Synchronized token -> ... |
+  EntryState.Pending -> ...`. `EntryState.isSynchronized` and
+  `EntryState.name` (`"pending"`, `"in-flight"`, ...) cover the common
+  checks. No application code can construct a state, so
+  `entry.State = EntryState.Pending` no longer compiles; match the pattern
+  instead.
+- `QueueEntry` and `OfflineQueue` are read-only. `entry.Sequence`,
+  `entry.Operation`, `entry.EnqueuedAt`, `entry.State`, `queue.Policy`,
+  `queue.NextSequence` and `queue.Entries` read as before, but
+  `{ entry with State = ... }` and `{ queue with Entries = ... }` do not
+  compile. Change the queue only with its commands: `enqueue`, `enqueueFor`,
+  `markInFlight`, `recordResult`, `recordReconciliation`, `recover`,
+  `revise`, `abandon`, `prune`, the new `discardUnsent`, or `OfflineSync`.
+  `OfflineQueue.decode` reads a queue Arca persisted.
+- `CommitReceipt` is minted only by a provider. Read `receipt.ChangeToken`,
+  `receipt.Revisions` and the new `receipt.IdempotencyKey`, but do not build
+  one. A test fake that returned `Ok { ChangeToken = ...; Revisions = ... }`
+  now commits through `InMemoryStore().Provider` (or returns a failure)
+  instead.
+- `recordResult` and `recordReconciliation` accept a receipt only for the
+  entry carrying the receipt's idempotency key. Another operation's receipt
+  is `QueueError.ReceiptMismatch`; a result for an entry no longer in flight
+  (a stale or out-of-order acknowledgment) stays `QueueError.NotApplicable`.
+  Neither changes the queue. Add the new case to any exhaustive match on
+  `QueueError`.
+
+What the types cannot prove, the application still must not do:
+
+- **Do not edit persisted queue text.** `decode` trusts the text Arca wrote;
+  a hand-edited `"synchronized"` state in localStorage or IndexedDB decodes
+  as synchronized. Arca refuses queue text it cannot parse, but it cannot
+  tell a well-formed edit from its own writing: browser storage is not
+  tamper-proof.
+- **Do not route a queued operation to a different provider.** A receipt
+  is bound to the operation's idempotency key, not to the provider instance.
+  Committing the same operation to a scratch provider (for example
+  `InMemoryStore` in production code) yields a genuine receipt for that
+  key, which the queue accepts. Send through `OfflineSync` with the
+  provider for the queue's namespace.
 
 ### 5a. The IndexedDB queue (`EchelonFoundry.Arca.Limen`, from 0.3.0)
 

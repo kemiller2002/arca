@@ -4,7 +4,7 @@ title: Arca shared storage requirements
 status: draft
 version: 0.4.0
 created: 2026-10-08
-updated: 2026-10-09
+updated: 2026-10-28
 owners:
   - arca
 related_documents:
@@ -74,6 +74,16 @@ provenance:
         model: unknown
         runtime: claude-code
       reason: "Add ARCA-OFF-007, sign-out matches accounts by a stable id (WI-0029)"
+    EXE-20261028T005603298Z-4cba0be1:
+      operations: [modified]
+      at: 2026-10-28T01:12:34.000Z
+      actor:
+        kind: agent
+        id: anthropic/claude-code
+        provider: anthropic
+        model: unknown
+        runtime: claude-code
+      reason: "Add ARCA-OFF-009, only the provider confirms a write (WI-0036)"
 ---
 
 # Arca shared storage requirements
@@ -422,6 +432,18 @@ partition is written, or none is. Its order, contents, evictions and
 diagnostics MUST be those of saving each partition in turn. *Sources: arca#38;
 Chrona WI-0039 and WI-0077 profiling (about 30 partitions at about 40 ms
 each per report refresh).*
+
+**ARCA-OFF-009** Only the provider MAY confirm a write. Application code MUST NOT
+be able to construct a synchronized entry state or a commit receipt, nor set
+an entry's state or a queue's entries directly: the types MUST make it
+unrepresentable, proven by compile-failure tests. An entry MUST become
+synchronized only through the queue's commands, from a receipt a provider
+issued for that entry's operation while it was in flight or outcome-unknown.
+A receipt for another operation, or for an entry no longer awaiting one (a
+stale or out-of-order acknowledgment), MUST be refused without changing the
+queue. *Sources: Echelon Engineering Improvement Initiative, Workstream D
+(owner approval 2026-10-28); indy-init-rehearsal-004 T33 findings DCT-002-B,
+R2-01 (an application marked unsaved work as persisted).*
 
 ## 9. Integrity: storage content is untrusted input (ARCA-INT)
 
