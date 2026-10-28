@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "repository": "arca",
-  "nextSeq": 27,
+  "nextSeq": 37,
   "items": [
     {
       "id": "WI-0001",
@@ -885,6 +885,32 @@
       "attachments": [],
       "createdAt": "2026-10-13T12:55:01.000Z",
       "updatedAt": "2026-10-13T12:55:33.000Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0036",
+      "title": "Persistence safety by construction (EII Workstream D): Synchronized entry states, CommitReceipts and QueueEntry.State unforgeable outside Arca; compile-failure fixtures; application-level queue scenario tests; breaking minor release 0.6.0",
+      "description": "Intake: .praxis/inbox/documents/2026-10-28-EII-D-persistence-safety.md. Owner approval 2026-10-28 for a breaking minor release (DF-ARCA-2026-0014). Delivers ARCA-OFF-009: only the provider may confirm a write.",
+      "tags": [
+        "arca",
+        "offline",
+        "integrity",
+        "eii"
+      ],
+      "priority": "high",
+      "status": "complete",
+      "attachments": [],
+      "createdAt": "2026-10-28T00:55:53.483Z",
+      "updatedAt": "2026-10-28T01:13:02.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",

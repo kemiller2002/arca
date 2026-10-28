@@ -168,7 +168,7 @@ let private truncating () =
 
         let truncate (inner: QueueStore) : QueueStore =
             { Load = inner.Load
-              Save = fun queue -> inner.Save { queue with Entries = queue.Entries |> List.truncate 1 } }
+              Save = fun queue -> inner.Save { queue with entries = queue.Entries |> List.truncate 1 } }
 
         return
             { subject with

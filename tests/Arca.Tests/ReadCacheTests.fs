@@ -4,8 +4,6 @@
 module Arca.Tests.ReadCacheTests
 
 open System
-open System.Diagnostics
-open System.IO
 open Arca
 open Xunit
 open FsCheck
@@ -417,35 +415,14 @@ let ``clearing a signed-out account leaves no entry of it and keeps another acco
 
 [<Fact>]
 let ``a cached token passed as a write's change-token condition does not compile (LCP-085)`` () =
-    let root =
-        match RequirementsTraceability.repositoryRoot (DirectoryInfo AppContext.BaseDirectory) with
-        | Some root -> root
-        | None -> failwith "the repository root (Arca.slnx) was not found"
-
-    let project = Path.Combine(root, "tests", "Arca.CompileFailure", "Arca.CompileFailure.fsproj")
-    let start = ProcessStartInfo("dotnet", $"build \"{project}\" -c Debug -nologo -clp:NoSummary")
-    start.RedirectStandardOutput <- true
-    start.RedirectStandardError <- true
-    start.UseShellExecute <- false
-
-    use build =
-        match Process.Start start with
-        | null -> failwith "dotnet did not start"
-        | started -> started
-
-    let output = build.StandardOutput.ReadToEnd() + build.StandardError.ReadToEnd()
-    build.WaitForExit()
-
-    let errors =
-        output.Split('\n')
-        |> Array.filter (fun line -> line.Contains ": error ")
-        |> Array.map (fun line -> line.Trim())
-        |> Array.distinct
+    let build = CompileFailureBuild.result.Force()
+    let cached = build.Errors |> List.filter (fun error -> error.File = "CachedTokenAsWriteCondition.fs")
 
     Assert.NotEqual(0, build.ExitCode)
-    Assert.True(errors.Length = 1, $"expected exactly one error, got:\n{output}")
-    Assert.Contains("CachedTokenAsWriteCondition.fs(", errors[0])
-    Assert.Contains("FS0001", errors[0])
+    // Exactly one error in the cached-token fixture, and none in its control.
+    Assert.True(cached.Length = 1, $"expected exactly one error in CachedTokenAsWriteCondition.fs, got:\n{build.Output}")
+    Assert.Equal("FS0001", cached.Head.Code)
+    Assert.Equal<string list>([], CompileFailureBuild.codesIn "FreshTokenAsWriteCondition.fs" build)
 
 // ---------------------------------------------------------------------------
 // Batched save (WI-0032, arca#38; ARCA-OFF-008).

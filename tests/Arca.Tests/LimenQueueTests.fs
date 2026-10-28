@@ -552,7 +552,7 @@ let ``outcome-unknown entries are never discarded, whoever signs out (ARCA-OFF-0
 
     let kept, count = QueueSignOut.discardAccount (signingOut alexA) held
     Assert.Equal(2, count)
-    Assert.Equal<EntryState list>([ EntryState.OutcomeUnknown(let (ChangeToken t) = token in t); EntryState.Pending ], kept.Entries |> List.map _.State)
+    Assert.Equal<EntryState list>([ EntryState.outcomeUnknown(let (ChangeToken t) = token in t); EntryState.pending ], kept.Entries |> List.map _.State)
 
 [<Fact>]
 let ``entries queued without an account id match only the legacy identity the caller names (ARCA-OFF-007)`` () =
@@ -577,7 +577,7 @@ let ``a revised entry still matches its account at sign-out, before and after a 
     let queue = own origin "a" |> owned
     let queued, sequence = OfflineQueue.enqueueFor alexA at (operationAs "Alex" "a1") empty |> ok
     let held = queued |> enqueueFor alexB "Alex" "b1"
-    let conflicted = { held with Entries = held.Entries |> List.map (fun entry -> if entry.Sequence = sequence then { entry with State = EntryState.Conflicted [] } else entry) }
+    let conflicted = { held with entries = held.Entries |> List.map (fun entry -> if entry.Sequence = sequence then { entry with state = EntryState.conflicted [] } else entry) }
     let revised = OfflineQueue.revise sequence (operationAs "Alex" "a1-revised") conflicted |> ok
 
     Assert.Equal(1, QueueSignOut.unsentOfAccount (signingOut alexA) revised)

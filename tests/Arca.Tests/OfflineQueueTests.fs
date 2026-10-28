@@ -85,7 +85,7 @@ let ``the queue is plain, inspectable data with keys and expected revisions (ARC
     let queue = enqueueAll [ create "a"; update ]
 
     Assert.Equal<int64 list>([ 1L; 2L ], queue.Entries |> List.map _.Sequence)
-    Assert.Equal<EntryState list>([ EntryState.Pending; EntryState.Pending ], states queue)
+    Assert.Equal<EntryState list>([ EntryState.pending; EntryState.pending ], states queue)
     let second = queue.Entries[1].Operation
     Assert.Equal("offline-u", second.IdempotencyKey)
     Assert.Equal<QueuedChange list>([ QueuedChange.Update("notes/a.json", "{}", "r-1") ], second.Changes)
@@ -116,7 +116,7 @@ let ``a queued namespace condition survives persistence and is enforced when sen
     store.WriteExternally(location, (Namespace.resolve chrona (path "notes/other.json") |> ok).Path, Some "{}")
     let queueStore = MemoryQueueStore()
     let drained = sync store queueStore.Store reloaded
-    Assert.Equal<EntryState list>([ EntryState.Conflicted [] ], states (fst drained))
+    Assert.Equal<EntryState list>([ EntryState.conflicted [] ], states (fst drained))
 
 [<Fact>]
 let ``the account id survives persistence, and a queue without one keeps its earlier text (ARCA-OFF-007)`` () =
@@ -136,7 +136,7 @@ let ``the account id survives persistence, and a queue without one keeps its ear
 let ``revising an entry keeps its account, sequence and enqueue time (ARCA-OFF-007)`` () =
     let account = AccountId.ProviderSubject("github", "583231")
     let queue, sequence = OfflineQueue.enqueueFor account at (create "a") (OfflineQueue.create OfflinePolicy.QueueWrites) |> ok
-    let conflicted = { queue with Entries = queue.Entries |> List.map (fun entry -> { entry with State = EntryState.Conflicted [ "notes/a.json" ] }) }
+    let conflicted = { queue with entries = queue.Entries |> List.map (fun entry -> { entry with state = EntryState.conflicted [ "notes/a.json" ] }) }
     let before = conflicted.Entries.Head
     let revised = OfflineQueue.revise sequence (create "a-revised") conflicted |> ok
     let after = revised.Entries.Head
@@ -144,7 +144,7 @@ let ``revising an entry keeps its account, sequence and enqueue time (ARCA-OFF-0
     Assert.Equal(Some(AccountId.toWire account), after.Operation.AccountId)
     Assert.Equal(before.Sequence, after.Sequence)
     Assert.Equal(before.EnqueuedAt, after.EnqueuedAt)
-    Assert.Equal(EntryState.Pending, after.State)
+    Assert.Equal(EntryState.pending, after.State)
     Assert.Equal("offline-a-revised", after.Operation.IdempotencyKey)
     // And through persistence.
     Assert.Equal(revised, OfflineQueue.encode revised |> ok |> OfflineQueue.decode |> ok)
@@ -175,7 +175,7 @@ let ``an erasure cannot be put into the queue by revising an entry (ARCA-INT-005
         |> ok
 
     let queue, sequence = OfflineQueue.enqueue at (create "a") (OfflineQueue.create OfflinePolicy.QueueWrites) |> ok
-    let conflicted = { queue with Entries = queue.Entries |> List.map (fun entry -> { entry with State = EntryState.Conflicted [] }) }
+    let conflicted = { queue with entries = queue.Entries |> List.map (fun entry -> { entry with state = EntryState.conflicted [] }) }
 
     match OfflineQueue.revise sequence erasure conflicted with
     | Error(QueueError.InvalidOperation _) -> ()
@@ -217,7 +217,7 @@ let ``nothing is sent when the in-flight state cannot be persisted`` () =
     let queue, result = enqueueAll [ create "a" ] |> sync store queueStore.Store
 
     Assert.Equal(SyncStep.Deferred "the queue could not be saved", result)
-    Assert.Equal<EntryState list>([ EntryState.Pending ], states queue)
+    Assert.Equal<EntryState list>([ EntryState.pending ], states queue)
     Assert.Empty(arcaCommits store)
 
 [<Fact>]
@@ -289,10 +289,10 @@ let ``a conflict blocks the entries after it and becomes the application's decis
     let blocked, result = queue |> sync store queueStore.Store
 
     match result with
-    | SyncStep.Blocked entry -> Assert.Equal(EntryState.Conflicted [ "notes/a.json" ], entry.State)
+    | SyncStep.Blocked entry -> Assert.Equal(EntryState.conflicted [ "notes/a.json" ], entry.State)
     | other -> failwith $"expected Blocked, got {other}"
 
-    Assert.Equal(EntryState.Pending, blocked.Entries[1].State)
+    Assert.Equal(EntryState.pending, blocked.Entries[1].State)
     Assert.Equal(1, (arcaCommits store).Length)
     let status = OfflineQueue.status blocked
     Assert.False(status.Synchronized)
@@ -324,7 +324,7 @@ let ``an abandoned entry stays visible until pruned, and unblocks the rest`` () 
     let stale = operationIn chrona "u" [ Change.Update(path "notes/x.json", "{}", Revision "gone") ]
     let blocked, _ = enqueueAll [ stale; create "b" ] |> sync store (MemoryQueueStore().Store)
     let abandoned = OfflineQueue.abandon 1L "superseded" blocked |> ok
-    Assert.Equal(EntryState.Abandoned "superseded", abandoned.Entries.Head.State)
+    Assert.Equal(EntryState.abandoned "superseded", abandoned.Entries.Head.State)
 
     let finished, _ = abandoned |> sync store (MemoryQueueStore().Store)
     Assert.True((OfflineQueue.status finished).Synchronized)
@@ -337,11 +337,11 @@ let ``a rate limit or revoked credential defers without losing anything`` () =
     store.Arrange(InMemoryFault.RateLimited None)
     let queue, result = enqueueAll [ create "a" ] |> sync store (MemoryQueueStore().Store)
     Assert.Equal(SyncStep.Deferred "the provider is unavailable", result)
-    Assert.Equal<EntryState list>([ EntryState.Pending ], states queue)
+    Assert.Equal<EntryState list>([ EntryState.pending ], states queue)
 
     store.Arrange InMemoryFault.CredentialRevoked
     let queue, _ = queue |> sync store (MemoryQueueStore().Store)
-    Assert.Equal<EntryState list>([ EntryState.Pending ], states queue)
+    Assert.Equal<EntryState list>([ EntryState.pending ], states queue)
     Assert.Empty(arcaCommits store)
 
 [<Fact>]
@@ -371,13 +371,13 @@ let ``transitions apply only to the entry and state they name`` () =
 /// Any entry state, with text that needs escaping.
 let stateGen =
     Gen.oneof
-        [ Gen.constant EntryState.Pending
-          Gen.elements [ "t1"; "t2" ] |> Gen.map EntryState.InFlight
-          Gen.elements [ "t3"; "t4" ] |> Gen.map EntryState.Synchronized
-          Gen.elements [ []; [ "notes/a.json" ]; [ "a"; "b/c" ] ] |> Gen.map EntryState.Conflicted
-          Gen.elements [ "t5" ] |> Gen.map EntryState.OutcomeUnknown
-          Gen.elements [ "nope"; "\"quoted\"\n" ] |> Gen.map EntryState.Refused
-          Gen.elements [ "superseded"; "é 😀" ] |> Gen.map EntryState.Abandoned ]
+        [ Gen.constant EntryState.pending
+          Gen.elements [ "t1"; "t2" ] |> Gen.map EntryState.inFlight
+          Gen.elements [ "t3"; "t4" ] |> Gen.map EntryState.synchronized
+          Gen.elements [ []; [ "notes/a.json" ]; [ "a"; "b/c" ] ] |> Gen.map EntryState.conflicted
+          Gen.elements [ "t5" ] |> Gen.map EntryState.outcomeUnknown
+          Gen.elements [ "nope"; "\"quoted\"\n" ] |> Gen.map EntryState.refused
+          Gen.elements [ "superseded"; "é 😀" ] |> Gen.map EntryState.abandoned ]
 
 /// Arbitrary queues of up to six entries in every state, under either policy.
 let queueGen =
@@ -389,8 +389,8 @@ let queueGen =
 
         return
             { queue with
-                Policy = policy
-                Entries = List.map2 (fun entry state -> { entry with State = state }) queue.Entries chosen }
+                policy = policy
+                entries = List.map2 (fun entry state -> { entry with state = state }) queue.Entries chosen }
     }
 
 [<Property>]

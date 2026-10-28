@@ -521,9 +521,7 @@ module GitHubStorage =
                 match beforeBase |> List.tryFind (fun (_, message) -> Commit.carriesKey pending.IdempotencyKey message) with
                 | Some(sha, _) ->
                     return
-                        ReconcileOutcome.Landed
-                            { ChangeToken = ChangeToken sha
-                              Revisions = pending.Revisions }
+                        ReconcileOutcome.Landed(CommitReceipt.mint pending.IdempotencyKey (ChangeToken sha) pending.Revisions)
                 | None when reachedBase -> return ReconcileOutcome.NotLanded
                 | None -> return ReconcileOutcome.StillUnknown pending
         }
@@ -536,9 +534,7 @@ module GitHubStorage =
             match pending.Candidate with
             | Some candidate when candidate = tip ->
                 return
-                    ReconcileOutcome.Landed
-                        { ChangeToken = ChangeToken candidate
-                          Revisions = pending.Revisions }
+                    ReconcileOutcome.Landed(CommitReceipt.mint pending.IdempotencyKey (ChangeToken candidate) pending.Revisions)
             | Some candidate ->
                 let! response = Session.get credential true $"{Api.repositoryPath session.Config}/compare/{candidate}...{tip}"
 
@@ -551,9 +547,7 @@ module GitHubStorage =
                     | "identical"
                     | "ahead" ->
                         return
-                            ReconcileOutcome.Landed
-                                { ChangeToken = ChangeToken candidate
-                                  Revisions = pending.Revisions }
+                            ReconcileOutcome.Landed(CommitReceipt.mint pending.IdempotencyKey (ChangeToken candidate) pending.Revisions)
                     | _ -> return! searchHistory credential tip pending
                 | 404 -> return! searchHistory credential tip pending
                 | _ -> return! unexpected response
@@ -674,8 +668,7 @@ module GitHubStorage =
                     let! published = publish credential commitSha
 
                     let receipt =
-                        { ChangeToken = ChangeToken commitSha
-                          Revisions = revisions }
+                        CommitReceipt.mint operation.Metadata.IdempotencyKey (ChangeToken commitSha) revisions
 
                     let pending =
                         { IdempotencyKey = operation.Metadata.IdempotencyKey

@@ -58,10 +58,42 @@ type Listing =
       Complete: bool }
 
 /// What a committed operation produced: the new change token and the new
-/// revision of every path it touched (None for a deleted path).
+/// revision of every path it touched (None for a deleted path), and the
+/// idempotency key of the operation it confirms.
+///
+/// A receipt is the provider's word that a write was accepted, so only a
+/// provider can mint one (ARCA-OFF-009, DF-ARCA-2026-0014). Its
+/// representation is internal to Arca's first-party assemblies: application
+/// code reads it through `ChangeToken`, `Revisions` and `IdempotencyKey` but
+/// cannot build or copy-and-update one, so it cannot tell the offline queue
+/// that a write landed when it did not.
 type CommitReceipt =
-    { ChangeToken: ChangeToken
-      Revisions: Map<string, Revision option> }
+    internal
+        { token: ChangeToken
+          revisions: Map<string, Revision option>
+          confirms: IdempotencyKey }
+
+    /// The provider's change token after the commit.
+    member this.ChangeToken = this.token
+
+    /// The new revision of every path the commit touched (None for a deleted path).
+    member this.Revisions = this.revisions
+
+    /// The idempotency key of the operation this receipt confirms. The
+    /// offline queue accepts a receipt only for the entry carrying this key.
+    member this.IdempotencyKey = this.confirms
+
+/// Minting receipts: internal to Arca's first-party providers (the in-memory
+/// provider here, and the GitHub adapter through InternalsVisibleTo).
+[<RequireQualifiedAccess>]
+module internal CommitReceipt =
+
+    /// The receipt a provider issues once it accepted the write of the
+    /// operation keyed `key`, producing `token` and `revisions`.
+    let mint (key: IdempotencyKey) (token: ChangeToken) (revisions: Map<string, Revision option>) =
+        { token = token
+          revisions = revisions
+          confirms = key }
 
 /// The obligation an unknown outcome creates (ARCA-OUT-001): the operation
 /// may or may not have landed, and must be reconciled before it is retried.

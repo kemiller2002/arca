@@ -120,30 +120,30 @@ module QueueStoreConformance =
     let private at = DateTimeOffset(2026, 10, 8, 12, 0, 0, TimeSpan.Zero)
 
     /// A queue of `keys` in `ns`, each entry in the matching state.
-    let queueOf (ns: Namespace) (entries: (string * EntryState) list) =
+    let internal queueOf (ns: Namespace) (entries: (string * EntryState) list) =
         let queue =
             entries
             |> List.fold
                 (fun queue (key, _) -> OfflineQueue.enqueue at (operation ns key $"{{\"key\":\"{key}\"}}") queue |> fixture |> fst)
                 (OfflineQueue.create OfflinePolicy.QueueWrites)
 
-        { queue with Entries = List.map2 (fun entry (_, state) -> { entry with State = state }) queue.Entries entries }
+        { queue with entries = List.map2 (fun entry (_, state) -> { entry with state = state }) queue.Entries entries }
 
     /// Queues that between them hold every entry state, both policies, an
     /// empty queue and text that needs escaping.
     let samples (ns: Namespace) =
         [ OfflineQueue.create OfflinePolicy.QueueWrites
           OfflineQueue.create OfflinePolicy.ReadOnlyWhenOffline
-          queueOf ns [ "a", EntryState.Pending ]
+          queueOf ns [ "a", EntryState.pending ]
           queueOf
               ns
-              [ "s", EntryState.Synchronized "t-1"
-                "f", EntryState.InFlight "t-1"
-                "u", EntryState.OutcomeUnknown "t-2"
-                "c", EntryState.Conflicted [ "notes/c.json"; "x/\"y\"" ]
-                "r", EntryState.Refused "refused \"quoted\"\n"
-                "x", EntryState.Abandoned "é 😀"
-                "p", EntryState.Pending ] ]
+              [ "s", EntryState.synchronized "t-1"
+                "f", EntryState.inFlight "t-1"
+                "u", EntryState.outcomeUnknown "t-2"
+                "c", EntryState.conflicted [ "notes/c.json"; "x/\"y\"" ]
+                "r", EntryState.refused "refused \"quoted\"\n"
+                "x", EntryState.abandoned "é 😀"
+                "p", EntryState.pending ] ]
 
     let private failure =
         function
@@ -207,7 +207,7 @@ module QueueStoreConformance =
                 |> fixture
 
             let conflicted =
-                { queued with Entries = queued.Entries |> List.map (fun entry -> { entry with State = EntryState.Conflicted [ "notes/r1.json" ] }) }
+                { queued with entries = queued.Entries |> List.map (fun entry -> { entry with state = EntryState.conflicted [ "notes/r1.json" ] }) }
 
             match OfflineQueue.revise sequence (operation subject.Namespace "r2" "{\"key\":\"r2\"}") conflicted with
             | Error error -> return ConformanceOutcome.Failed $"revise: {error}"
@@ -249,8 +249,8 @@ module QueueStoreConformance =
 
     let private replaces (subject: QueueStoreSubject) =
         async {
-            let first = queueOf subject.Namespace [ "a", EntryState.Pending; "b", EntryState.Pending ]
-            let second = { first with Entries = first.Entries |> List.tail }
+            let first = queueOf subject.Namespace [ "a", EntryState.pending; "b", EntryState.pending ]
+            let second = { first with entries = first.Entries |> List.tail }
 
             match! subject.Store.Save first with
             | Error error -> return ConformanceOutcome.Failed $"first save: {failure error}"
@@ -267,7 +267,7 @@ module QueueStoreConformance =
 
     let private overBudget (subject: QueueStoreSubject) =
         async {
-            let kept = queueOf subject.Namespace [ "kept", EntryState.Pending ]
+            let kept = queueOf subject.Namespace [ "kept", EntryState.pending ]
             let large = String('x', int (min subject.Budget (int64 Int32.MaxValue - 1L)) + 1)
 
             let tooLarge =
@@ -295,7 +295,7 @@ module QueueStoreConformance =
                   Location = subject.Namespace.Location }
             |> fixture
 
-        let text = queueOf other [ "theirs", EntryState.Pending ] |> OfflineQueue.encode |> fixture
+        let text = queueOf other [ "theirs", EntryState.pending ] |> OfflineQueue.encode |> fixture
 
         arranged
             subject
@@ -322,7 +322,7 @@ module QueueStoreConformance =
             QueueStoreFault.Unavailable
             (async {
                 let! load = subject.Store.Load()
-                let! save = subject.Store.Save(queueOf subject.Namespace [ "a", EntryState.Pending ])
+                let! save = subject.Store.Save(queueOf subject.Namespace [ "a", EntryState.pending ])
 
                 match load, save with
                 | Error QueueStoreFailure.Unavailable, Error QueueStoreFailure.Unavailable -> return ConformanceOutcome.Passed
@@ -332,12 +332,12 @@ module QueueStoreConformance =
 
     let private credentialFree (subject: QueueStoreSubject) =
         async {
-            let queue = queueOf subject.Namespace [ "a", EntryState.Pending ]
+            let queue = queueOf subject.Namespace [ "a", EntryState.pending ]
             let token = "ghp_" + String('A', 36)
 
             let leaking =
                 { queue with
-                    Entries = queue.Entries |> List.map (fun entry -> { entry with Operation = { entry.Operation with Summary = token } }) }
+                    entries = queue.Entries |> List.map (fun entry -> { entry with operation = { entry.Operation with Summary = token } }) }
 
             match! subject.Store.Save leaking with
             | Error(QueueStoreFailure.Corrupt _) ->

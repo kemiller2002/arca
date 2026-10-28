@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-13T12:55:33.000Z",
+  "updatedAt": "2026-10-28T01:13:02.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -1525,6 +1525,64 @@
         }
       },
       "completedAt": "2026-10-13T12:55:33.000Z"
+    },
+    {
+      "id": "WI-0036",
+      "type": "task",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "src/Arca.Core/OfflineQueue.fs"
+        },
+        {
+          "type": "implementation",
+          "path": "src/Arca.Core/Storage.fs"
+        },
+        {
+          "type": "tests",
+          "path": "tests/Arca.Tests/PersistenceSafetyTests.fs"
+        },
+        {
+          "type": "tests",
+          "path": "tests/Arca.CompileFailure/Arca.CompileFailure.fsproj"
+        },
+        {
+          "type": "decision",
+          "path": "research/decisions/DF-ARCA-2026-0014--only-the-provider-confirms-a-write.md"
+        },
+        {
+          "type": "documentation",
+          "path": "CHANGELOG.md"
+        }
+      ],
+      "updatedAt": "2026-10-28T01:13:02.000Z",
+      "telemetryExecutionIds": [
+        "EXE-20261028T005603298Z-4cba0be1"
+      ],
+      "latestCheckpoint": {
+        "id": "f56ee2153b98113073bc2f17",
+        "recordedAt": "2026-10-28T01:13:01.000Z",
+        "executionId": "EXE-20261028T005603298Z-4cba0be1",
+        "repository": "arca",
+        "branch": "claude/eii-d-persistence-safety",
+        "commit": "0b2a69822ceefdcb4108898ae14401ba61702e2b",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca.git"
+        },
+        "remoteBranch": "claude/eii-d-persistence-safety",
+        "remoteCommit": "0b2a69822ceefdcb4108898ae14401ba61702e2b",
+        "summary": "Implementation, fixtures, scenario tests, docs, DR and 0.6.0 bump committed and pushed (380/380 tests pass)",
+        "nextAction": "Complete WI-0036, rebuild registries, validate, commit Praxis state; owner opens the PR",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-10-28T01:13:02.000Z",
+      "conclusion": "Synchronized states, receipts and queue records are unforgeable outside Arca; 0.6.0 breaking minor; 380/380 tests pass"
     }
   ]
 }
