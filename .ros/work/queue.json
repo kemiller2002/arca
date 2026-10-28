@@ -907,10 +907,10 @@
         "eii"
       ],
       "priority": "high",
-      "status": "ready",
+      "status": "complete",
       "attachments": [],
       "createdAt": "2026-10-28T00:55:53.483Z",
-      "updatedAt": "2026-10-28T01:06:43.000Z",
+      "updatedAt": "2026-10-28T01:13:02.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",
