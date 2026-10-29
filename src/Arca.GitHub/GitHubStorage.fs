@@ -60,6 +60,7 @@ module GitHubStorage =
             match Api.json parse response.Body with
             | Ok value -> Done(Ok value, session)
             | Error(CallFailure.Failed failure) -> Done(Error(Session.failed failure), session)
+            | Error(CallFailure.ServerError(status, _)) -> Done(Error(Session.serverError status), session)
             | Error _ -> Done(Error(StorageFailure.ProviderFailed("AEGIS.GITHUB.INVALID_RESPONSE", false, "unreadable response")), session)
 
     let private unexpected (response: Response) : Op<'a> =
@@ -369,6 +370,7 @@ module GitHubStorage =
         | ResolveError.RepositoryNotFound repository ->
             StorageFailure.ProviderFailed("AEGIS.GITHUB.REPOSITORY_NOT_FOUND", false, $"{repository} was not found or is not visible")
         | ResolveError.Call(CallFailure.Failed failure) -> Session.failed failure
+        | ResolveError.Call(CallFailure.ServerError(status, _)) -> Session.serverError status
         | ResolveError.Call _ -> StorageFailure.ProviderFailed("ARCA.GITHUB.UNKNOWN", true, "identity resolution did not complete")
 
     /// The capability snapshot, resolved once per session and again after a
@@ -463,6 +465,11 @@ module GitHubStorage =
                             | _ -> None
 
                         Ok(Refused(StorageFailure.RateLimited(retryAfter, None))), session
+                    // A server error may follow an applied update: the write may
+                    // have landed, so it is reconciled, never assumed unapplied
+                    // (ARCA-OUT-001; Indy-init RF-F-3, R7-REM-002).
+                    elif status >= 500 then
+                        Ok Unknown, session
                     elif status = 422 && message.Contains "fast forward" then
                         Ok Raced, session
                     elif (status = 422 || status = 403) && (message.Contains "protected branch" || message.Contains "repository rule") then
@@ -485,11 +492,16 @@ module GitHubStorage =
                         ),
                         session
                 // A failure that cannot have changed anything (Limen's network
-                // failure for a mutating request means the browser was offline).
-                | HttpOutcome.Failed _
+                // failure for a mutating request means the browser was offline;
+                // an abort happens before the request is sent).
+                | HttpOutcome.Failed HttpFailure.Network
+                | HttpOutcome.Failed HttpFailure.Aborted
                 | HttpOutcome.Cancelled ->
                     Ok(Refused(StorageFailure.ProviderFailed("AEGIS.NETWORK.UNAVAILABLE", true, "GitHub could not be reached; nothing was changed"))),
                     session
+                // A response arrived but could not be read (or was too large): the
+                // request reached GitHub and may have been applied.
+                | HttpOutcome.Failed _
                 | HttpOutcome.OutcomeUnknown _ -> Ok Unknown, session)
 
     /// Commits whose message carries the key, walking back from the head to
@@ -687,10 +699,16 @@ module GitHubStorage =
 
                         match settled with
                         | Ok(ReconcileOutcome.Landed landed) -> return landed
-                        | Ok ReconcileOutcome.NotLanded when number < session.Policy.MaxCommitAttempts ->
-                            return! attempt credential addresses (number + 1)
+                        // Not landed after an uncertain answer: one lost answer is
+                        // resent once at once. A second means GitHub or the network
+                        // is failing, and resending again is a burst (five ref
+                        // updates in seconds): fail transiently and let the schedule
+                        // back off (Indy-init R7-REM-002, re-review N1).
+                        | Ok ReconcileOutcome.NotLanded when number = 1 -> return! attempt credential addresses (number + 1)
+                        | Ok ReconcileOutcome.NotLanded ->
+                            return!
+                                Op.fail (StorageFailure.ProviderFailed("ARCA.GITHUB.NOT_LANDED", true, "the write did not land; it is sent again later"))
                         | Ok(ReconcileOutcome.StillUnknown obligation) -> return! Op.fail (StorageFailure.OutcomeUnknown obligation)
-                        | Ok ReconcileOutcome.NotLanded
                         | Error _ -> return! Op.fail (StorageFailure.OutcomeUnknown pending)
             }
 

@@ -42,6 +42,11 @@ type CallFailure =
     /// The request may have reached GitHub; its effect is unknown (ARCA-OUT-001).
     | Unknown of UnknownReason
     | Cancelled
+    /// GitHub answered a server error (5xx). Aegis files 502-504 as network
+    /// unavailable and 500 as an invalid response; neither is right for
+    /// retrying, so the status is kept beside Aegis's classification and the
+    /// failure is transient (Session.ServerError; Indy-init R7-REM-002).
+    | ServerError of status: int * failure: GitHubFailure.T
 
 /// A response GitHub sent.
 type Response =
@@ -107,10 +112,11 @@ module Api =
     let unexpected (config: GitHubConfig) (response: Response) =
         let outcome = HttpOutcome.Response(response.Status, response.Headers, response.Body)
 
-        CallFailure.Failed(
+        let failure =
             Faults.ofOutcome (string config.Location.Repository) outcome
             |> Option.defaultValue (GitHubFailure.InvalidResponse $"unexpected status {response.Status}")
-        )
+
+        if response.Status >= 500 then CallFailure.ServerError(response.Status, failure) else CallFailure.Failed failure
 
     /// Reads a JSON body with `read`; a body that is not JSON, or lacks what
     /// `read` needs, is an invalid response, never an exception.

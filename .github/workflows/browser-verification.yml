@@ -13,6 +13,10 @@ name: Browser verification
 # through Limen's store pack: one owner, hand-off at a higher fencing epoch,
 # and a taken-over tab's late save fenced. Every page runs in Chromium and in
 # WebKit (OQ-LIMEN-IDB-006).
+# The multi-tab safety spec (WI-0038, Indy-init R6-D-002) adds: without Web
+# Locks no tab owns the durable queue and nothing is written; seeded random
+# three-tab interleavings lose no acknowledged save; and acknowledged changes
+# survive storage restored into a new context.
 
 on:
   pull_request:

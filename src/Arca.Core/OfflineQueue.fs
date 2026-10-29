@@ -840,6 +840,93 @@ type SyncStep =
     /// The provider or the store failed transiently; try again later.
     | Deferred of reason: string
 
+/// Why a synchronization step stopped short, typed so that the host knows
+/// when, and whether, to try again (ARCA-OFF-010). `SyncSchedule` turns it
+/// into a directive; a host never decides by looping.
+[<RequireQualifiedAccess>]
+type Deferral =
+    /// The provider could not be reached: the device is offline. Nothing was
+    /// sent; wait for the connection.
+    | Offline
+    /// The provider's rate limit is exhausted; its evidence (ARCA-API-003).
+    | RateLimited of retryAfter: TimeSpan option * resetAt: int64 option
+    /// Trying later may succeed: a provider failure marked transient, an
+    /// outcome not yet settled, or a local queue save that failed.
+    | Transient
+    /// No credential is available. Retrying cannot help until the
+    /// application supplies one.
+    | AwaitingCredential
+    /// Retrying cannot help: the provider refused, or failed permanently.
+    | Permanent
+
+/// Classifying storage failures as deferrals.
+[<RequireQualifiedAccess>]
+module Deferral =
+
+    /// Aegis's fault code for a provider that could not be reached.
+    [<Literal>]
+    let NetworkUnavailable = "AEGIS.NETWORK.UNAVAILABLE"
+
+    /// The deferral a failure calls for. Only the network fault means
+    /// offline; only a missing credential waits for one; a transient
+    /// provider failure, an unknown outcome and stale tokens may succeed
+    /// later; every other refusal or failure is permanent.
+    let ofFailure (failure: StorageFailure) =
+        match failure with
+        | StorageFailure.ProviderFailed(code, _, _) when code = NetworkUnavailable -> Deferral.Offline
+        | StorageFailure.RateLimited(retryAfter, resetAt) -> Deferral.RateLimited(retryAfter, resetAt)
+        | StorageFailure.Refused(WriteRefusal.CredentialUnavailable _) -> Deferral.AwaitingCredential
+        | StorageFailure.ProviderFailed(_, true, _)
+        | StorageFailure.OutcomeUnknown _
+        | StorageFailure.Conflicted _
+        | StorageFailure.StaleChangeToken _
+        | StorageFailure.StaleNamespaceToken _ -> Deferral.Transient
+        | StorageFailure.ProviderFailed(_, false, _)
+        | StorageFailure.Refused _
+        | StorageFailure.ObjectTooLarge _
+        | StorageFailure.WrongLocation _
+        | StorageFailure.IntegrityRefused _ -> Deferral.Permanent
+
+    /// The stored name: `offline`, `rate-limited`, `transient`,
+    /// `awaiting-credential` or `permanent`.
+    let name (deferral: Deferral) =
+        match deferral with
+        | Deferral.Offline -> "offline"
+        | Deferral.RateLimited _ -> "rate-limited"
+        | Deferral.Transient -> "transient"
+        | Deferral.AwaitingCredential -> "awaiting-credential"
+        | Deferral.Permanent -> "permanent"
+
+    /// True when only the application can unblock it: never retried
+    /// automatically.
+    let needsApplication (deferral: Deferral) =
+        match deferral with
+        | Deferral.AwaitingCredential
+        | Deferral.Permanent -> true
+        | Deferral.Offline
+        | Deferral.RateLimited _
+        | Deferral.Transient -> false
+
+/// What one synchronization attempt did: `SyncStep` with the deferral typed
+/// (ARCA-OFF-010).
+[<RequireQualifiedAccess>]
+type SyncAttempt =
+    | Idle
+    | Blocked of QueueEntry
+    | Progressed of QueueEntry
+    | Deferred of deferral: Deferral * reason: string
+
+[<RequireQualifiedAccess>]
+module SyncAttempt =
+
+    /// The untyped step, with the same reason text.
+    let toStep (attempt: SyncAttempt) =
+        match attempt with
+        | SyncAttempt.Idle -> SyncStep.Idle
+        | SyncAttempt.Blocked entry -> SyncStep.Blocked entry
+        | SyncAttempt.Progressed entry -> SyncStep.Progressed entry
+        | SyncAttempt.Deferred(_, reason) -> SyncStep.Deferred reason
+
 /// Synchronizes the queue with a provider, one write-ahead step at a time
 /// (ARCA-OFF-004): the entry is persisted as in flight before it is sent,
 /// and an unknown outcome is reconciled before anything else is sent.
@@ -853,79 +940,100 @@ module OfflineSync =
             | Error failure -> return Error failure
         }
 
-    /// Advances the next entry by one step and persists the result.
-    let step (provider: StorageProvider) (store: QueueStore) (ns: Namespace) (queue: OfflineQueue) : Async<OfflineQueue * SyncStep> =
+    let private transient reason = SyncAttempt.Deferred(Deferral.Transient, reason)
+
+    /// Advances the next entry by one step, persists the result and says,
+    /// typed, why it stopped short (ARCA-OFF-010). Offline, the provider's
+    /// change token cannot be read, so nothing is committed.
+    let attempt (provider: StorageProvider) (store: QueueStore) (ns: Namespace) (queue: OfflineQueue) : Async<OfflineQueue * SyncAttempt> =
         async {
             match OfflineQueue.next queue with
-            | None -> return queue, SyncStep.Idle
+            | None -> return queue, SyncAttempt.Idle
             | Some entry ->
                 match entry.State, OfflineQueue.operationOf ns entry.Operation with
-                | (EntryState.Conflicted _ | EntryState.Refused _), _ -> return queue, SyncStep.Blocked entry
+                | (EntryState.Conflicted _ | EntryState.Refused _), _ -> return queue, SyncAttempt.Blocked entry
                 | _, Error _ ->
                     let refused =
                         { entry with state = EntryState.refused "the queued operation no longer validates" }
 
                     let queue = { queue with entries = queue.Entries |> List.map (fun e -> if e.Sequence = entry.Sequence then refused else e) }
                     let! _ = persist store queue
-                    return queue, SyncStep.Blocked refused
+                    return queue, SyncAttempt.Blocked refused
                 | (EntryState.OutcomeUnknown _ | EntryState.InFlight _), Ok operation ->
                     let queue = OfflineQueue.recover queue
                     let entry = OfflineQueue.next queue |> Option.get
 
                     match OfflineQueue.pendingOf entry with
-                    | None -> return queue, SyncStep.Deferred "no reconciliation obligation"
+                    | None -> return queue, transient "no reconciliation obligation"
                     | Some pending ->
                         match! provider.Reconcile operation.Namespace pending with
-                        | Error _ -> return queue, SyncStep.Deferred "reconciliation did not complete"
-                        | Ok(ReconcileOutcome.StillUnknown _) -> return queue, SyncStep.Deferred "the outcome is still unknown"
+                        | Error failure -> return queue, SyncAttempt.Deferred(Deferral.ofFailure failure, "reconciliation did not complete")
+                        | Ok(ReconcileOutcome.StillUnknown _) -> return queue, transient "the outcome is still unknown"
                         | Ok outcome ->
                             match OfflineQueue.recordReconciliation entry.Sequence outcome queue with
-                            | Error _ -> return queue, SyncStep.Deferred "the reconciliation could not be recorded"
+                            | Error _ -> return queue, transient "the reconciliation could not be recorded"
                             | Ok next ->
                                 match! persist store next with
-                                | Error _ -> return queue, SyncStep.Deferred "the queue could not be saved"
-                                | Ok saved -> return saved, SyncStep.Progressed(saved.Entries |> List.find (fun e -> e.Sequence = entry.Sequence))
+                                | Error _ -> return queue, transient "the queue could not be saved"
+                                | Ok saved -> return saved, SyncAttempt.Progressed(saved.Entries |> List.find (fun e -> e.Sequence = entry.Sequence))
                 | _, Ok operation ->
                     match! provider.ChangeToken operation.Namespace with
-                    | Error _ -> return queue, SyncStep.Deferred "the provider is unavailable"
+                    | Error failure -> return queue, SyncAttempt.Deferred(Deferral.ofFailure failure, "the provider is unavailable")
                     | Ok baseToken ->
                         match OfflineQueue.markInFlight entry.Sequence baseToken queue with
-                        | Error _ -> return queue, SyncStep.Deferred "the entry is not pending"
+                        | Error _ -> return queue, transient "the entry is not pending"
                         | Ok inFlight ->
                             // Write-ahead: the in-flight state is durable before sending.
                             match! persist store inFlight with
-                            | Error _ -> return queue, SyncStep.Deferred "the queue could not be saved"
+                            | Error _ -> return queue, transient "the queue could not be saved"
                             | Ok inFlight ->
                                 let! result = provider.Commit operation
 
                                 match OfflineQueue.recordResult entry.Sequence result inFlight with
-                                | Error _ -> return inFlight, SyncStep.Deferred "the result could not be recorded"
+                                | Error _ -> return inFlight, transient "the result could not be recorded"
                                 | Ok next ->
                                     match! persist store next with
-                                    | Error _ -> return next, SyncStep.Deferred "the queue could not be saved"
+                                    | Error _ -> return next, transient "the queue could not be saved"
                                     | Ok saved ->
                                         let sent = saved.Entries |> List.find (fun e -> e.Sequence = entry.Sequence)
 
-                                        match sent.State with
-                                        // Nothing was applied; the provider asked to try later.
-                                        | EntryState.Pending -> return saved, SyncStep.Deferred "the provider is unavailable for now"
-                                        | EntryState.Conflicted _
-                                        | EntryState.Refused _ -> return saved, SyncStep.Blocked sent
-                                        | _ -> return saved, SyncStep.Progressed sent
+                                        match sent.State, result with
+                                        // Nothing was applied; the failure says when to try again.
+                                        | EntryState.Pending, Error failure ->
+                                            return saved, SyncAttempt.Deferred(Deferral.ofFailure failure, "the provider is unavailable for now")
+                                        | EntryState.Pending, Ok _ -> return saved, transient "the provider is unavailable for now"
+                                        | EntryState.Conflicted _, _
+                                        | EntryState.Refused _, _ -> return saved, SyncAttempt.Blocked sent
+                                        | _ -> return saved, SyncAttempt.Progressed sent
         }
 
-    /// Steps until the queue is idle, blocked or deferred, at most `limit` steps.
-    let run (provider: StorageProvider) (store: QueueStore) (ns: Namespace) (limit: int) (queue: OfflineQueue) =
+    /// Advances the next entry by one step and persists the result.
+    let step (provider: StorageProvider) (store: QueueStore) (ns: Namespace) (queue: OfflineQueue) : Async<OfflineQueue * SyncStep> =
+        async {
+            let! queue, result = attempt provider store ns queue
+            return queue, SyncAttempt.toStep result
+        }
+
+    /// Attempts until the queue is idle, blocked or deferred, at most `limit`
+    /// attempts. Hitting the limit is a transient deferral.
+    let drive (provider: StorageProvider) (store: QueueStore) (ns: Namespace) (limit: int) (queue: OfflineQueue) =
         let rec loop remaining queue =
             async {
                 if remaining = 0 then
-                    return queue, SyncStep.Deferred "step limit reached"
+                    return queue, transient "step limit reached"
                 else
-                    let! next, result = step provider store ns queue
+                    let! next, result = attempt provider store ns queue
 
                     match result with
-                    | SyncStep.Progressed _ -> return! loop (remaining - 1) next
+                    | SyncAttempt.Progressed _ -> return! loop (remaining - 1) next
                     | other -> return next, other
             }
 
         loop limit queue
+
+    /// Steps until the queue is idle, blocked or deferred, at most `limit` steps.
+    let run (provider: StorageProvider) (store: QueueStore) (ns: Namespace) (limit: int) (queue: OfflineQueue) =
+        async {
+            let! queue, result = drive provider store ns limit queue
+            return queue, SyncAttempt.toStep result
+        }

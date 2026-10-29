@@ -9,6 +9,71 @@ release may change the API; pin an exact version.
 
 ## [Unreleased]
 
+Bounded synchronization scheduling (ARCA-OFF-010, WI-0037, R7-REM-002).
+Rehearsal 6 (R6-D-003) sent one offline change as 151 POSTs in 60 s: a
+commit aborted while `navigator.onLine` stayed true is an unknown outcome,
+reconciliation finds it not landed, and a host that re-runs synchronization
+on every result sends it again at once. Arca now says when to try again.
+Additive: `OfflineSync.step` and `run` keep their results and reason text.
+
+### Added
+
+- `Deferral` and `Deferral.ofFailure`: why an attempt stopped short, typed
+  (offline, rate limited, transient, awaiting a credential, permanent).
+- `SyncAttempt`, `OfflineSync.attempt` and `OfflineSync.drive`: `step` and
+  `run` with the deferral typed.
+- `RetryPolicy` (validated: a policy that could spin is refused),
+  `SyncSchedule` (pure transitions over `Changed`, `Started`, `Finished`,
+  `ConnectivityChanged`; `isDue`, `wakeAt`) and `SaveState.ofQueue`, the
+  state to show a person, confirmed only when the queue is synchronized.
+
+### Fixed (independent review of WI-0037)
+
+- GitHub 5xx answers were classified by Aegis as network unavailable
+  (502–504) or as a permanent invalid response (500): a server outage read
+  as "waiting for the connection", and one 500 was never retried. A 5xx read
+  is now `ARCA.GITHUB.SERVER_ERROR`, transient. A 5xx to the ref update, and
+  a failed response other than a network failure (unreadable or aborted in
+  flight), is an unknown outcome reconciled by idempotency key, never
+  assumed unapplied (ARCA-OUT-001).
+- `ConnectivityChanged` acts only on a change: a host re-reporting `online`
+  (focus, visibility, polling) reset the backoff each time.
+- `SyncEvent.Resolved` (added) is the application resolving what waits for
+  it; an edit (`Changed`) no longer retries a revoked credential, refusal or
+  conflict.
+- `SaveState` shows waiting-for-connection, not checking-outcome, while
+  offline with an unsettled outcome.
+- Re-review: a 5xx while resolving identity (`/user`, the repository, its
+  rules) is transient too, through `CallFailure.ServerError(status, aegis)`,
+  which keeps Aegis's classification beside the status (a code-level
+  deviation from ARCA-ARCH-007, recorded in `Session.ServerError`).
+- Re-review: after an uncertain ref update that reconciles as not landed, a
+  commit resends once at once; a second time it fails transiently and the
+  schedule backs off, instead of up to five ref updates in seconds.
+- Re-review: `SyncSchedule` keeps what the host reported apart from what
+  attempts found. Only a change of the report acts, so re-reported `online`
+  cannot reset the backoff after a network failure; any answer from the
+  provider marks the device online, so the queue drains without an `online`
+  event. `Resolved` is documented as one attempt per application act.
+- Third review: a resend that reconciled as not landed fails as
+  `ARCA.GITHUB.NOT_LANDED` (not a server error); only results the provider
+  answered mark the device online. Known volume: when every ref update fails
+  (a 5xx or a lost answer), the first minute carries up to 36 write requests
+  (12 ref updates over 6 backed-off attempts), decaying after (48 in 5 min);
+  Rehearsal 6 sent 151 in one minute.
+- Not changed: with `QueueOptions.standard` and no Web Locks, `LimenQueue`
+  opens a per-tab memory-only queue (no cross-tab loss, but unsent changes
+  do not survive closing the tab) and `SaveState` does not show the
+  durability mode; read `OwnedQueue.Mode` and say so, or leave `MemoryOnly`
+  out of the order to fail closed.
+
+### Fixed
+
+- A permanent refusal while reading the change token (for example a revoked
+  credential) was reported as an untyped deferral, so hosts retried it
+  forever. It is now `Deferral.AwaitingCredential` or `Deferral.Permanent`,
+  and the schedule waits for the application.
+
 ## [0.6.0] — 2026-10-28
 
 A **breaking** minor release (DF-ARCA-2026-0014; owner approval 2026-10-28,
