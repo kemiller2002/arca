@@ -55,6 +55,12 @@ Additive: `OfflineSync.step` and `run` keep their results and reason text.
   cannot reset the backoff after a network failure; any answer from the
   provider marks the device online, so the queue drains without an `online`
   event. `Resolved` is documented as one attempt per application act.
+- Third review: a resend that reconciled as not landed fails as
+  `ARCA.GITHUB.NOT_LANDED` (not a server error); only results the provider
+  answered mark the device online. Known volume: when every ref update fails
+  (a 5xx or a lost answer), the first minute carries up to 36 write requests
+  (12 ref updates over 6 backed-off attempts), decaying after (48 in 5 min);
+  Rehearsal 6 sent 151 in one minute.
 - Not changed: with `QueueOptions.standard` and no Web Locks, `LimenQueue`
   opens a per-tab memory-only queue (no cross-tab loss, but unsent changes
   do not survive closing the tab) and `SaveState` does not show the

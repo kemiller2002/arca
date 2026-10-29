@@ -707,7 +707,7 @@ module GitHubStorage =
                         | Ok ReconcileOutcome.NotLanded when number = 1 -> return! attempt credential addresses (number + 1)
                         | Ok ReconcileOutcome.NotLanded ->
                             return!
-                                Op.fail (StorageFailure.ProviderFailed(Session.ServerError, true, "the write did not land; it is sent again later"))
+                                Op.fail (StorageFailure.ProviderFailed("ARCA.GITHUB.NOT_LANDED", true, "the write did not land; it is sent again later"))
                         | Ok(ReconcileOutcome.StillUnknown obligation) -> return! Op.fail (StorageFailure.OutcomeUnknown obligation)
                         | Error _ -> return! Op.fail (StorageFailure.OutcomeUnknown pending)
             }

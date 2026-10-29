@@ -199,12 +199,17 @@ module SyncSchedule =
         | Deferral.Permanent -> SyncDirective.AwaitApplication
 
     let private finished (now: DateTimeOffset) (sample: float) (attempt: SyncAttempt) (schedule: SyncSchedule) =
-        // Anything but a network failure is an answer from the provider: the
-        // device is online, whatever the host last reported (re-review N2).
+        // An answer from the provider means the device is online, whatever
+        // the host last reported (re-review N2). Only results the provider
+        // answered count: an idle or blocked queue, or a transient failure
+        // that may be local (a queue save), prove nothing (re-review L3).
         let reached =
             match attempt with
-            | SyncAttempt.Deferred(Deferral.Offline, _) -> schedule.connectivity
-            | _ -> Connectivity.Online
+            | SyncAttempt.Progressed _
+            | SyncAttempt.Deferred((Deferral.RateLimited _ | Deferral.AwaitingCredential | Deferral.Permanent), _) -> Connectivity.Online
+            | SyncAttempt.Idle
+            | SyncAttempt.Blocked _
+            | SyncAttempt.Deferred((Deferral.Offline | Deferral.Transient), _) -> schedule.connectivity
 
         let settled =
             { schedule with
