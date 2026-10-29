@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "repository": "arca",
-  "nextSeq": 39,
+  "nextSeq": 40,
   "items": [
     {
       "id": "WI-0001",
@@ -962,6 +962,30 @@
       "createdAt": "2026-10-29T10:30:00Z",
       "updatedAt": "2026-10-29T10:31:00Z",
       "createdBy": "anthropic/claude-code",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0039",
+      "title": "Release Arca 0.7.0 (bounded sync scheduling ARCA-OFF-010: SyncSchedule, RetryPolicy, SaveState, Deferral, CallFailure.ServerError; arca#47) as attested GitHub release assets",
+      "description": "Owner instruction 2026-10-29: cut the release, then the registry. Version choice in DF-ARCA-2026-0015.",
+      "tags": [
+        "arca",
+        "release"
+      ],
+      "priority": "high",
+      "status": "ready",
+      "attachments": [],
+      "createdAt": "2026-10-29T13:55:10.838Z",
+      "updatedAt": "2026-10-29T13:55:23.000Z",
+      "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",
         "id": "anthropic/claude-code",

@@ -1,9 +1,13 @@
 # Consuming Arca
 
 How an application (Chrona first) takes Arca 0.5.0 and wires it into a Limen
-engine. 0.6.0 (unreleased; WI-0036) changes the offline queue's API so only a
+engine. 0.6.0 (WI-0036) changes the offline queue's API so only a
 provider can confirm a write; see [§5c](#5c-only-the-provider-confirms-a-write-from-060-breaking)
-and the CHANGELOG's migration notes before moving to it. Distribution follows the short-term plan
+and the CHANGELOG's migration notes before moving to it. 0.7.0 (WI-0037,
+WI-0039) adds bounded synchronization scheduling (`SyncSchedule`,
+`RetryPolicy`, `SaveState`, typed `Deferral`); see the CHANGELOG. Both are
+published as GitHub release assets; until the Registry selects them, the
+steps below install 0.5.0. Distribution follows the short-term plan
 ([`distribution-short-term-plan.md`](distribution-short-term-plan.md)): the
 packages are attested GitHub release assets, which Conditor installs into the
 repository's local NuGet feed.
