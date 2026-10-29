@@ -932,10 +932,10 @@
         "r7-remediation"
       ],
       "priority": "high",
-      "status": "ready",
+      "status": "complete",
       "attachments": [],
       "createdAt": "2026-10-29T10:00:00Z",
-      "updatedAt": "2026-10-29T10:04:00Z",
+      "updatedAt": "2026-10-29T18:55:50.000Z",
       "createdBy": "anthropic/claude-code",
       "createdByActor": {
         "kind": "agent",
@@ -957,10 +957,10 @@
         "r7-remediation"
       ],
       "priority": "high",
-      "status": "ready",
+      "status": "complete",
       "attachments": [],
       "createdAt": "2026-10-29T10:30:00Z",
-      "updatedAt": "2026-10-29T10:31:00Z",
+      "updatedAt": "2026-10-29T18:55:50.000Z",
       "createdBy": "anthropic/claude-code",
       "createdByActor": {
         "kind": "agent",
@@ -981,10 +981,10 @@
         "release"
       ],
       "priority": "high",
-      "status": "ready",
+      "status": "complete",
       "attachments": [],
       "createdAt": "2026-10-29T13:55:10.838Z",
-      "updatedAt": "2026-10-29T13:55:23.000Z",
+      "updatedAt": "2026-10-29T18:55:50.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",
