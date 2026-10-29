@@ -624,5 +624,56 @@
     "title": "Only the provider confirms a write; synchronized entry states, commit receipts and queue entries are unforgeable outside Arca, in a breaking 0.6.0 minor release",
     "updated": "2026-10-28",
     "version": "1.0.0"
+  },
+  {
+    "created": "2026-10-29",
+    "id": "DF-ARCA-2026-0015",
+    "owners": [
+      "arca"
+    ],
+    "path": "research/decisions/DF-ARCA-2026-0015--release-0-7-0-is-a-minor-release.md",
+    "provenance": {
+      "contributions": {
+        "EXE-20261029T135524249Z-054f4d84": {
+          "actor": {
+            "id": "anthropic/claude-code",
+            "kind": "agent",
+            "model": "unknown",
+            "provider": "anthropic",
+            "runtime": "claude-code"
+          },
+          "at": "2026-10-29T13:56:00.000Z",
+          "operations": [
+            "created"
+          ],
+          "reason": "Version choice for the 0.7.0 release (WI-0039, arca#47)"
+        }
+      }
+    },
+    "related_documents": [
+      "CHANGELOG.md",
+      "Directory.Build.props",
+      "docs/consuming-arca.md",
+      "docs/requirements/ARCA-STORAGE-REQUIREMENTS.md",
+      "src/Arca.Core/SyncSchedule.fs",
+      "src/Arca.Core/OfflineQueue.fs",
+      "src/Arca.GitHub/Api.fs",
+      "src/Arca.GitHub/Session.fs",
+      "research/decisions/DF-ARCA-2026-0013--release-0-5-0-is-a-minor-release.md",
+      "research/decisions/DF-ARCA-2026-0014--only-the-provider-confirms-a-write.md"
+    ],
+    "review_cycle": "on-trigger",
+    "status": "accepted",
+    "superseded_by": [],
+    "supersedes": [],
+    "tags": [
+      "release",
+      "versioning",
+      "semver",
+      "distribution"
+    ],
+    "title": "The release carrying bounded synchronization scheduling is 0.7.0, a minor release, because it adds public API; its one source-level caveat is the new CallFailure.ServerError case",
+    "updated": "2026-10-29",
+    "version": "1.0.0"
   }
 ]

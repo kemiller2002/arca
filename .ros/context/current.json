@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-29T10:32:00Z",
+  "updatedAt": "2026-10-29T13:55:23.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -1605,6 +1605,37 @@
       "telemetryExecutionIds": [
         "EXE-20261029T092741897Z-74cda00d"
       ]
+    },
+    {
+      "id": "WI-0039",
+      "type": "task",
+      "state": "active",
+      "semanticState": "active",
+      "evidence": [],
+      "updatedAt": "2026-10-29T13:55:23.000Z",
+      "telemetryExecutionIds": [
+        "EXE-20261029T135524249Z-054f4d84"
+      ],
+      "latestCheckpoint": {
+        "id": "9919737017f6476fb3741649",
+        "recordedAt": "2026-10-29T13:57:29.000Z",
+        "executionId": "EXE-20261029T135524249Z-054f4d84",
+        "repository": "arca",
+        "branch": "claude/release-0.7.0",
+        "commit": "93f564c1172ff32b938151940768a2ba1b7c943e",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "claude/release-0.7.0",
+        "remoteCommit": "93f564c1172ff32b938151940768a2ba1b7c943e",
+        "summary": "0.7.0 release change committed and pushed: CHANGELOG, Directory.Build.props, DF-ARCA-2026-0015, consuming-arca intro; local build and 415 tests pass",
+        "nextAction": "Merge the release PR; release.yml publishes v0.7.0 from main; then record it in echelon-registry",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      }
     }
   ]
 }

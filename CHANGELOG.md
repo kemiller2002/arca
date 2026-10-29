@@ -9,6 +9,14 @@ release may change the API; pin an exact version.
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-10-29
+
+A minor release (DF-ARCA-2026-0015; WI-0039). It adds API, and 0.6.0
+code compiles and behaves as before except for the fixes below. The one
+source-level caveat is that `CallFailure` (Arca.GitHub) gains the case
+`ServerError`, so an exhaustive match on it in application code needs that
+case. Built and tested against limen-fsharp 0.9.0, as 0.4.x to 0.6.0 are.
+
 Bounded synchronization scheduling (ARCA-OFF-010, WI-0037, R7-REM-002).
 Rehearsal 6 (R6-D-003) sent one offline change as 151 POSTs in 60 s: a
 commit aborted while `navigator.onLine` stayed true is an unknown outcome,
