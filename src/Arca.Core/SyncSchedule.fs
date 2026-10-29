@@ -90,15 +90,19 @@ type SyncDirective =
     | AwaitConnection of probeAt: DateTimeOffset
     /// Only the application can unblock synchronization: a conflict, a
     /// refused entry, a missing credential or a permanent failure. Never
-    /// retried automatically; the next `Changed` allows one attempt.
+    /// retried automatically, nor on an edit; `Resolved` allows one attempt.
     | AwaitApplication
 
 /// What the host reports to the schedule.
 [<RequireQualifiedAccess>]
 type SyncEvent =
-    /// The application queued, revised or abandoned a change, or supplied a
-    /// credential.
+    /// The application queued another change (an edit). It never shortens
+    /// a backoff and never retries what awaits the application.
     | Changed
+    /// The application resolved what synchronization was waiting for: it
+    /// revised or abandoned a conflicted or refused entry, or supplied a
+    /// credential. It allows one attempt.
+    | Resolved
     /// The host began the attempt the schedule made due.
     | Started
     /// The attempt finished.
@@ -238,28 +242,48 @@ module SyncSchedule =
 
             { settled with directive = afterDeferral now sample failures deferral settled }
 
+    let private retry (now: DateTimeOffset) (schedule: SyncSchedule) =
+        { schedule with
+            failures = 0
+            deferral = None
+            directive = ready now schedule }
+
     let private changed (now: DateTimeOffset) (schedule: SyncSchedule) =
         if schedule.attempting then
             { schedule with changedDuringAttempt = true }
         else
             match schedule.directive with
             // A backoff or a connection wait already holds the change; a new
-            // edit never shortens it (no spinning on keystrokes).
+            // edit never shortens it (no spinning on keystrokes). Nor does an
+            // edit retry what awaits the application: a revoked credential is
+            // not sent again on every keystroke.
+            | SyncDirective.AttemptAt _
+            | SyncDirective.AwaitConnection _
+            | SyncDirective.AttemptNow
+            | SyncDirective.AwaitApplication -> schedule
+            | SyncDirective.Rest -> retry now schedule
+
+    let private resolved (now: DateTimeOffset) (schedule: SyncSchedule) =
+        if schedule.attempting then
+            { schedule with changedDuringAttempt = true }
+        else
+            match schedule.directive with
+            // The application acted: one attempt, no loop.
+            | SyncDirective.AwaitApplication
+            | SyncDirective.Rest -> retry now schedule
             | SyncDirective.AttemptAt _
             | SyncDirective.AwaitConnection _
             | SyncDirective.AttemptNow -> schedule
-            // The application acted: one attempt, no loop.
-            | SyncDirective.AwaitApplication
-            | SyncDirective.Rest ->
-                { schedule with
-                    failures = 0
-                    deferral = None
-                    directive = ready now schedule }
 
     let private connectivityChanged (now: DateTimeOffset) (connectivity: Connectivity) (schedule: SyncSchedule) =
+        let previous = schedule.connectivity
         let schedule = { schedule with connectivity = connectivity }
 
         match connectivity, schedule.directive, schedule.deferral with
+        // Only a change acts: a host that reports `online` again (on focus,
+        // visibility, or by polling navigator.onLine) must not reset the
+        // backoff each time (independent review finding 2).
+        | _ when connectivity = previous -> schedule
         // The connection is back: send at once, backoff forgotten.
         | Connectivity.Online, SyncDirective.AwaitConnection _, _
         | Connectivity.Online, SyncDirective.AttemptAt _, Some Deferral.Transient ->
@@ -277,6 +301,7 @@ module SyncSchedule =
     let apply (now: DateTimeOffset) (sample: float) (event: SyncEvent) (schedule: SyncSchedule) =
         match event with
         | SyncEvent.Changed -> changed now schedule
+        | SyncEvent.Resolved -> resolved now schedule
         | SyncEvent.Started ->
             { schedule with
                 attempting = true
@@ -346,10 +371,13 @@ module SaveState =
             match schedule.Deferral, schedule.Directive with
             | Some Deferral.AwaitingCredential, SyncDirective.AwaitApplication -> SaveState.NeedsCredential
             | Some Deferral.Permanent, SyncDirective.AwaitApplication -> SaveState.FailedPermanently "the provider refused the change"
-            | _ when status.OutcomeUnknown > 0 -> SaveState.CheckingOutcome
+            | _ when schedule.Attempting && status.OutcomeUnknown > 0 -> SaveState.CheckingOutcome
             | _ when schedule.Attempting || status.InFlight > 0 -> SaveState.Sending
+            // Offline comes before an unsettled outcome: nothing can be
+            // checked until the connection returns (review finding 4).
             | _, SyncDirective.AwaitConnection _ -> SaveState.WaitingForConnection
             | _ when schedule.Connectivity = Connectivity.Offline -> SaveState.WaitingForConnection
+            | _ when status.OutcomeUnknown > 0 -> SaveState.CheckingOutcome
             | _, SyncDirective.AttemptAt at -> SaveState.RetryScheduled at
             | _ -> SaveState.SavedOnDevice
 

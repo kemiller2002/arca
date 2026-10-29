@@ -463,6 +463,11 @@ module GitHubStorage =
                             | _ -> None
 
                         Ok(Refused(StorageFailure.RateLimited(retryAfter, None))), session
+                    // A server error may follow an applied update: the write may
+                    // have landed, so it is reconciled, never assumed unapplied
+                    // (ARCA-OUT-001; Indy-init RF-F-3, R7-REM-002).
+                    elif status >= 500 then
+                        Ok Unknown, session
                     elif status = 422 && message.Contains "fast forward" then
                         Ok Raced, session
                     elif (status = 422 || status = 403) && (message.Contains "protected branch" || message.Contains "repository rule") then
@@ -486,10 +491,13 @@ module GitHubStorage =
                         session
                 // A failure that cannot have changed anything (Limen's network
                 // failure for a mutating request means the browser was offline).
-                | HttpOutcome.Failed _
+                | HttpOutcome.Failed HttpFailure.Network
                 | HttpOutcome.Cancelled ->
                     Ok(Refused(StorageFailure.ProviderFailed("AEGIS.NETWORK.UNAVAILABLE", true, "GitHub could not be reached; nothing was changed"))),
                     session
+                // A response arrived but could not be read, or the request was
+                // aborted in flight: it may have been applied.
+                | HttpOutcome.Failed _
                 | HttpOutcome.OutcomeUnknown _ -> Ok Unknown, session)
 
     /// Commits whose message carries the key, walking back from the head to

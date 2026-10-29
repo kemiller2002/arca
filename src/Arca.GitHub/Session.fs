@@ -185,8 +185,16 @@ module Session =
             StorageFailure.ProviderFailed(code, GitHubFailure.persistence failure = Transient, GitHubFailure.userMessage failure)
 
     /// An unexpected response as a storage failure.
+    /// Arca's code for a server error GitHub answered (5xx). Aegis files
+    /// 502–504 under its network-unavailable fault and 500 as an invalid,
+    /// permanent response; neither is right for retrying: the device is
+    /// online and GitHub may recover (Indy-init R7-REM-002, review finding 1).
+    [<Literal>]
+    let ServerError = "ARCA.GITHUB.SERVER_ERROR"
+
     let unexpected (session: GitHubSession) (response: Response) =
         match Api.unexpected session.Config response with
+        | _ when response.Status >= 500 -> StorageFailure.ProviderFailed(ServerError, true, $"GitHub answered {response.Status}")
         | CallFailure.Failed failure -> failed failure
         | CallFailure.Unknown _ -> StorageFailure.ProviderFailed("ARCA.GITHUB.UNKNOWN", true, "the request's outcome is unknown")
         | CallFailure.Cancelled -> StorageFailure.ProviderFailed("ARCA.CANCELLED", true, "the request was cancelled")

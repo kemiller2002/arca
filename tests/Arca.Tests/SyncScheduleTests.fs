@@ -392,6 +392,7 @@ let private events =
 
     Gen.oneof
         [ Gen.constant SyncEvent.Changed
+          Gen.constant SyncEvent.Resolved
           Gen.constant SyncEvent.Started
           Gen.constant(SyncEvent.Finished SyncAttempt.Idle)
           deferral |> Gen.map (fun d -> SyncEvent.Finished(SyncAttempt.Deferred(d, "simulated")))
@@ -407,7 +408,7 @@ let ``under any event sequence, nothing is due again within half the base delay 
             |> List.fold (fun schedule event -> SyncSchedule.apply t0 0.999 event schedule) (schedule Connectivity.Online)
 
         match final.Deferral, final.Directive with
-        | Some _, SyncDirective.AttemptNow -> true // reached only through Changed or ConnectivityChanged
+        | Some _, SyncDirective.AttemptNow -> true // reached only through Resolved, Changed while resting, or a connectivity change
         | Some _, _ -> not (SyncSchedule.isDue (t0 + TimeSpan.FromMilliseconds 999.0) final)
         | None, _ -> true)
 
@@ -420,12 +421,43 @@ let ``a schedule awaiting the application is never due on its own`` () =
 
         final.Directive <> SyncDirective.AwaitApplication || not (SyncSchedule.isDue (t0 + TimeSpan.FromDays 365.0) final))
 
+/// A queue every change of which the provider confirmed.
+let private synchronized =
+    let store = InMemoryStore()
+    OfflineSync.run store.Provider (memoryStore ()) causa 10 (queueOf [ "a"; "b" ]) |> Async.RunSynchronously |> fst
+
 [<Property>]
-let ``the save state is confirmed only when the queue says every change is synchronized`` () =
+let ``the save state is confirmed exactly when the queue says every change is synchronized`` () =
     Prop.forAll events (fun sequence ->
         let final =
             sequence
             |> List.fold (fun schedule event -> SyncSchedule.apply t0 0.3 event schedule) (schedule Connectivity.Online)
 
-        let queue = queueOf [ "a" ]
-        not (SaveState.isConfirmed (SaveState.ofQueue final queue)))
+        (OfflineQueue.status synchronized).Synchronized
+        && SaveState.isConfirmed (SaveState.ofQueue final synchronized)
+        && not (SaveState.isConfirmed (SaveState.ofQueue final (queueOf [ "a" ]))))
+
+[<Property>]
+let ``a connectivity event repeated changes nothing: only a change acts`` () =
+    Prop.forAll events (fun sequence ->
+        let state =
+            sequence
+            |> List.fold (fun schedule event -> SyncSchedule.apply t0 0.3 event schedule) (schedule Connectivity.Online)
+
+        [ Connectivity.Online; Connectivity.Offline ]
+        |> List.forall (fun connectivity ->
+            let once = SyncSchedule.apply t0 0.3 (SyncEvent.ConnectivityChanged connectivity) state
+            let twice = SyncSchedule.apply t0 0.3 (SyncEvent.ConnectivityChanged connectivity) once
+            once.Directive = twice.Directive && once.Failures = twice.Failures))
+
+[<Fact>]
+let ``an edit never retries what awaits the application; Resolved allows one attempt`` () =
+    let awaiting =
+        schedule Connectivity.Online
+        |> SyncSchedule.apply t0 0.0 SyncEvent.Changed
+        |> SyncSchedule.apply t0 0.0 SyncEvent.Started
+        |> SyncSchedule.apply t0 0.0 (SyncEvent.Finished(SyncAttempt.Deferred(Deferral.AwaitingCredential, "revoked")))
+
+    let edited = SyncSchedule.apply t0 0.0 SyncEvent.Changed awaiting
+    Assert.Equal(SyncDirective.AwaitApplication, edited.Directive)
+    Assert.Equal(SyncDirective.AttemptNow, (SyncSchedule.apply t0 0.0 SyncEvent.Resolved edited).Directive)

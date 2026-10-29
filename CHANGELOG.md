@@ -27,6 +27,28 @@ Additive: `OfflineSync.step` and `run` keep their results and reason text.
   `ConnectivityChanged`; `isDue`, `wakeAt`) and `SaveState.ofQueue`, the
   state to show a person, confirmed only when the queue is synchronized.
 
+### Fixed (independent review of WI-0037)
+
+- GitHub 5xx answers were classified by Aegis as network unavailable
+  (502–504) or as a permanent invalid response (500): a server outage read
+  as "waiting for the connection", and one 500 was never retried. A 5xx read
+  is now `ARCA.GITHUB.SERVER_ERROR`, transient. A 5xx to the ref update, and
+  a failed response other than a network failure (unreadable or aborted in
+  flight), is an unknown outcome reconciled by idempotency key, never
+  assumed unapplied (ARCA-OUT-001).
+- `ConnectivityChanged` acts only on a change: a host re-reporting `online`
+  (focus, visibility, polling) reset the backoff each time.
+- `SyncEvent.Resolved` (added) is the application resolving what waits for
+  it; an edit (`Changed`) no longer retries a revoked credential, refusal or
+  conflict.
+- `SaveState` shows waiting-for-connection, not checking-outcome, while
+  offline with an unsettled outcome.
+- Not changed: with `QueueOptions.standard` and no Web Locks, `LimenQueue`
+  opens a per-tab memory-only queue (no cross-tab loss, but unsent changes
+  do not survive closing the tab) and `SaveState` does not show the
+  durability mode; read `OwnedQueue.Mode` and say so, or leave `MemoryOnly`
+  out of the order to fail closed.
+
 ### Fixed
 
 - A permanent refusal while reading the change token (for example a revoked

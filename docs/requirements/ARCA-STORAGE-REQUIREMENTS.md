@@ -452,7 +452,10 @@ permanent. Transient failures MUST back off exponentially with jitter up to a
 bounded maximum; a rate limit's retry-after or reset is a floor the backoff
 never shortens. While offline nothing is committed: the host waits for the
 connection, with at most a slow read probe. A permanent failure or a missing
-credential MUST NOT be retried until the application acts, and then once. An
+credential MUST NOT be retried until the application resolves it, and then
+once; a new edit is not a resolution. A server error (5xx) is transient, never
+offline and never permanent; a 5xx or unreadable answer to a write is an
+unknown outcome. A repeated connectivity report MUST NOT reset a backoff. An
 entry that advanced without a provider's receipt (an unknown outcome, or one
 reconciled as not landed) MUST count as a failure, not as progress. New edits
 MUST NOT shorten a backoff. The save state shown to a person MUST be derived

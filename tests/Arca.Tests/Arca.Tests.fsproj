@@ -38,6 +38,7 @@
     <Compile Include="ReadCacheTests.fs" />
     <Compile Include="PersistenceSafetyTests.fs" />
     <Compile Include="SyncScheduleTests.fs" />
+    <Compile Include="AdapterScheduleTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
