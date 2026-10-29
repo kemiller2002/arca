@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "repository": "arca",
-  "nextSeq": 38,
+  "nextSeq": 39,
   "items": [
     {
       "id": "WI-0001",
@@ -936,6 +936,31 @@
       "attachments": [],
       "createdAt": "2026-10-29T10:00:00Z",
       "updatedAt": "2026-10-29T10:04:00Z",
+      "createdBy": "anthropic/claude-code",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0038",
+      "title": "R7-REM-001: real-browser multi-tab safety evidence for the IndexedDB queue (R6-D-002)",
+      "description": "Intake: .praxis/inbox/documents/2026-10-29-R7-REM-001-multi-tab-safety.md. Evidence for ARCA-OFF-002 and LCP-059 under Rehearsal 6's no-Web-Locks scenario.",
+      "tags": [
+        "arca",
+        "offline",
+        "r7-remediation"
+      ],
+      "priority": "high",
+      "status": "ready",
+      "attachments": [],
+      "createdAt": "2026-10-29T10:30:00Z",
+      "updatedAt": "2026-10-29T10:31:00Z",
       "createdBy": "anthropic/claude-code",
       "createdByActor": {
         "kind": "agent",
