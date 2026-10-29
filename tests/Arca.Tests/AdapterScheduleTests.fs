@@ -66,10 +66,12 @@ type private Mode =
     | WritesLost
     /// GitHub answers every request with this status.
     | Answers of int
+    /// This request's answer is lost after GitHub received it.
+    | Lost
 
 /// The adapter over FakeGitHub. Each request takes 100 ms of simulated time,
 /// and the adapter's own waits advance it too. The counters are the only state.
-type private Harness(mode: unit -> Mode) =
+type private Harness(mode: Authorized -> Mode) =
     let server = Server("acme", "data")
     let mutable elapsed = TimeSpan.Zero
     let mutable writes = 0
@@ -91,11 +93,12 @@ type private Harness(mode: unit -> Mode) =
                         if not read then
                             writes <- writes + 1
 
-                        match mode () with
+                        match mode sent with
                         | Up -> return server.Send sent
                         | NavigatorOffline -> return HttpOutcome.Failed HttpFailure.Network
                         | WritesLost -> return (if read then server.Send sent else HttpOutcome.OutcomeUnknown UnknownReason.ConnectionLost)
                         | Answers status -> return HttpOutcome.Response(status, Map.empty, "{\"message\":\"x\"}")
+                        | Lost -> return HttpOutcome.OutcomeUnknown UnknownReason.ConnectionLost
                     }
               Wait = fun wait -> async { elapsed <- elapsed + wait }
               Tokens = fun () -> async { return server.ValidToken() } }
@@ -163,7 +166,7 @@ let private deferral (run: Run) = run.Schedule.Deferral |> Option.map Deferral.n
 
 [<Fact>]
 let ``navigator offline: no write leaves the device in 60 s, and the state waits for the connection`` () =
-    let h = Harness(fun () -> NavigatorOffline)
+    let h = Harness(fun _ -> NavigatorOffline)
     let run = simulate h window [] (queueOf [ "a" ])
     Assert.Equal(0, h.Writes)
     Assert.InRange(run.Attempts.Length, 1, 2)
@@ -171,7 +174,7 @@ let ``navigator offline: no write leaves the device in 60 s, and the state waits
 
 [<Fact>]
 let ``R6-D-003 through the adapter: lost writes stay bounded (at most 25 write requests in 60 s) and never confirmed`` () =
-    let h = Harness(fun () -> WritesLost)
+    let h = Harness(fun _ -> WritesLost)
     let run = simulate h window [] (queueOf [ "a" ])
     Assert.InRange(h.Writes, 1, 25)
     Assert.InRange(run.Attempts.Length, 1, 8)
@@ -179,7 +182,7 @@ let ``R6-D-003 through the adapter: lost writes stay bounded (at most 25 write r
 
 [<Fact>]
 let ``a 503 is a transient server error: retried with backoff, shown as a scheduled retry, not as a lost connection`` () =
-    let h = Harness(fun () -> Answers 503)
+    let h = Harness(fun _ -> Answers 503)
     let run = simulate h window [] (queueOf [ "a" ])
     Assert.Equal(Some "transient", deferral run)
     Assert.Equal(Connectivity.Online, run.Schedule.Connectivity)
@@ -188,7 +191,7 @@ let ``a 503 is a transient server error: retried with backoff, shown as a schedu
 
 [<Fact>]
 let ``a 500 is transient, not a permanent failure: it is retried`` () =
-    let h = Harness(fun () -> Answers 500)
+    let h = Harness(fun _ -> Answers 500)
     let run = simulate h window [] (queueOf [ "a" ])
     Assert.Equal(Some "transient", deferral run)
     Assert.NotEqual<string>("failed-permanently", run.Final)
@@ -199,7 +202,7 @@ let ``after a server outage the save lands once and is confirmed`` () =
     // GitHub answers 503 to its first 12 requests, then recovers.
     let requests = ref 0
 
-    let mode () =
+    let mode _ =
         requests.Value <- requests.Value + 1
         if requests.Value <= 12 then Answers 503 else Up
 
@@ -212,14 +215,14 @@ let ``after a server outage the save lands once and is confirmed`` () =
 
 [<Fact>]
 let ``a 403 refusal is sent once and reported as failed permanently`` () =
-    let h = Harness(fun () -> Answers 403)
+    let h = Harness(fun _ -> Answers 403)
     let run = simulate h window [] (queueOf [ "a" ])
     Assert.Equal(1, run.Attempts.Length)
     Assert.Equal("failed-permanently", run.Final)
 
 [<Fact>]
 let ``a 401 is attempted once and edits every 2 s never send it again; resolving allows exactly one more attempt`` () =
-    let h = Harness(fun () -> Answers 401)
+    let h = Harness(fun _ -> Answers 401)
     let edits = [ for i in 1..29 -> t0 + TimeSpan.FromSeconds(2.0 * float i), SyncEvent.Changed ]
     let run = simulate h window edits (queueOf [ "a" ])
     Assert.Equal(1, run.Attempts.Length)
@@ -230,15 +233,15 @@ let ``a 401 is attempted once and edits every 2 s never send it again; resolving
 
 [<Fact>]
 let ``repeated online events (focus, visibility, polling) never reset the backoff`` () =
-    let quiet = simulate (Harness(fun () -> WritesLost)) window [] (queueOf [ "a" ])
+    let quiet = simulate (Harness(fun _ -> WritesLost)) window [] (queueOf [ "a" ])
     let online = [ for i in 1..239 -> t0 + TimeSpan.FromMilliseconds(250.0 * float i), SyncEvent.ConnectivityChanged Connectivity.Online ]
-    let noisy = simulate (Harness(fun () -> WritesLost)) window online (queueOf [ "a" ])
+    let noisy = simulate (Harness(fun _ -> WritesLost)) window online (queueOf [ "a" ])
     Assert.Equal(quiet.Attempts.Length, noisy.Attempts.Length)
 
 [<Fact>]
 let ``a write lost and then the device offline: the state waits for the connection, not an endless check`` () =
     let offline = ref false
-    let h = Harness(fun () -> if offline.Value then NavigatorOffline else Up)
+    let h = Harness(fun _ -> if offline.Value then NavigatorOffline else Up)
 
     h.Server.Inject(
         (fun (a: Authorized) ->
@@ -250,3 +253,81 @@ let ``a write lost and then the device offline: the state waits for the connecti
 
     let run = simulate h (t0 + TimeSpan.FromSeconds 120.0) [] (queueOf [ "a" ])
     Assert.Equal("waiting-for-connection", run.Final)
+
+let private isPatch (sent: Authorized) = sent.Request.Method = HttpMethod.Patch
+let private isUser (sent: Authorized) = sent.Request.Method = HttpMethod.Get && sent.Request.Url.EndsWith "/user"
+
+[<Fact>]
+let ``a 500 while resolving identity is transient: retried, then confirmed, never failed permanently`` () =
+    let failures = ref 0
+
+    let h =
+        Harness(fun sent ->
+            if isUser sent && failures.Value < 3 then
+                failures.Value <- failures.Value + 1
+                Answers 500
+            else
+                Up)
+
+    let run = simulate h (t0 + TimeSpan.FromMinutes 5.0) [] (queueOf [ "a" ])
+    Assert.DoesNotContain("failed-permanently", run.States)
+    Assert.Equal("confirmed", run.Final)
+
+/// Runs `failing` (which answers the ref update) for 60 s and 5 min, counting ref updates.
+let private refUpdateBurst (answer: Mode) =
+    let measure until =
+        let patches = ref 0
+
+        let h =
+            Harness(fun sent ->
+                if isPatch sent then
+                    patches.Value <- patches.Value + 1
+                    answer
+                else
+                    Up)
+
+        let run = simulate h until [] (queueOf [ "a" ])
+        run, patches.Value, h.Writes
+
+    measure window, measure (t0 + TimeSpan.FromMinutes 5.0)
+
+[<Fact>]
+let ``a persistent 502 on the ref update: at most two ref updates per attempt, backed off, never confirmed`` () =
+    let (minute, patches, writes), (_, patchesIn5, writesIn5) = refUpdateBurst (Answers 502)
+    Assert.True(patches <= 2 * minute.Attempts.Length, $"{patches} ref updates in {minute.Attempts.Length} attempts")
+    Assert.InRange(minute.Attempts.Length, 2, 7)
+    Assert.DoesNotContain("confirmed", minute.States)
+    // Backoff: the next four minutes add fewer writes than the first one.
+    Assert.True(writesIn5 - writes < writes, $"{writes} writes in the first minute, {writesIn5} in five")
+    Assert.True(patchesIn5 < 3 * patches)
+
+[<Fact>]
+let ``only the ref update's answer lost, every time: at most two ref updates per attempt, backed off`` () =
+    let (minute, patches, writes), (_, _, writesIn5) = refUpdateBurst Lost
+    Assert.True(patches <= 2 * minute.Attempts.Length, $"{patches} ref updates in {minute.Attempts.Length} attempts")
+    Assert.InRange(minute.Attempts.Length, 2, 7)
+    Assert.DoesNotContain("confirmed", minute.States)
+    Assert.True(writesIn5 - writes < writes, $"{writes} writes in the first minute, {writesIn5} in five")
+
+[<Fact>]
+let ``network failures with online re-reported every 250 ms do not multiply attempts`` () =
+    let online = [ for i in 1..239 -> t0 + TimeSpan.FromMilliseconds(250.0 * float i), SyncEvent.ConnectivityChanged Connectivity.Online ]
+    let quiet = simulate (Harness(fun _ -> NavigatorOffline)) window [] (queueOf [ "a" ])
+    let noisy = simulate (Harness(fun _ -> NavigatorOffline)) window online (queueOf [ "a" ])
+    Assert.Equal(quiet.Attempts.Length, noisy.Attempts.Length)
+
+[<Fact>]
+let ``after one network failure, a successful answer means online: the queue drains without waiting for an online event`` () =
+    let calls = ref 0
+
+    let h =
+        Harness(fun _ ->
+            calls.Value <- calls.Value + 1
+            if calls.Value <= 4 then NavigatorOffline else Up)
+
+    let run = simulate h (t0 + TimeSpan.FromMinutes 3.0) [] (queueOf [ "a"; "b"; "c" ])
+    Assert.Equal("confirmed", run.Final)
+    Assert.Equal(Connectivity.Online, run.Schedule.Connectivity)
+    // One minute to the probe, then the three entries drain together.
+    let confirmedAt = run.Attempts |> List.map fst |> List.max
+    Assert.True(confirmedAt - t0 < TimeSpan.FromSeconds 75.0, $"the queue drained at +{(confirmedAt - t0).TotalSeconds} s")

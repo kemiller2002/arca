@@ -43,6 +43,18 @@ Additive: `OfflineSync.step` and `run` keep their results and reason text.
   conflict.
 - `SaveState` shows waiting-for-connection, not checking-outcome, while
   offline with an unsettled outcome.
+- Re-review: a 5xx while resolving identity (`/user`, the repository, its
+  rules) is transient too, through `CallFailure.ServerError(status, aegis)`,
+  which keeps Aegis's classification beside the status (a code-level
+  deviation from ARCA-ARCH-007, recorded in `Session.ServerError`).
+- Re-review: after an uncertain ref update that reconciles as not landed, a
+  commit resends once at once; a second time it fails transiently and the
+  schedule backs off, instead of up to five ref updates in seconds.
+- Re-review: `SyncSchedule` keeps what the host reported apart from what
+  attempts found. Only a change of the report acts, so re-reported `online`
+  cannot reset the backoff after a network failure; any answer from the
+  provider marks the device online, so the queue drains without an `online`
+  event. `Resolved` is documented as one attempt per application act.
 - Not changed: with `QueueOptions.standard` and no Web Locks, `LimenQueue`
   opens a per-tab memory-only queue (no cross-tab loss, but unsent changes
   do not survive closing the tab) and `SaveState` does not show the

@@ -101,7 +101,8 @@ type SyncEvent =
     | Changed
     /// The application resolved what synchronization was waiting for: it
     /// revised or abandoned a conflicted or refused entry, or supplied a
-    /// credential. It allows one attempt.
+    /// credential. It allows one attempt. Send it for that act only, never
+    /// on an edit or a keystroke: each one is an attempt.
     | Resolved
     /// The host began the attempt the schedule made due.
     | Started
@@ -115,7 +116,13 @@ type SyncEvent =
 type SyncSchedule =
     internal
         { policy: RetryPolicy
+          /// What the attempts found: Offline after a network failure, Online
+          /// after any answer from the provider.
           connectivity: Connectivity
+          /// What the host last reported. Only a change of it acts, so a host
+          /// that re-reports `online` (focus, visibility, polling) while
+          /// requests keep failing cannot reset the backoff.
+          reported: Connectivity
           failures: int
           deferral: Deferral option
           directive: SyncDirective
@@ -124,6 +131,7 @@ type SyncSchedule =
 
     member this.Policy = this.policy
     member this.Connectivity = this.connectivity
+    member this.Reported = this.reported
 
     /// Consecutive attempts that deferred since the last one that did not.
     member this.Failures = this.failures
@@ -152,6 +160,7 @@ module SyncSchedule =
         |> Result.map (fun policy ->
             { policy = policy
               connectivity = connectivity
+              reported = connectivity
               failures = 0
               deferral = None
               directive = SyncDirective.Rest
@@ -190,7 +199,18 @@ module SyncSchedule =
         | Deferral.Permanent -> SyncDirective.AwaitApplication
 
     let private finished (now: DateTimeOffset) (sample: float) (attempt: SyncAttempt) (schedule: SyncSchedule) =
-        let settled = { schedule with attempting = false; changedDuringAttempt = false }
+        // Anything but a network failure is an answer from the provider: the
+        // device is online, whatever the host last reported (re-review N2).
+        let reached =
+            match attempt with
+            | SyncAttempt.Deferred(Deferral.Offline, _) -> schedule.connectivity
+            | _ -> Connectivity.Online
+
+        let settled =
+            { schedule with
+                attempting = false
+                changedDuringAttempt = false
+                connectivity = reached }
 
         match attempt with
         | SyncAttempt.Progressed entry when EntryState.isSynchronized entry.State ->
@@ -276,25 +296,25 @@ module SyncSchedule =
             | SyncDirective.AttemptNow -> schedule
 
     let private connectivityChanged (now: DateTimeOffset) (connectivity: Connectivity) (schedule: SyncSchedule) =
-        let previous = schedule.connectivity
-        let schedule = { schedule with connectivity = connectivity }
+        let reported = { schedule with connectivity = connectivity; reported = connectivity }
 
         match connectivity, schedule.directive, schedule.deferral with
-        // Only a change acts: a host that reports `online` again (on focus,
-        // visibility, or by polling navigator.onLine) must not reset the
-        // backoff each time (independent review finding 2).
-        | _ when connectivity = previous -> schedule
+        // Only a change of the host's report acts: a host that reports
+        // `online` again (on focus, visibility, or by polling
+        // navigator.onLine) must not reset the backoff each time, even after
+        // an attempt found the network failing (independent review finding 2).
+        | _ when connectivity = schedule.reported -> schedule
         // The connection is back: send at once, backoff forgotten.
         | Connectivity.Online, SyncDirective.AwaitConnection _, _
         | Connectivity.Online, SyncDirective.AttemptAt _, Some Deferral.Transient ->
-            { schedule with
+            { reported with
                 failures = 0
                 directive = SyncDirective.AttemptNow }
         // Gone offline: wait for it instead of attempting.
         | Connectivity.Offline, SyncDirective.AttemptNow, _
         | Connectivity.Offline, SyncDirective.AttemptAt _, Some Deferral.Transient ->
-            { schedule with directive = awaitConnection now schedule }
-        | _ -> schedule
+            { reported with directive = awaitConnection now reported }
+        | _ -> reported
 
     /// The schedule after `event`, at `now`. `sample` is the host's entropy
     /// in [0, 1), used only for jitter.

@@ -354,7 +354,7 @@ let ``a policy that could spin is refused`` () =
 let ``failures are classified by what retrying can achieve`` () =
     let cases =
         [ networkFailure, "offline"
-          StorageFailure.ProviderFailed("AEGIS.GITHUB.SERVER_ERROR", true, "503"), "transient"
+          StorageFailure.ProviderFailed(Arca.GitHub.Session.ServerError, true, "503"), "transient"
           StorageFailure.ProviderFailed("AEGIS.GITHUB.REPOSITORY_NOT_FOUND", false, "gone"), "permanent"
           StorageFailure.RateLimited(Some(TimeSpan.FromSeconds 5.0), None), "rate-limited"
           StorageFailure.Refused(WriteRefusal.CredentialUnavailable "expired"), "awaiting-credential"
