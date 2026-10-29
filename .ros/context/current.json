@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-28T01:13:02.000Z",
+  "updatedAt": "2026-10-29T10:05:00Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -1583,6 +1583,17 @@
       },
       "completedAt": "2026-10-28T01:13:02.000Z",
       "conclusion": "Synchronized states, receipts and queue records are unforgeable outside Arca; 0.6.0 breaking minor; 380/380 tests pass"
+    },
+    {
+      "id": "WI-0037",
+      "type": "task",
+      "state": "active",
+      "semanticState": "active",
+      "evidence": [],
+      "updatedAt": "2026-10-29T10:05:00Z",
+      "telemetryExecutionIds": [
+        "EXE-20261029T092117479Z-c436041c"
+      ]
     }
   ]
 }

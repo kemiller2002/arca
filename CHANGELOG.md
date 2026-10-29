@@ -9,6 +9,31 @@ release may change the API; pin an exact version.
 
 ## [Unreleased]
 
+Bounded synchronization scheduling (ARCA-OFF-010, WI-0037, R7-REM-002).
+Rehearsal 6 (R6-D-003) sent one offline change as 151 POSTs in 60 s: a
+commit aborted while `navigator.onLine` stayed true is an unknown outcome,
+reconciliation finds it not landed, and a host that re-runs synchronization
+on every result sends it again at once. Arca now says when to try again.
+Additive: `OfflineSync.step` and `run` keep their results and reason text.
+
+### Added
+
+- `Deferral` and `Deferral.ofFailure`: why an attempt stopped short, typed
+  (offline, rate limited, transient, awaiting a credential, permanent).
+- `SyncAttempt`, `OfflineSync.attempt` and `OfflineSync.drive`: `step` and
+  `run` with the deferral typed.
+- `RetryPolicy` (validated: a policy that could spin is refused),
+  `SyncSchedule` (pure transitions over `Changed`, `Started`, `Finished`,
+  `ConnectivityChanged`; `isDue`, `wakeAt`) and `SaveState.ofQueue`, the
+  state to show a person, confirmed only when the queue is synchronized.
+
+### Fixed
+
+- A permanent refusal while reading the change token (for example a revoked
+  credential) was reported as an untyped deferral, so hosts retried it
+  forever. It is now `Deferral.AwaitingCredential` or `Deferral.Permanent`,
+  and the schedule waits for the application.
+
 ## [0.6.0] — 2026-10-28
 
 A **breaking** minor release (DF-ARCA-2026-0014; owner approval 2026-10-28,
