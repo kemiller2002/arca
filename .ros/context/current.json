@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-29T13:55:23.000Z",
+  "updatedAt": "2026-10-29T18:55:50.000Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -1587,55 +1587,152 @@
     {
       "id": "WI-0037",
       "type": "task",
-      "state": "active",
-      "semanticState": "active",
-      "evidence": [],
-      "updatedAt": "2026-10-29T10:05:00Z",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "src/Arca.Core/SyncSchedule.fs"
+        },
+        {
+          "type": "tests",
+          "path": "tests/Arca.Tests/SyncScheduleTests.fs"
+        },
+        {
+          "type": "tests",
+          "path": "tests/Arca.Tests/AdapterScheduleTests.fs"
+        },
+        {
+          "type": "requirement",
+          "path": "docs/requirements/ARCA-STORAGE-REQUIREMENTS.md"
+        },
+        {
+          "type": "documentation",
+          "path": "CHANGELOG.md"
+        }
+      ],
+      "updatedAt": "2026-10-29T18:55:50.000Z",
       "telemetryExecutionIds": [
         "EXE-20261029T092117479Z-c436041c"
-      ]
-    },
-    {
-      "id": "WI-0038",
-      "type": "task",
-      "state": "active",
-      "semanticState": "active",
-      "evidence": [],
-      "updatedAt": "2026-10-29T10:32:00Z",
-      "telemetryExecutionIds": [
-        "EXE-20261029T092741897Z-74cda00d"
-      ]
-    },
-    {
-      "id": "WI-0039",
-      "type": "task",
-      "state": "active",
-      "semanticState": "active",
-      "evidence": [],
-      "updatedAt": "2026-10-29T13:55:23.000Z",
-      "telemetryExecutionIds": [
-        "EXE-20261029T135524249Z-054f4d84"
       ],
       "latestCheckpoint": {
-        "id": "9919737017f6476fb3741649",
-        "recordedAt": "2026-10-29T13:57:29.000Z",
-        "executionId": "EXE-20261029T135524249Z-054f4d84",
+        "id": "24877c61df6ee5dbf16ae309",
+        "recordedAt": "2026-10-29T18:55:33.000Z",
+        "executionId": "EXE-20261029T092117479Z-c436041c",
         "repository": "arca",
-        "branch": "claude/release-0.7.0",
-        "commit": "93f564c1172ff32b938151940768a2ba1b7c943e",
+        "branch": "claude/close-wi-0037-0038-0039",
+        "commit": "7e1f90d6b461af68439a4289f46ee5e6efa5921d",
         "remote": {
           "name": "origin",
           "url": "https://github.com/kemiller2002/arca"
         },
-        "remoteBranch": "claude/release-0.7.0",
-        "remoteCommit": "93f564c1172ff32b938151940768a2ba1b7c943e",
-        "summary": "0.7.0 release change committed and pushed: CHANGELOG, Directory.Build.props, DF-ARCA-2026-0015, consuming-arca intro; local build and 415 tests pass",
-        "nextAction": "Merge the release PR; release.yml publishes v0.7.0 from main; then record it in echelon-registry",
+        "remoteBranch": "claude/close-wi-0037-0038-0039",
+        "remoteCommit": "7e1f90d6b461af68439a4289f46ee5e6efa5921d",
+        "summary": "ARCA-OFF-010 bounded sync scheduling merged in arca#47 (merge 916d0caa698e5226ae6d16da5a40a62938ee1d4d; CI build-and-test, browser, validate, foundations all success) and released in Arca v0.7.0 (arca#48, merge/tag 7e1f90d6b461af68439a4289f46ee5e6efa5921d; release workflow run 40887500264 success); registered in echelon-registry#104 (merge 7a2c27a3db7cab4337ea47536f3e1fc22d257f03), echelon-current 1.33.0 approved",
+        "nextAction": "Complete WI-0037 and commit the Praxis state",
         "verification": {
           "status": "verified",
           "mechanism": "git-remote-observation"
         }
-      }
+      },
+      "completedAt": "2026-10-29T18:55:50.000Z",
+      "conclusion": "Merged in arca#47 (916d0caa698e5226ae6d16da5a40a62938ee1d4d); CI build-and-test/browser/validate/foundations success; released in Arca v0.7.0 (tag at 7e1f90d6b461af68439a4289f46ee5e6efa5921d, arca#48); registered in echelon-registry#104 (7a2c27a3db7cab4337ea47536f3e1fc22d257f03), echelon-current 1.33.0"
+    },
+    {
+      "id": "WI-0038",
+      "type": "task",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "verification/browser/tests/multi-tab-safety.spec.mjs"
+        },
+        {
+          "type": "tests",
+          "path": "verification/browser/tests/multi-tab-safety.spec.mjs"
+        },
+        {
+          "type": "implementation",
+          "path": ".github/workflows/browser-verification.yml"
+        }
+      ],
+      "updatedAt": "2026-10-29T18:55:50.000Z",
+      "telemetryExecutionIds": [
+        "EXE-20261029T092741897Z-74cda00d"
+      ],
+      "latestCheckpoint": {
+        "id": "25301f15cde597566760fbce",
+        "recordedAt": "2026-10-29T18:55:33.000Z",
+        "executionId": "EXE-20261029T092741897Z-74cda00d",
+        "repository": "arca",
+        "branch": "claude/close-wi-0037-0038-0039",
+        "commit": "7e1f90d6b461af68439a4289f46ee5e6efa5921d",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "claude/close-wi-0037-0038-0039",
+        "remoteCommit": "7e1f90d6b461af68439a4289f46ee5e6efa5921d",
+        "summary": "R6-D-002 real-browser multi-tab safety evidence (Limen browser spec multi-tab-safety.spec.mjs) merged in arca#47 (merge 916d0caa698e5226ae6d16da5a40a62938ee1d4d; browser verification check success) and released in Arca v0.7.0 (arca#48, 7e1f90d6b461af68439a4289f46ee5e6efa5921d; browser run 40887500287 success on main); registered in echelon-registry#104 (7a2c27a3db7cab4337ea47536f3e1fc22d257f03)",
+        "nextAction": "Complete WI-0038 and commit the Praxis state",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-10-29T18:55:50.000Z",
+      "conclusion": "Merged in arca#47 (916d0caa698e5226ae6d16da5a40a62938ee1d4d); browser verification success on the PR and on main 7e1f90d (run 40887500287); released in Arca v0.7.0 (arca#48); registered in echelon-registry#104 (7a2c27a3db7cab4337ea47536f3e1fc22d257f03)"
+    },
+    {
+      "id": "WI-0039",
+      "type": "task",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "release",
+          "path": "CHANGELOG.md"
+        },
+        {
+          "type": "implementation",
+          "path": "Directory.Build.props"
+        },
+        {
+          "type": "decision",
+          "path": "research/decisions/DF-ARCA-2026-0015--release-0-7-0-is-a-minor-release.md"
+        },
+        {
+          "type": "tests",
+          "path": "CHANGELOG.md"
+        }
+      ],
+      "updatedAt": "2026-10-29T18:55:50.000Z",
+      "telemetryExecutionIds": [
+        "EXE-20261029T135524249Z-054f4d84"
+      ],
+      "latestCheckpoint": {
+        "id": "e0cbab64b6e2de7bf0932b6b",
+        "recordedAt": "2026-10-29T18:55:33.000Z",
+        "executionId": "EXE-20261029T135524249Z-054f4d84",
+        "repository": "arca",
+        "branch": "claude/close-wi-0037-0038-0039",
+        "commit": "7e1f90d6b461af68439a4289f46ee5e6efa5921d",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "claude/close-wi-0037-0038-0039",
+        "remoteCommit": "7e1f90d6b461af68439a4289f46ee5e6efa5921d",
+        "summary": "Arca 0.7.0 released: arca#48 merged as 7e1f90d6b461af68439a4289f46ee5e6efa5921d; GitHub release v0.7.0 published 2026-10-29T14:03:34Z with Core/GitHub/Limen 0.7.0 nupkgs, checksums.txt, echelon-release.json (NuGet library release run 40887500264 success); registry step done: echelon-registry#104 merged as 7a2c27a3db7cab4337ea47536f3e1fc22d257f03, echelon-current 1.33.0 approved selecting Arca 0.7.0",
+        "nextAction": "Complete WI-0039 and commit the Praxis state",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-10-29T18:55:50.000Z",
+      "conclusion": "Released Arca v0.7.0 (arca#48 merged as 7e1f90d6b461af68439a4289f46ee5e6efa5921d; NuGet library release run 40887500264 success; release assets Core/GitHub/Limen 0.7.0 nupkgs, checksums.txt, echelon-release.json); registry step done: echelon-registry#104 merged as 7a2c27a3db7cab4337ea47536f3e1fc22d257f03, echelon-current 1.33.0 approved selecting Arca 0.7.0"
     }
   ]
 }

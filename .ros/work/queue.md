@@ -39,6 +39,6 @@
 | WI-0034 | Release Arca 0.5.0 (batched read-cache save ARCA-OFF-008, pinned GitHub reads ARCA-API-006; arca#38, arca#39) as attested GitHub release assets, record it in echelon-registry and select it in echelon-current | complete | arca, release, registry | high |
 | WI-0035 | Measurement baseline index: docs/measurement/baseline-sources.md lists where Arca's historical evidence lives and when each Echelon capability was adopted (Echelon measurement amendment 2026-10-13) | complete | measurement, docs | medium |
 | WI-0036 | Persistence safety by construction (EII Workstream D): Synchronized entry states, CommitReceipts and QueueEntry.State unforgeable outside Arca; compile-failure fixtures; application-level queue scenario tests; breaking minor release 0.6.0 | complete | arca, offline, integrity, eii | high |
-| WI-0037 | R7-REM-002: bounded queue-sync scheduling, typed deferrals and save state (R6-D-003) | active | arca, offline, r7-remediation | high |
-| WI-0038 | R7-REM-001: real-browser multi-tab safety evidence for the IndexedDB queue (R6-D-002) | active | arca, offline, r7-remediation | high |
-| WI-0039 | Release Arca 0.7.0 (bounded sync scheduling ARCA-OFF-010: SyncSchedule, RetryPolicy, SaveState, Deferral, CallFailure.ServerError; arca#47) as attested GitHub release assets | ready | arca, release | high |
+| WI-0037 | R7-REM-002: bounded queue-sync scheduling, typed deferrals and save state (R6-D-003) | complete | arca, offline, r7-remediation | high |
+| WI-0038 | R7-REM-001: real-browser multi-tab safety evidence for the IndexedDB queue (R6-D-002) | complete | arca, offline, r7-remediation | high |
+| WI-0039 | Release Arca 0.7.0 (bounded sync scheduling ARCA-OFF-010: SyncSchedule, RetryPolicy, SaveState, Deferral, CallFailure.ServerError; arca#47) as attested GitHub release assets | complete | arca, release | high |
