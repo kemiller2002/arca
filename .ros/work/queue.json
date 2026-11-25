@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "repository": "arca",
-  "nextSeq": 43,
+  "nextSeq": 44,
   "items": [
     {
       "id": "WI-0001",
@@ -1048,6 +1048,27 @@
       "attachments": [],
       "createdAt": "2026-11-25T15:40:05.685Z",
       "updatedAt": "2026-11-25T15:43:16Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0043",
+      "title": "Upgrade to echelon-current 1.42.0 (Praxis 3.25.0, Ordo 1.20.0, Limen npm 0.9.1)",
+      "description": null,
+      "tags": [],
+      "priority": "medium",
+      "status": "ready",
+      "attachments": [],
+      "createdAt": "2026-11-25T17:50:25.405Z",
+      "updatedAt": "2026-11-25T17:50:31.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",
