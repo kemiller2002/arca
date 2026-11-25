@@ -4,17 +4,17 @@
   "registryAuthority": {
     "kind": "resolved-release-set",
     "path": ".conditor/authority/resolved-release-set.json",
-    "sha256": "d6a26a57b1566ee9641d3d408b790d797845075ff683b52b8a574487e718841e"
+    "sha256": "6be3bc97fbdd314abc4c712c2b1b47c1a18487995d9e1b9db445b4d141a8ee8a"
   },
   "components": [
     {
       "id": "praxis",
-      "version": "3.7.2",
+      "version": "3.25.0",
       "required": true
     },
     {
       "id": "ordo",
-      "version": "1.5.0",
+      "version": "1.20.0",
       "required": true
     },
     {

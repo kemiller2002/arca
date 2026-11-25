@@ -17,14 +17,14 @@
     },
     "ordo": {
       "required": true,
-      "version": "1.5.0"
+      "version": "1.20.0"
     },
     "percepta": {
       "required": false
     },
     "praxis": {
       "required": true,
-      "version": "3.7.2"
+      "version": "3.25.0"
     }
   }
 }
