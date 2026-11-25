@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "repository": "arca",
-  "nextSeq": 44,
+  "nextSeq": 45,
   "items": [
     {
       "id": "WI-0001",
@@ -1069,6 +1069,27 @@
       "attachments": [],
       "createdAt": "2026-11-25T17:50:25.405Z",
       "updatedAt": "2026-11-25T18:06:57.000Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0044",
+      "title": "Release Arca 0.7.1 built against Aegis 2.0.2 (patch: dependency move only, public API unchanged)",
+      "description": null,
+      "tags": [],
+      "priority": "medium",
+      "status": "complete",
+      "attachments": [],
+      "createdAt": "2026-11-25T20:36:55.161Z",
+      "updatedAt": "2026-11-25T20:43:29Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",

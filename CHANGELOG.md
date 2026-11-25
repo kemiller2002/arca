@@ -9,6 +9,34 @@ release may change the API; pin an exact version.
 
 ## [Unreleased]
 
+## [0.7.1] — 2026-11-25
+
+A patch release (WI-0044). Arca's source and public API are unchanged from
+0.7.0; the packages are rebuilt against Aegis 2.0.2 so that a consumer on
+echelon-current 1.42.0 no longer restores Aegis 1.0.0 through Arca.
+
+### Changed
+
+- `EchelonFoundry.Arca.GitHub` and `EchelonFoundry.Arca.Limen` depend on
+  `EchelonFoundry.Aegis.Integration.GitHub` 2.0.2 and
+  `EchelonFoundry.Aegis.Core` 2.0.2 (both were 1.0.0; WI-0040 to WI-0042).
+  `EchelonFoundry.Arca.Core` has no Aegis dependency. The `FSharp.Core` floor stays 10.1.400: Aegis 2.0.1
+  restored that floor after 2.0.0 declared 11.0.101, so Arca 0.7.1 restores
+  with the .NET 10 SDK and in the WebAssembly browser engine.
+- Aegis 2.0 made no public signature change Arca uses, and its behaviour
+  changes (a `GitHubStore` query failing closed on unreadable records;
+  `GitHubFailure.ofException` mapping an HttpClient timeout to `Timeout`;
+  a detached `capture` no longer blocking) are in APIs Arca does not call.
+  Arca classifies GitHub answers through `GitHubFailure.ofStatus`, `code`,
+  `persistence` and `userMessage`, whose results are the same.
+- Consumer note: `CallFailure.Failed` and `CallFailure.ServerError` carry
+  Aegis's `GitHubFailure.T`, now from the Aegis 2 assembly. An application
+  that also references Aegis directly must be on Aegis 2.0.2 or later
+  (echelon-current 1.42.0 already selects it); code that compiled against
+  0.7.0 compiles unchanged.
+- The browser verification harness runs against `@echelon-foundry/limen`
+  0.9.1 (WI-0043); limen-fsharp stays at 0.9.0.
+
 ## [0.7.0] — 2026-10-29
 
 A minor release (DF-ARCA-2026-0015; WI-0039). It adds API, and 0.6.0
