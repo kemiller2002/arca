@@ -43,4 +43,4 @@
 | WI-0038 | R7-REM-001: real-browser multi-tab safety evidence for the IndexedDB queue (R6-D-002) | complete | arca, offline, r7-remediation | high |
 | WI-0039 | Release Arca 0.7.0 (bounded sync scheduling ARCA-OFF-010: SyncSchedule, RetryPolicy, SaveState, Deferral, CallFailure.ServerError; arca#47) as attested GitHub release assets | complete | arca, release | high |
 | WI-0040 | Upgrade Aegis 1.0.0 -> 2.0.0 (echelon-current 1.40.0) | complete |  | medium |
-| WI-0041 | Retarget Aegis 2.0.0 to 2.0.1 (FSharp.Core 10.1.400 floor) | ready |  | medium |
+| WI-0041 | Retarget Aegis 2.0.0 to 2.0.1 (FSharp.Core 10.1.400 floor) | complete |  | medium |
