@@ -1,0 +1,12 @@
+{
+  "schema": "praxis.instance/1",
+  "instanceId": "pxi-a12e59d0489946619dd5d185eb7c7d25",
+  "createdAt": "2026-11-25T17:51:05.588Z",
+  "createdWith": "3.25.0",
+  "repository": {
+    "provider": "github",
+    "repositoryId": null,
+    "repository": "kemiller2002/arca"
+  },
+  "predecessors": []
+}
