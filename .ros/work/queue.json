@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "repository": "arca",
-  "nextSeq": 41,
+  "nextSeq": 42,
   "items": [
     {
       "id": "WI-0001",
@@ -1006,6 +1006,27 @@
       "attachments": [],
       "createdAt": "2026-11-25T12:17:16.909Z",
       "updatedAt": "2026-11-25T12:32:00.000Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0041",
+      "title": "Retarget Aegis 2.0.0 to 2.0.1 (FSharp.Core 10.1.400 floor)",
+      "description": null,
+      "tags": [],
+      "priority": "medium",
+      "status": "ready",
+      "attachments": [],
+      "createdAt": "2026-11-25T12:52:43.361Z",
+      "updatedAt": "2026-11-25T12:52:58.294Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",
