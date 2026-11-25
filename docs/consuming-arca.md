@@ -5,8 +5,10 @@ engine. 0.6.0 (WI-0036) changes the offline queue's API so only a
 provider can confirm a write; see [§5c](#5c-only-the-provider-confirms-a-write-from-060-breaking)
 and the CHANGELOG's migration notes before moving to it. 0.7.0 (WI-0037,
 WI-0039) adds bounded synchronization scheduling (`SyncSchedule`,
-`RetryPolicy`, `SaveState`, typed `Deferral`); see the CHANGELOG. Both are
-published as GitHub release assets; until the Registry selects them, the
+`RetryPolicy`, `SaveState`, typed `Deferral`); see the CHANGELOG. 0.7.1
+(WI-0044) is 0.7.0 rebuilt against Aegis 2.0.2, with no source or API
+change, so a consumer on Aegis 2 no longer restores Aegis 1.0.0 through
+Arca. All are published as GitHub release assets; until the Registry selects them, the
 steps below install 0.5.0. Distribution follows the short-term plan
 ([`distribution-short-term-plan.md`](distribution-short-term-plan.md)): the
 packages are attested GitHub release assets, which Conditor installs into the
@@ -65,7 +67,9 @@ read sections 3a, 3b and 5a/5b before moving from 0.3.0. In the consuming reposi
 
    Reference `EchelonFoundry.Arca.Core` from the pure domain, and
    `EchelonFoundry.Arca.GitHub` from the engine that talks to storage. Both
-   need `FSharp.Core` 10.1.400 or later, which Aegis 1.0.0 also needs.
+   need `FSharp.Core` 10.1.400 or later, which Aegis 1.0.0 and 2.0.1+ also
+   need. Arca 0.7.1 and later depend on Aegis 2.0.2; earlier versions on
+   Aegis 1.0.0.
 
 Other platforms use their own channel file. The SHA-256 values at registry
 `e161bed` (echelon-current 1.19.0) are:
