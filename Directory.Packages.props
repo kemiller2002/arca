@@ -5,9 +5,9 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="FSharp.Core" Version="10.1.400" />
-    <!-- Aegis 2.0.1 (FSharp.Core 10.1.400 floor). -->
-    <PackageVersion Include="EchelonFoundry.Aegis.Core" Version="2.0.1" />
-    <PackageVersion Include="EchelonFoundry.Aegis.Integration.GitHub" Version="2.0.1" />
+    <!-- Aegis 2.0.2 (FSharp.Core 10.1.400 floor). -->
+    <PackageVersion Include="EchelonFoundry.Aegis.Core" Version="2.0.2" />
+    <PackageVersion Include="EchelonFoundry.Aegis.Integration.GitHub" Version="2.0.2" />
     <!-- Limen 0.9.0's F# packages (limen-fsharp, echelon-current 1.12.0),
          restored only from vendor/nuget, which Conditor writes and verifies
          (NuGet.config). Lockstep with Limen's npm version (OQ-LIMEN-IDB-005). -->
