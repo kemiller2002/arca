@@ -46,3 +46,4 @@
 | WI-0041 | Retarget Aegis 2.0.0 to 2.0.1 (FSharp.Core 10.1.400 floor) | complete |  | medium |
 | WI-0042 | Retarget Aegis 2.0.1 -> 2.0.2 (detached capture no longer blocks single-threaded WebAssembly hosts) | complete |  | medium |
 | WI-0043 | Upgrade to echelon-current 1.42.0 (Praxis 3.25.0, Ordo 1.20.0, Limen npm 0.9.1) | complete |  | medium |
+| WI-0044 | Release Arca 0.7.1 built against Aegis 2.0.2 (patch: dependency move only, public API unchanged) | ready |  | medium |
