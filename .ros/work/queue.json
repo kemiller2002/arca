@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "repository": "arca",
-  "nextSeq": 40,
+  "nextSeq": 41,
   "items": [
     {
       "id": "WI-0001",
@@ -985,6 +985,27 @@
       "attachments": [],
       "createdAt": "2026-10-29T13:55:10.838Z",
       "updatedAt": "2026-10-29T18:55:50.000Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0040",
+      "title": "Upgrade Aegis 1.0.0 -> 2.0.0 (echelon-current 1.40.0)",
+      "description": null,
+      "tags": [],
+      "priority": "medium",
+      "status": "ready",
+      "attachments": [],
+      "createdAt": "2026-11-25T12:17:16.909Z",
+      "updatedAt": "2026-11-25T12:17:24.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",
