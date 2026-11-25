@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-10-29T18:55:50.000Z",
+  "updatedAt": "2026-11-25T15:43:16Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -1733,6 +1733,129 @@
       },
       "completedAt": "2026-10-29T18:55:50.000Z",
       "conclusion": "Released Arca v0.7.0 (arca#48 merged as 7e1f90d6b461af68439a4289f46ee5e6efa5921d; NuGet library release run 40887500264 success; release assets Core/GitHub/Limen 0.7.0 nupkgs, checksums.txt, echelon-release.json); registry step done: echelon-registry#104 merged as 7a2c27a3db7cab4337ea47536f3e1fc22d257f03, echelon-current 1.33.0 approved selecting Arca 0.7.0"
+    },
+    {
+      "id": "WI-0040",
+      "type": "task",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "Directory.Packages.props"
+        },
+        {
+          "type": "tests",
+          "path": ".github/workflows/build-and-test.yml"
+        }
+      ],
+      "updatedAt": "2026-11-25T12:32:00.000Z",
+      "telemetryExecutionIds": [
+        "EXE-20261125T121725606Z-17d0596b"
+      ],
+      "latestCheckpoint": {
+        "id": "52fecbf89928dc612fa2c2c9",
+        "recordedAt": "2026-11-25T12:31:58.000Z",
+        "executionId": "EXE-20261125T121725606Z-17d0596b",
+        "repository": "arca",
+        "branch": "claude/vigila-implementation-jdeps1",
+        "commit": "148b7d6fb3f5cb7bbd55d303b51af5fc3cdddbb4",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "claude/vigila-implementation-jdeps1",
+        "remoteCommit": "148b7d6fb3f5cb7bbd55d303b51af5fc3cdddbb4",
+        "summary": "Aegis pins bumped 1.0.0 -> 2.0.0 in Directory.Packages.props; build/test pass on SDK 10.0.404 and 11.0.100 (415/415)",
+        "nextAction": "Complete WI-0040 and open a draft PR; coordinator will retarget to Aegis 2.0.1",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-11-25T12:32:00.000Z"
+    },
+    {
+      "id": "WI-0041",
+      "type": "task",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "Directory.Packages.props"
+        },
+        {
+          "type": "tests",
+          "path": "tests/Arca.Tests/Arca.Tests.fsproj"
+        }
+      ],
+      "updatedAt": "2026-11-25T13:10:43.882Z",
+      "telemetryExecutionIds": [
+        "EXE-20261125T125259228Z-32a3e78c"
+      ],
+      "latestCheckpoint": {
+        "id": "c63e440120ab5ba973532a90",
+        "recordedAt": "2026-11-25T13:10:30.168Z",
+        "executionId": "EXE-20261125T125259228Z-32a3e78c",
+        "repository": "arca",
+        "branch": "claude/vigila-implementation-jdeps1",
+        "commit": "2712fa37fafc4e6f27fd9f1dea6a2485076fbda6",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "claude/vigila-implementation-jdeps1",
+        "remoteCommit": "2712fa37fafc4e6f27fd9f1dea6a2485076fbda6",
+        "summary": "Aegis pins retargeted 2.0.0 -> 2.0.1; restore, build and tests green on the global.json SDK",
+        "nextAction": "Complete WI-0041; update PR to 2.0.1 and confirm CI",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-11-25T13:10:43.882Z"
+    },
+    {
+      "id": "WI-0042",
+      "type": "task",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "Directory.Packages.props"
+        },
+        {
+          "type": "tests",
+          "path": "tests/Arca.Tests/Arca.Tests.fsproj"
+        }
+      ],
+      "updatedAt": "2026-11-25T15:43:16Z",
+      "telemetryExecutionIds": [
+        "EXE-20261125T154014410Z-92041d22"
+      ],
+      "latestCheckpoint": {
+        "id": "ecca10264f625d2be8f48081",
+        "recordedAt": "2026-11-25T15:43:15Z",
+        "executionId": "EXE-20261125T154014410Z-92041d22",
+        "repository": "arca",
+        "branch": "claude/vigila-implementation-jdeps1",
+        "commit": "287f71e5878d4cb46d4fa0a1541dfe2aef2ba4be",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "claude/vigila-implementation-jdeps1",
+        "remoteCommit": "287f71e5878d4cb46d4fa0a1541dfe2aef2ba4be",
+        "summary": "Aegis pins retargeted 2.0.1 -> 2.0.2; build green on SDK 10.0.404 and 11.0.100; 415 tests pass",
+        "nextAction": "Complete WI-0042; update PR to 2.0.2 and confirm CI",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-11-25T15:43:16Z"
     }
   ]
 }
