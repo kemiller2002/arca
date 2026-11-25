@@ -4,7 +4,7 @@
   "repository": "arca",
   "actor": "ros-bootstrap",
   "startedAt": "2026-10-08T07:50:21.907Z",
-  "updatedAt": "2026-11-25T15:40:13Z",
+  "updatedAt": "2026-11-25T15:43:16Z",
   "baselineDirtyPaths": [],
   "workItems": [
     {
@@ -1819,13 +1819,43 @@
     {
       "id": "WI-0042",
       "type": "task",
-      "state": "active",
-      "semanticState": "active",
-      "evidence": [],
-      "updatedAt": "2026-11-25T15:40:13Z",
+      "state": "complete",
+      "semanticState": "complete",
+      "evidence": [
+        {
+          "type": "implementation",
+          "path": "Directory.Packages.props"
+        },
+        {
+          "type": "tests",
+          "path": "tests/Arca.Tests/Arca.Tests.fsproj"
+        }
+      ],
+      "updatedAt": "2026-11-25T15:43:16Z",
       "telemetryExecutionIds": [
         "EXE-20261125T154014410Z-92041d22"
-      ]
+      ],
+      "latestCheckpoint": {
+        "id": "ecca10264f625d2be8f48081",
+        "recordedAt": "2026-11-25T15:43:15Z",
+        "executionId": "EXE-20261125T154014410Z-92041d22",
+        "repository": "arca",
+        "branch": "claude/vigila-implementation-jdeps1",
+        "commit": "287f71e5878d4cb46d4fa0a1541dfe2aef2ba4be",
+        "remote": {
+          "name": "origin",
+          "url": "https://github.com/kemiller2002/arca"
+        },
+        "remoteBranch": "claude/vigila-implementation-jdeps1",
+        "remoteCommit": "287f71e5878d4cb46d4fa0a1541dfe2aef2ba4be",
+        "summary": "Aegis pins retargeted 2.0.1 -> 2.0.2; build green on SDK 10.0.404 and 11.0.100; 415 tests pass",
+        "nextAction": "Complete WI-0042; update PR to 2.0.2 and confirm CI",
+        "verification": {
+          "status": "verified",
+          "mechanism": "git-remote-observation"
+        }
+      },
+      "completedAt": "2026-11-25T15:43:16Z"
     }
   ]
 }
