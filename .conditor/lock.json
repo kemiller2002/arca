@@ -1,19 +1,19 @@
 {
   "schemaVersion": 4,
   "project": "arca",
-  "manifestSha256": "2c7b5d55c9477fffe6c8ddcceff3f93815b500da9461520059ec2d5eb23bd488",
+  "manifestSha256": "ac244bd06f575cd8e43bf6e71e3e0a577e41b5357e81d3874beb0d3e796df0b7",
   "manifest": {
     "schemaVersion": 1,
     "name": "arca",
     "registryAuthority": {
       "kind": "resolved-release-set",
       "path": ".conditor/authority/resolved-release-set.json",
-      "sha256": "6be3bc97fbdd314abc4c712c2b1b47c1a18487995d9e1b9db445b4d141a8ee8a"
+      "sha256": "4851c24d52cf3a7ef6dd2ccec26ef7a97c769dd06076b51dfede387c5a8cf8c9"
     },
     "components": [
       {
         "id": "praxis",
-        "version": "3.25.0",
+        "version": "3.26.0",
         "required": true
       },
       {
@@ -44,12 +44,12 @@
   "components": [
     {
       "id": "praxis",
-      "version": "3.25.0",
+      "version": "3.26.0",
       "distribution": "host-tool",
       "package": "praxis",
-      "descriptorSha256": "a6a854d426d865133e7d1440e2ca80245dbf425aecdf1aafdb7ffddf5bd4487a",
+      "descriptorSha256": "5cb1f058f06dde4ff975e0c559b74a564abda5a78aadac1d4d3fd8f6e3eaefa7",
       "authority": "embedded-component-descriptor",
-      "sourceReference": "host:praxis@3.25.0"
+      "sourceReference": "host:praxis@3.26.0"
     },
     {
       "id": "ordo",

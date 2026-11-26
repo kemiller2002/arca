@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "repository": "arca",
-  "nextSeq": 45,
+  "nextSeq": 46,
   "items": [
     {
       "id": "WI-0001",
@@ -1090,6 +1090,27 @@
       "attachments": [],
       "createdAt": "2026-11-25T20:36:55.161Z",
       "updatedAt": "2026-11-25T20:43:29Z",
+      "createdBy": "unknown",
+      "createdByActor": {
+        "kind": "agent",
+        "id": "anthropic/claude-code",
+        "provider": "anthropic",
+        "model": "unknown",
+        "runtime": "claude-code"
+      },
+      "source": "manual",
+      "sourceReference": null
+    },
+    {
+      "id": "WI-0045",
+      "title": "Upgrade to echelon-current 1.43.0 (Praxis 3.25.0 -> 3.26.0)",
+      "description": null,
+      "tags": [],
+      "priority": "medium",
+      "status": "complete",
+      "attachments": [],
+      "createdAt": "2026-11-26T00:26:00.707Z",
+      "updatedAt": "2026-11-26T00:34:59.000Z",
       "createdBy": "unknown",
       "createdByActor": {
         "kind": "agent",
